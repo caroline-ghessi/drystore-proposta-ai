@@ -62,12 +62,13 @@ const UploadPDF = () => {
     setUploadedFile(file);
     toast({
       title: "Arquivo carregado com sucesso!",
-      description: "Agora você pode prosseguir para a seleção de sistemas.",
+      description: "Agora você pode prosseguir para a análise técnica com IA.",
     });
   };
 
   const handleNext = () => {
-    navigate('/select-systems');
+    // Redireciona para análise técnica em vez de seleção de sistemas
+    navigate('/technical-analysis');
   };
 
   return (
@@ -151,7 +152,7 @@ const UploadPDF = () => {
                     className="bg-drystore-orange hover:bg-drystore-orange-light text-white"
                     size="lg"
                   >
-                    Próximo: Selecionar Sistemas
+                    Próximo: Análise Técnica
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>

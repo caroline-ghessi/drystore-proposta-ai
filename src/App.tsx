@@ -17,6 +17,8 @@ import ProposalView from "./pages/ProposalView";
 import ProposalManagement from "./pages/ProposalManagement";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TechnicalAnalysis from "./pages/TechnicalAnalysis";
+import TechnicalTable from "./pages/TechnicalTable";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <UploadDocument />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/technical-analysis" 
+              element={
+                <ProtectedRoute>
+                  <TechnicalAnalysis />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/technical-table" 
+              element={
+                <ProtectedRoute>
+                  <TechnicalTable />
                 </ProtectedRoute>
               } 
             />
