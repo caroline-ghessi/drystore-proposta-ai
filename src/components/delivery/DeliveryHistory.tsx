@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, CheckCircle, Download } from 'lucide-react';
+import { FileText, CheckCircle, Download, Package } from 'lucide-react';
 import { DeliveryItem } from '@/types/delivery';
 
 interface DeliveryHistoryProps {
