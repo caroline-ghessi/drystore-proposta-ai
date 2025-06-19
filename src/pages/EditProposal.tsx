@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const EditProposal = () => {
@@ -69,7 +69,6 @@ const EditProposal = () => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
           
-          // Recalcular total se quantidade ou preço unitário mudaram
           if (field === 'quantity' || field === 'unitPrice') {
             updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
           }
@@ -192,62 +191,129 @@ const EditProposal = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {items.map((item) => (
-                      <div key={item.id} className="grid grid-cols-12 gap-3 items-center p-4 bg-gray-50 rounded-lg">
-                        <div className="col-span-4">
-                          <Label className="text-xs text-gray-500">Descrição</Label>
-                          <Input
-                            value={item.description}
-                            onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="col-span-2">
-                          <Label className="text-xs text-gray-500">Qtd</Label>
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="col-span-1">
-                          <Label className="text-xs text-gray-500">Un</Label>
-                          <Input
-                            value={item.unit}
-                            onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="col-span-2">
-                          <Label className="text-xs text-gray-500">Preço Un.</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        <div className="col-span-2">
-                          <Label className="text-xs text-gray-500">Total</Label>
-                          <div className="text-sm font-medium p-2 bg-white rounded border">
-                            R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <div key={item.id}>
+                        {/* Desktop View */}
+                        <div className="hidden md:grid md:grid-cols-12 gap-3 items-center p-4 bg-gray-50 rounded-lg">
+                          <div className="col-span-4">
+                            <Label className="text-xs text-gray-500">Descrição</Label>
+                            <Input
+                              value={item.description}
+                              onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <Label className="text-xs text-gray-500">Qtd</Label>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                              className="text-sm"
+                            />
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <Label className="text-xs text-gray-500">Un</Label>
+                            <Input
+                              value={item.unit}
+                              onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <Label className="text-xs text-gray-500">Preço Un.</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.unitPrice}
+                              onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              className="text-sm"
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <Label className="text-xs text-gray-500">Total</Label>
+                            <div className="text-sm font-medium p-2 bg-white rounded border">
+                              R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeItem(item.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                        
-                        <div className="col-span-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(item.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          >
-                            ×
-                          </Button>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden bg-gray-50 rounded-lg p-4 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-sm text-gray-700">Item #{item.id}</h4>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeItem(item.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-500">Descrição</Label>
+                            <Input
+                              value={item.description}
+                              onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                              className="text-sm mt-1"
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs text-gray-500">Quantidade</Label>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                className="text-sm mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-500">Unidade</Label>
+                              <Input
+                                value={item.unit}
+                                onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
+                                className="text-sm mt-1"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-gray-500">Preço Unitário</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.unitPrice}
+                              onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              className="text-sm mt-1"
+                            />
+                          </div>
+                          
+                          <div className="pt-3 border-t border-gray-200">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-500">Total:</span>
+                              <span className="font-bold text-blue-600">
+                                R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
