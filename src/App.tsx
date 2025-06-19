@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,8 +8,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CreateProposal from "./pages/CreateProposal";
+import UploadPDF from "./pages/UploadPDF";
 import UploadDocument from "./pages/UploadDocument";
 import SelectSystems from "./pages/SelectSystems";
+import ProposalPreview from "./pages/ProposalPreview";
 import EditProposal from "./pages/EditProposal";
 import ProposalView from "./pages/ProposalView";
 import ProposalManagement from "./pages/ProposalManagement";
@@ -46,6 +47,14 @@ const App = () => (
               } 
             />
             <Route 
+              path="/upload-pdf" 
+              element={
+                <ProtectedRoute>
+                  <UploadPDF />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/upload-document" 
               element={
                 <ProtectedRoute>
@@ -58,6 +67,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SelectSystems />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/proposal-preview" 
+              element={
+                <ProtectedRoute>
+                  <ProposalPreview />
                 </ProtectedRoute>
               } 
             />
