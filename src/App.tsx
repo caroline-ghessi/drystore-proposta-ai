@@ -16,6 +16,8 @@ import ProposalPreview from "./pages/ProposalPreview";
 import EditProposal from "./pages/EditProposal";
 import ProposalView from "./pages/ProposalView";
 import ProposalManagement from "./pages/ProposalManagement";
+import DeliveryControl from "./pages/DeliveryControl";
+import DeliveryTracking from "./pages/DeliveryTracking";
 import ExportData from "./pages/admin/ExportData";
 import AIPromptTester from "./pages/admin/AIPromptTester";
 import NotFound from "./pages/NotFound";

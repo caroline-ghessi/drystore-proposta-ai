@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalHeader } from '@/components/proposal/ProposalHeader';
 import { ProposalBenefits } from '@/components/proposal/ProposalBenefits';
@@ -15,6 +14,8 @@ import UrgencyCard from '@/components/proposal/UrgencyCard';
 import RecommendedProducts from '@/components/proposal/RecommendedProducts';
 import ClientQuestionForm from '@/components/proposal/ClientQuestionForm';
 import ProposalActions from '@/components/proposal/ProposalActions';
+import { Button } from '@/components/ui/button';
+import { Package } from 'lucide-react';
 
 interface Interaction {
   id: string;
