@@ -1,30 +1,12 @@
+
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  Filter, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  Eye, 
-  Edit,
-  Plus,
-  Calendar,
-  DollarSign,
-  Bot,
-  MessageCircle,
-  Settings
-} from 'lucide-react';
-import ClientTags from '@/components/clients/ClientTags';
-import ProposalStatus from '@/components/proposal/ProposalStatus';
+import { Plus } from 'lucide-react';
+import ProposalStats from '@/components/proposal/ProposalStats';
+import ProposalFilters from '@/components/proposal/ProposalFilters';
+import ProposalListSection from '@/components/proposal/ProposalListSection';
 
 interface Proposal {
   id: string;
@@ -150,25 +132,6 @@ const ProposalManagement = () => {
     ));
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      aberta: { label: 'Em Aberto', variant: 'secondary' as const, icon: Clock, color: 'text-yellow-600' },
-      aceita: { label: 'Aceita', variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
-      negada: { label: 'Negada', variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' },
-      expirada: { label: 'Expirada', variant: 'outline' as const, icon: AlertCircle, color: 'text-gray-600' }
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig];
-    const Icon = config.icon;
-
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {config.label}
-      </Badge>
-    );
-  };
-
   const filteredProposals = proposals.filter(proposal => {
     const matchesSearch = proposal.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          proposal.project.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -216,222 +179,22 @@ const ProposalManagement = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                </div>
-                <div className="p-3 rounded-full bg-blue-50 text-blue-600">
-                  <FileText className="w-6 h-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Em Andamento</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.abertas}</p>
-                </div>
-                <div className="p-3 rounded-full bg-yellow-50 text-yellow-600">
-                  <Clock className="w-6 h-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Aceitas</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.aceitas}</p>
-                </div>
-                <div className="p-3 rounded-full bg-green-50 text-green-600">
-                  <CheckCircle className="w-6 h-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Valor Fechado</p>
-                  <p className="text-xl font-bold text-gray-900">
-                    R$ {stats.valorTotal.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-                <div className="p-3 rounded-full bg-purple-50 text-purple-600">
-                  <DollarSign className="w-6 h-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <ProposalStats stats={stats} />
 
         {/* Filters */}
-        <Card className="mb-8 border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Buscar por cliente, projeto ou número..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="aguardando_planta">Aguardando Planta</SelectItem>
-                  <SelectItem value="revisao_tecnica">Revisão Técnica</SelectItem>
-                  <SelectItem value="aberta">Em Aberto</SelectItem>
-                  <SelectItem value="negociacao">Negociação</SelectItem>
-                  <SelectItem value="aceita">Aceitas</SelectItem>
-                  <SelectItem value="negada">Negadas</SelectItem>
-                  <SelectItem value="expirada">Expiradas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <ProposalFilters 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+        />
 
         {/* Proposals List */}
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle>Propostas ({filteredProposals.length})</CardTitle>
-            <CardDescription>
-              Lista de todas as propostas com seus respectivos status e tags
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredProposals.length > 0 ? (
-                filteredProposals.map((proposal) => (
-                  <div 
-                    key={proposal.id}
-                    className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-white" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <p className="font-medium text-gray-900">{proposal.number}</p>
-                            <ProposalStatus 
-                              currentStatus={proposal.status}
-                              onStatusChange={(status) => updateProposalStatus(proposal.id, status)}
-                              editable={true}
-                            />
-                            {proposal.hasQuestions && (
-                              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                                <MessageCircle className="w-3 h-3 mr-1" />
-                                Dúvidas
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{proposal.client} - {proposal.project}</p>
-                          
-                          <ClientTags
-                            clientId={proposal.id}
-                            tags={proposal.clientTags}
-                            onTagsChange={(tags) => updateClientTags(proposal.id, tags)}
-                            editable={true}
-                          />
-                          
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                            <span className="flex items-center">
-                              <Calendar className="w-3 h-3 mr-1" />
-                              Criada: {proposal.date}
-                            </span>
-                            <span>Válida até: {proposal.validUntil}</span>
-                            <span>{proposal.interactionCount} interações</span>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="font-semibold text-lg text-gray-900">
-                            R$ {proposal.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Atualizada: {proposal.lastUpdate}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/proposal/${proposal.id}?ai=true`)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Bot className="w-4 h-4 mr-1" />
-                          IA
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/proposal/${proposal.id}`)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/edit-proposal/${proposal.id}`)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'Nenhuma proposta encontrada com os filtros aplicados'
-                      : 'Nenhuma proposta criada ainda'
-                    }
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/create-proposal')}
-                    className="gradient-bg hover:opacity-90"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeira Proposta
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ProposalListSection
+          proposals={filteredProposals}
+          onUpdateTags={updateClientTags}
+          onUpdateStatus={updateProposalStatus}
+        />
       </div>
     </Layout>
   );
