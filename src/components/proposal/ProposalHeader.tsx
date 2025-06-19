@@ -26,32 +26,37 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
       <header className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
+            {/* Left Side - Back Button */}
+            <div className="flex items-center">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="text-gray-600"
+                className="text-gray-600 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
-              
-              <div className="flex items-center space-x-3 ml-4">
-                <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">D</span>
-                </div>
-                <div>
-                  <h1 className="font-semibold text-gray-900">Drystore</h1>
-                  <p className="text-xs text-orange-500">Sua Solução Completa</p>
-                </div>
+            </div>
+            
+            {/* Center - Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">D</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="font-semibold text-gray-900">Drystore</h1>
+                <p className="text-xs text-orange-500">Sua Solução Completa</p>
               </div>
             </div>
             
-            <Button variant="outline" size="sm" className="text-orange-500 border-orange-500">
-              <Share className="w-4 h-4 mr-2" />
-              Compartilhar
-            </Button>
+            {/* Right Side - Share Button */}
+            <div className="flex items-center">
+              <Button variant="outline" size="sm" className="text-orange-500 border-orange-500">
+                <Share className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Compartilhar</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
