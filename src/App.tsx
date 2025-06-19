@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,8 @@ import ProposalPreview from "./pages/ProposalPreview";
 import EditProposal from "./pages/EditProposal";
 import ProposalView from "./pages/ProposalView";
 import ProposalManagement from "./pages/ProposalManagement";
+import ExportData from "./pages/admin/ExportData";
+import AIPromptTester from "./pages/admin/AIPromptTester";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TechnicalAnalysis from "./pages/TechnicalAnalysis";
@@ -113,6 +116,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProposalManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/export" 
+              element={
+                <ProtectedRoute>
+                  <ExportData />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/ai-prompts" 
+              element={
+                <ProtectedRoute>
+                  <AIPromptTester />
                 </ProtectedRoute>
               } 
             />

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Edit3, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import FullscreenPreview from '@/components/proposal/FullscreenPreview';
 
 const ProposalPreview = () => {
   const navigate = useNavigate();
@@ -84,6 +85,39 @@ const ProposalPreview = () => {
     navigate('/proposal/1');
   };
 
+  const proposalContent = (
+    <div className="space-y-6">
+      <div className="text-center border-b pb-6">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Proposta Comercial</h1>
+        <p className="text-xl text-gray-600">PROP-2024-001 - João Silva</p>
+        <p className="text-gray-500">Residência Moderna</p>
+      </div>
+
+      <div className="space-y-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <div className="flex-1">
+              <h3 className="font-medium text-gray-900">{item.description}</h3>
+              <p className="text-sm text-gray-500">{item.quantity} {item.unit} × R$ {item.unitPrice.toFixed(2)}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-lg font-semibold text-gray-900">
+                R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t pt-6">
+        <div className="flex justify-between text-2xl font-bold text-blue-600">
+          <span>Total da Proposta:</span>
+          <span>R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Layout>
       <div className="max-w-5xl mx-auto animate-fade-in">
@@ -104,6 +138,10 @@ const ProposalPreview = () => {
           </div>
           
           <div className="flex space-x-3">
+            <FullscreenPreview>
+              {proposalContent}
+            </FullscreenPreview>
+            
             <Button variant="outline" onClick={handleSave}>
               <Edit3 className="w-4 h-4 mr-2" />
               Salvar Alterações

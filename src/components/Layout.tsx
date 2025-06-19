@@ -6,7 +6,9 @@ import {
   Home, 
   FileText, 
   Settings,
-  User
+  User,
+  Download,
+  Bot
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -22,6 +24,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Propostas', href: '/proposals', icon: FileText },
   ];
+
+  const adminNavigation = [
+    { name: 'Exportar Dados', href: '/admin/export', icon: Download },
+    { name: 'Prompts IA', href: '/admin/ai-prompts', icon: Bot },
+  ];
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,6 +68,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 );
               })}
+              
+              {isAdmin && (
+                <>
+                  <div className="border-l border-gray-200 mx-2" />
+                  {adminNavigation.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'text-purple-600 bg-purple-50'
+                            : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
             </nav>
 
             <div className="flex items-center space-x-4">

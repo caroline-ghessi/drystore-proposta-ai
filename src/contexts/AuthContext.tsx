@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { sessionTracker } from '@/services/sessionTracking';
 
 interface User {
   id: string;
@@ -34,7 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Simular verificação de token/sessão
     const savedUser = localStorage.getItem('drystore_user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      setUser(userData);
+      
+      // Track activity para usuário já logado
+      sessionTracker.trackActivity(userData.id);
     }
     setLoading(false);
   }, []);
@@ -51,6 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(userData);
       localStorage.setItem('drystore_user', JSON.stringify(userData));
+      
+      // Track login session
+      await sessionTracker.trackLogin(userData.id, userData.email);
+      
       return true;
     }
     return false;
