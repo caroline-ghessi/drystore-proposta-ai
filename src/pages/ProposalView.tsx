@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +64,69 @@ const ProposalView = () => {
       '30 anos de garantia',
       'Facilidade de manutenção'
     ],
-    technicalDetails: 'Cobertura residencial com telhas shingle premium cor cinza escuro. Área total de 180m² incluindo estrutura de madeira, manta térmica e sistema de captação pluvial.'
+    technicalDetails: 'Cobertura residencial com telhas shingle premium cor cinza escuro. Área total de 180m² incluindo estrutura de madeira, manta térmica e sistema de captação pluvial.',
+    technicalImages: [
+      {
+        url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&h=300&fit=crop',
+        description: 'Vista detalhada da instalação das telhas shingle'
+      },
+      {
+        url: 'https://images.unsplash.com/photo-1439337153520-7082a56a81f4?w=500&h=300&fit=crop',
+        description: 'Sistema de ventilação e estrutura'
+      }
+    ],
+    solutions: [
+      {
+        name: 'Cobertura',
+        products: [
+          {
+            name: 'Telhas Shingle Premium',
+            description: 'Telhas asfálticas de alta qualidade cor cinza escuro',
+            area: '180m²',
+            unitPrice: 45,
+            totalPrice: 8100
+          },
+          {
+            name: 'Estrutura de Madeira',
+            description: 'Caibros e ripas em madeira tratada',
+            area: '180m²',
+            unitPrice: 25,
+            totalPrice: 4500
+          }
+        ]
+      },
+      {
+        name: 'Impermeabilização',
+        products: [
+          {
+            name: 'Manta Asfáltica',
+            description: 'Manta térmica e impermeabilizante',
+            area: '180m²',
+            unitPrice: 18,
+            totalPrice: 3240
+          }
+        ]
+      },
+      {
+        name: 'Acabamentos',
+        products: [
+          {
+            name: 'Calhas e Rufos',
+            description: 'Sistema completo de captação pluvial',
+            area: '45m',
+            unitPrice: 35,
+            totalPrice: 1575
+          },
+          {
+            name: 'Ventilação',
+            description: 'Sistema de ventilação da cobertura',
+            area: '12 unidades',
+            unitPrice: 65,
+            totalPrice: 780
+          }
+        ]
+      }
+    ]
   };
 
   const handleAccept = () => {
@@ -216,7 +277,69 @@ const ProposalView = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-700 leading-relaxed">{proposal.technicalDetails}</p>
+                <p className="text-gray-700 leading-relaxed mb-6">{proposal.technicalDetails}</p>
+                
+                {/* Imagens Técnicas */}
+                <div className="mb-8">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Imagens Técnicas Explicativas
+                  </h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {proposal.technicalImages.map((image, index) => (
+                      <div key={index} className="bg-white rounded-lg border overflow-hidden">
+                        <img 
+                          src={image.url} 
+                          alt={image.description}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="p-3">
+                          <p className="text-sm text-gray-600">{image.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Produtos por Solução */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Produtos e Soluções
+                  </h4>
+                  <div className="space-y-6">
+                    {proposal.solutions.map((solution, solutionIndex) => (
+                      <div key={solutionIndex} className="bg-gray-50 rounded-lg p-4">
+                        <h5 className="font-medium text-gray-900 mb-3 text-lg">{solution.name}</h5>
+                        <div className="space-y-3">
+                          {solution.products.map((product, productIndex) => (
+                            <div key={productIndex} className="bg-white rounded-lg p-4 border">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1">
+                                  <h6 className="font-medium text-gray-900">{product.name}</h6>
+                                  <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+                                  <div className="flex items-center space-x-4 text-sm">
+                                    <span className="text-orange-600 font-medium">
+                                      {product.area}
+                                    </span>
+                                    <span className="text-gray-500">
+                                      R$ {product.unitPrice}/m²
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-gray-900">
+                                    R$ {product.totalPrice.toLocaleString('pt-BR')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
