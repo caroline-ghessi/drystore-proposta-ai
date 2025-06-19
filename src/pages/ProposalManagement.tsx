@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,26 +18,34 @@ import {
   Edit,
   Plus,
   Calendar,
-  DollarSign
+  DollarSign,
+  Bot,
+  MessageCircle,
+  Settings
 } from 'lucide-react';
+import ClientTags from '@/components/clients/ClientTags';
+import ProposalStatus from '@/components/proposal/ProposalStatus';
 
 const ProposalManagement = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Dados mockados das propostas
-  const proposals = [
+  // Dados mockados das propostas com novas funcionalidades
+  const [proposals, setProposals] = useState([
     {
       id: '1',
       number: 'PROP-2024-001',
       client: 'João Silva',
       project: 'Residência Moderna',
       value: 48283.75,
-      status: 'aberta',
+      status: 'aguardando_planta',
       date: '2024-01-15',
       validUntil: '2024-01-30',
-      lastUpdate: '2024-01-15'
+      lastUpdate: '2024-01-15',
+      clientTags: ['Cliente Quente', 'Follow-up'],
+      hasQuestions: true,
+      interactionCount: 5
     },
     {
       id: '2',
@@ -46,10 +53,13 @@ const ProposalManagement = () => {
       client: 'Maria Santos',
       project: 'Cobertura Premium',
       value: 78000.00,
-      status: 'aceita',
+      status: 'negociacao',
       date: '2024-01-14',
       validUntil: '2024-01-29',
-      lastUpdate: '2024-01-16'
+      lastUpdate: '2024-01-16',
+      clientTags: ['Negociação'],
+      hasQuestions: false,
+      interactionCount: 8
     },
     {
       id: '3',
@@ -60,7 +70,10 @@ const ProposalManagement = () => {
       status: 'negada',
       date: '2024-01-13',
       validUntil: '2024-01-28',
-      lastUpdate: '2024-01-14'
+      lastUpdate: '2024-01-14',
+      clientTags: ['Cliente Frio'],
+      hasQuestions: true,
+      interactionCount: 3
     },
     {
       id: '4',
@@ -95,7 +108,23 @@ const ProposalManagement = () => {
       validUntil: '2024-01-25',
       lastUpdate: '2024-01-12'
     }
-  ];
+  ]);
+
+  const updateClientTags = (proposalId: string, tags: string[]) => {
+    setProposals(prev => prev.map(proposal => 
+      proposal.id === proposalId 
+        ? { ...proposal, clientTags: tags }
+        : proposal
+    ));
+  };
+
+  const updateProposalStatus = (proposalId: string, status: string) => {
+    setProposals(prev => prev.map(proposal => 
+      proposal.id === proposalId 
+        ? { ...proposal, status, lastUpdate: new Date().toISOString().split('T')[0] }
+        : proposal
+    ));
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -128,7 +157,7 @@ const ProposalManagement = () => {
 
   const getStats = () => {
     const total = proposals.length;
-    const abertas = proposals.filter(p => p.status === 'aberta').length;
+    const abertas = proposals.filter(p => ['aberta', 'aguardando_planta', 'revisao_tecnica', 'negociacao'].includes(p.status)).length;
     const aceitas = proposals.filter(p => p.status === 'aceita').length;
     const valorTotal = proposals
       .filter(p => p.status === 'aceita')
@@ -164,6 +193,7 @@ const ProposalManagement = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* ... keep existing code (stats cards) */}
           <Card className="border-0 shadow-md">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -182,7 +212,7 @@ const ProposalManagement = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Em Aberto</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">Em Andamento</p>
                   <p className="text-2xl font-bold text-gray-900">{stats.abertas}</p>
                 </div>
                 <div className="p-3 rounded-full bg-yellow-50 text-yellow-600">
@@ -246,7 +276,10 @@ const ProposalManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="aguardando_planta">Aguardando Planta</SelectItem>
+                  <SelectItem value="revisao_tecnica">Revisão Técnica</SelectItem>
                   <SelectItem value="aberta">Em Aberto</SelectItem>
+                  <SelectItem value="negociacao">Negociação</SelectItem>
                   <SelectItem value="aceita">Aceitas</SelectItem>
                   <SelectItem value="negada">Negadas</SelectItem>
                   <SelectItem value="expirada">Expiradas</SelectItem>
@@ -261,7 +294,7 @@ const ProposalManagement = () => {
           <CardHeader>
             <CardTitle>Propostas ({filteredProposals.length})</CardTitle>
             <CardDescription>
-              Lista de todas as propostas com seus respectivos status
+              Lista de todas as propostas com seus respectivos status e tags
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -270,53 +303,88 @@ const ProposalManagement = () => {
                 filteredProposals.map((proposal) => (
                   <div 
                     key={proposal.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-white" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-1">
-                          <p className="font-medium text-gray-900">{proposal.number}</p>
-                          {getStatusBadge(proposal.status)}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-white" />
                         </div>
-                        <p className="text-sm text-gray-600">{proposal.client} - {proposal.project}</p>
-                        <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
-                          <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Criada: {proposal.date}
-                          </span>
-                          <span>Válida até: {proposal.validUntil}</span>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <p className="font-medium text-gray-900">{proposal.number}</p>
+                            <ProposalStatus 
+                              currentStatus={proposal.status}
+                              onStatusChange={(status) => updateProposalStatus(proposal.id, status)}
+                              editable={true}
+                            />
+                            {proposal.hasQuestions && (
+                              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                <MessageCircle className="w-3 h-3 mr-1" />
+                                Dúvidas
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{proposal.client} - {proposal.project}</p>
+                          
+                          <ClientTags
+                            clientId={proposal.id}
+                            tags={proposal.clientTags}
+                            onTagsChange={(tags) => updateClientTags(proposal.id, tags)}
+                            editable={true}
+                          />
+                          
+                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <span className="flex items-center">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Criada: {proposal.date}
+                            </span>
+                            <span>Válida até: {proposal.validUntil}</span>
+                            <span>{proposal.interactionCount} interações</span>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="text-right">
-                        <p className="font-semibold text-lg text-gray-900">
-                          R$ {proposal.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Atualizada: {proposal.lastUpdate}
-                        </p>
+                        
+                        <div className="text-right">
+                          <p className="font-semibold text-lg text-gray-900">
+                            R$ {proposal.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Atualizada: {proposal.lastUpdate}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/proposal/${proposal.id}`)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/edit-proposal/${proposal.id}`)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/proposal/${proposal.id}?ai=true`)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Bot className="w-4 h-4 mr-1" />
+                          IA
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/proposal/${proposal.id}`)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/edit-proposal/${proposal.id}`)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))

@@ -1,23 +1,53 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ProposalHeader } from '@/components/proposal/ProposalHeader';
 import { ProposalBenefits } from '@/components/proposal/ProposalBenefits';
 import { TechnicalDetails } from '@/components/proposal/TechnicalDetails';
 import { InvestmentCard } from '@/components/proposal/InvestmentCard';
 import { StatusMessage } from '@/components/proposal/StatusMessage';
+import InteractionLog from '@/components/proposal/InteractionLog';
+import InternalNotes from '@/components/proposal/InternalNotes';
+import AIAssistant from '@/components/proposal/AIAssistant';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Phone, Clock, Star, ShoppingCart, Sparkles, Plus } from 'lucide-react';
+import { MessageCircle, Phone, Clock, Star, ShoppingCart, Sparkles, Plus, Bot } from 'lucide-react';
 
 const ProposalView = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const showAI = searchParams.get('ai') === 'true';
   const { toast } = useToast();
   const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
   const [question, setQuestion] = useState('');
+  const [internalNotes, setInternalNotes] = useState('Cliente demonstrou interesse em painéis solares adicionais.\nNegociar desconto se fechar até sexta-feira.');
+  const [interactions, setInteractions] = useState([
+    {
+      id: '1',
+      type: 'edit' as const,
+      description: 'Proposta criada',
+      user: 'Carlos Vendedor',
+      timestamp: '19/06/2025 09:00',
+      details: 'Proposta inicial baseada na planta enviada pelo cliente'
+    },
+    {
+      id: '2',
+      type: 'send' as const,
+      description: 'Proposta enviada por email',
+      user: 'Sistema',
+      timestamp: '19/06/2025 09:15'
+    },
+    {
+      id: '3',
+      type: 'view' as const,
+      description: 'Cliente visualizou a proposta',
+      user: 'João Silva',
+      timestamp: '19/06/2025 14:30'
+    }
+  ]);
 
   // Dados mockados da proposta
   const proposal = {
@@ -118,6 +148,13 @@ const ProposalView = () => {
     ]
   };
 
+  const clientQuestions = [
+    'Qual a garantia dos materiais?',
+    'É possível parcelar em mais vezes?',
+    'Vocês fazem a instalação?'
+  ];
+
+  // Dados mockados dos itens da proposta
   const proposalItems = [
     { description: 'Telhas Shingle Premium - Cor Cinza Escuro', quantity: 180, unit: 'm²', unitPrice: 45.00, total: 8100.00 },
     { description: 'Estrutura de Madeira Tratada', quantity: 180, unit: 'm²', unitPrice: 25.00, total: 4500.00 },
@@ -126,6 +163,7 @@ const ProposalView = () => {
     { description: 'Painéis Metálicos para Fachada', quantity: 95, unit: 'm²', unitPrice: 85.00, total: 8075.00 }
   ];
 
+  // Dados mockados dos produtos recomendados
   const recommendedProducts = [
     {
       id: 1,
@@ -145,8 +183,22 @@ const ProposalView = () => {
     }
   ];
 
+  const addInteraction = (interaction: Omit<typeof interactions[0], 'id' | 'timestamp'>) => {
+    const newInteraction = {
+      ...interaction,
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleString('pt-BR')
+    };
+    setInteractions(prev => [...prev, newInteraction]);
+  };
+
   const handleAccept = () => {
     setStatus('accepted');
+    addInteraction({
+      type: 'accept',
+      description: 'Proposta aceita pelo cliente',
+      user: proposal.clientName
+    });
     toast({
       title: "Proposta Aceita!",
       description: "O vendedor será notificado sobre sua decisão.",
@@ -155,6 +207,11 @@ const ProposalView = () => {
 
   const handleReject = () => {
     setStatus('rejected');
+    addInteraction({
+      type: 'reject',
+      description: 'Proposta rejeitada pelo cliente',
+      user: proposal.clientName
+    });
     toast({
       title: "Proposta Rejeitada",
       description: "O vendedor foi notificado sobre sua decisão.",
@@ -170,6 +227,13 @@ const ProposalView = () => {
       });
       return;
     }
+    
+    addInteraction({
+      type: 'question',
+      description: 'Cliente enviou dúvida',
+      user: proposal.clientName,
+      details: question
+    });
     
     toast({
       title: "Dúvida Enviada",
@@ -348,6 +412,20 @@ const ProposalView = () => {
               solutions={proposal.solutions}
             />
 
+            {/* Anotações Internas - Apenas para vendedores */}
+            <InternalNotes
+              proposalId={proposal.id!}
+              notes={internalNotes}
+              onNotesChange={setInternalNotes}
+            />
+
+            {/* Log de Interações */}
+            <InteractionLog
+              proposalId={proposal.id!}
+              interactions={interactions}
+              onAddInteraction={addInteraction}
+            />
+
             {/* Enviar Dúvida */}
             <Card>
               <CardHeader>
@@ -382,6 +460,15 @@ const ProposalView = () => {
               onQuestion={handleQuestion}
             />
 
+            {/* Assistente de IA - Apenas para vendedores */}
+            {showAI && (
+              <AIAssistant
+                proposalId={proposal.id!}
+                clientQuestions={clientQuestions}
+                proposalData={proposal}
+              />
+            )}
+
             {/* Ações Principais */}
             {status === 'pending' && (
               <Card className="border-0 shadow-lg">
@@ -395,7 +482,7 @@ const ProposalView = () => {
                   </Button>
                   
                   <Button 
-                    onClick={handleWhatsApp}
+                    onClick={() => toast({ title: "Redirecionando para WhatsApp" })}
                     className="w-full bg-green-500 hover:bg-green-600 text-white"
                     size="lg"
                   >
