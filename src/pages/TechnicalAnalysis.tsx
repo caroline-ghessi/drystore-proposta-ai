@@ -18,7 +18,7 @@ const TechnicalAnalysis = () => {
     { id: 'pdf-conversion', label: 'Convertendo PDF em imagens', icon: FileText },
     { id: 'adobe-extraction', label: 'Extraindo texto e tabelas (Adobe PDF Services)', icon: FileText },
     { id: 'ocr-analysis', label: 'Análise textual com IA (Memorial + Tabelas)', icon: Brain },
-    { id: visual-analysis', label: 'Análise visual com IA Multimodal (Plantas + Símbolos)', icon: Eye },
+    { id: 'visual-analysis', label: 'Análise visual com IA Multimodal (Plantas + Símbolos)', icon: Eye },
     { id: 'data-unification', label: 'Unificando resultados das IAs', icon: Cpu },
   ];
 
