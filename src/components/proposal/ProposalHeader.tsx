@@ -1,12 +1,14 @@
-
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Mail, Calendar, Clock, TrendingUp, Share, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ShareModal } from './ShareModal';
 
 interface ProposalHeaderProps {
   proposal: {
+    id?: string;
     title: string;
     subtitle: string;
     clientName: string;
@@ -19,6 +21,11 @@ interface ProposalHeaderProps {
 
 export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
   const navigate = useNavigate();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  const handleShare = () => {
+    setIsShareModalOpen(true);
+  };
 
   return (
     <>
@@ -52,7 +59,12 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
             
             {/* Right Side - Share Button */}
             <div className="flex items-center">
-              <Button variant="outline" size="sm" className="text-orange-500 border-orange-500">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-orange-500 border-orange-500"
+                onClick={handleShare}
+              >
                 <Share className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Compartilhar</span>
               </Button>
@@ -60,6 +72,13 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
           </div>
         </div>
       </header>
+
+      {/* Modal de Compartilhamento */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        proposalId={proposal.id || 'unknown'}
+      />
 
       {/* Alerta de Expiração */}
       {proposal.isExpired && (
