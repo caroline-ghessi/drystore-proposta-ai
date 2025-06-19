@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Upload, FileText, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import DrystoreCube from '@/components/DrystoreCube';
 
 const UploadPDF = () => {
   const navigate = useNavigate();
@@ -72,18 +73,21 @@ const UploadPDF = () => {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto animate-fade-in">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload do Projeto</h1>
-          <p className="text-gray-600">Faça upload do PDF com o projeto arquitetônico ou lista de materiais</p>
+        <div className="mb-8 text-center">
+          <div className="flex justify-center mb-4">
+            <DrystoreCube size="md" />
+          </div>
+          <h1 className="text-3xl font-bold text-drystore-gray-dark mb-2">Upload do Projeto</h1>
+          <p className="text-drystore-gray-medium">Faça upload do PDF com o projeto arquitetônico ou lista de materiais</p>
         </div>
 
-        <Card className="border-0 shadow-lg">
+        <Card className="border border-drystore-gray-light shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Upload className="w-5 h-5 mr-2 text-blue-600" />
+            <CardTitle className="flex items-center text-drystore-gray-dark">
+              <Upload className="w-5 h-5 mr-2 text-drystore-orange" />
               Upload de PDF
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-drystore-gray-medium">
               Aceita arquivos PDF de até 10MB com projetos arquitetônicos ou listas de materiais
             </CardDescription>
           </CardHeader>
@@ -91,18 +95,20 @@ const UploadPDF = () => {
             {!uploadedFile ? (
               <div
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragActive ? 'border-blue-600 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+                  dragActive 
+                    ? 'border-drystore-orange bg-orange-50' 
+                    : 'border-drystore-gray-light hover:border-drystore-gray-medium'
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <Upload className="w-12 h-12 text-drystore-gray-medium mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-drystore-gray-dark mb-2">
                   Arraste o arquivo aqui ou clique para selecionar
                 </h3>
-                <p className="text-gray-500 mb-4">
+                <p className="text-drystore-gray-medium mb-4">
                   Projetos arquitetônicos, plantas baixas ou listas de materiais em PDF
                 </p>
                 <input
@@ -113,7 +119,7 @@ const UploadPDF = () => {
                   id="file-upload"
                 />
                 <label htmlFor="file-upload">
-                  <Button variant="outline" className="cursor-pointer" asChild>
+                  <Button variant="outline" className="cursor-pointer border-drystore-gray-medium text-drystore-gray-dark hover:bg-drystore-gray-light" asChild>
                     <span>Selecionar Arquivo</span>
                   </Button>
                 </label>
@@ -121,27 +127,28 @@ const UploadPDF = () => {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <FileText className="w-8 h-8 text-green-600 mr-3" />
+                  <FileText className="w-8 h-8 text-drystore-green-sustainable mr-3" />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{uploadedFile.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-drystore-gray-dark">{uploadedFile.name}</p>
+                    <p className="text-sm text-drystore-gray-medium">
                       {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
                   </div>
-                  <Check className="w-5 h-5 text-green-600" />
+                  <Check className="w-5 h-5 text-drystore-green-sustainable" />
                 </div>
 
                 <div className="flex justify-between pt-4">
                   <Button 
                     variant="outline" 
                     onClick={() => setUploadedFile(null)}
+                    className="border-drystore-gray-medium text-drystore-gray-dark hover:bg-drystore-gray-light"
                   >
                     Enviar Outro Arquivo
                   </Button>
                   
                   <Button 
                     onClick={handleNext}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-drystore-orange hover:bg-drystore-orange-light text-white"
                     size="lg"
                   >
                     Próximo: Selecionar Sistemas

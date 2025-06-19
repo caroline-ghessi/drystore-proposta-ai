@@ -54,14 +54,15 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				drystore: {
-					blue: '#1e40af',
-					'blue-light': '#3b82f6',
-					'blue-dark': '#1e3a8a',
-					green: '#10b981',
-					'green-light': '#34d399',
-					gray: '#6b7280',
-					'gray-light': '#f3f4f6',
-					'gray-dark': '#374151'
+					orange: '#FF7F00',
+					'orange-light': '#FF9500',
+					'gray-dark': '#404040',
+					'gray-medium': '#808080',
+					'gray-light': '#E0E0E0',
+					white: '#FFFFFF',
+					'green-sustainable': '#4CAF50',
+					'blue-technical': '#2196F3',
+					black: '#000000'
 				}
 			},
 			borderRadius: {

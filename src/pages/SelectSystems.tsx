@@ -3,10 +3,10 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Home, Layers, Zap, Droplets } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Home, Layers, Zap } from 'lucide-react';
+import DrystoreCube from '@/components/DrystoreCube';
 
 const SelectSystems = () => {
   const navigate = useNavigate();
@@ -18,42 +18,48 @@ const SelectSystems = () => {
       name: 'Telhado Shingle',
       description: 'Telhas asfálticas de alta qualidade',
       icon: Home,
-      estimatedValue: 'R$ 15.000 - R$ 25.000'
+      estimatedValue: 'R$ 15.000 - R$ 25.000',
+      division: 'Drybuild'
     },
     {
       id: 'forro-drywall',
       name: 'Forro Drywall',
       description: 'Sistema de forro em placas de gesso',
       icon: Layers,
-      estimatedValue: 'R$ 8.000 - R$ 12.000'
+      estimatedValue: 'R$ 8.000 - R$ 12.000',
+      division: 'Drybuild'
     },
     {
       id: 'revestimento-interno',
       name: 'Revestimento Interno',
       description: 'Acabamentos internos em drywall',
       icon: Layers,
-      estimatedValue: 'R$ 12.000 - R$ 18.000'
+      estimatedValue: 'R$ 12.000 - R$ 18.000',
+      division: 'Drybuild'
     },
     {
       id: 'revestimento-externo',
       name: 'Revestimento Externo',
       description: 'Painéis de fachada e acabamentos',
       icon: Layers,
-      estimatedValue: 'R$ 20.000 - R$ 30.000'
+      estimatedValue: 'R$ 20.000 - R$ 30.000',
+      division: 'Drybuild'
     },
     {
       id: 'piso',
       name: 'Piso',
       description: 'Sistema de pisos e contrapiso',
       icon: Layers,
-      estimatedValue: 'R$ 10.000 - R$ 16.000'
+      estimatedValue: 'R$ 10.000 - R$ 16.000',
+      division: 'Drybuild'
     },
     {
       id: 'energia-solar',
       name: 'Energia Solar',
       description: 'Sistema fotovoltaico completo',
       icon: Zap,
-      estimatedValue: 'R$ 25.000 - R$ 40.000'
+      estimatedValue: 'R$ 25.000 - R$ 40.000',
+      division: 'Drysolar'
     }
   ];
 
@@ -77,14 +83,17 @@ const SelectSystems = () => {
           <Button 
             variant="ghost" 
             onClick={() => navigate('/upload-pdf')}
-            className="mr-4"
+            className="mr-4 text-drystore-gray-medium hover:text-drystore-gray-dark"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Selecionar Sistemas</h1>
-            <p className="text-gray-600 mt-1">Escolha quais sistemas farão parte da proposta</p>
+          <div className="flex items-center">
+            <DrystoreCube size="md" className="mr-4" />
+            <div>
+              <h1 className="text-3xl font-bold text-drystore-gray-dark">Selecionar Sistemas</h1>
+              <p className="text-drystore-gray-medium mt-1">Escolha quais sistemas farão parte da proposta</p>
+            </div>
           </div>
         </div>
 
@@ -97,8 +106,10 @@ const SelectSystems = () => {
               return (
                 <Card 
                   key={system.id} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    isSelected ? 'ring-2 ring-blue-600 bg-blue-50' : ''
+                  className={`cursor-pointer transition-all hover:shadow-md border ${
+                    isSelected 
+                      ? 'ring-2 ring-drystore-orange bg-orange-50 border-drystore-orange' 
+                      : 'border-drystore-gray-light hover:border-drystore-gray-medium'
                   }`}
                   onClick={() => handleSystemToggle(system.id)}
                 >
@@ -112,16 +123,25 @@ const SelectSystems = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                            <div className={`p-2 rounded-lg ${
+                              isSelected 
+                                ? 'bg-drystore-orange text-white' 
+                                : system.division === 'Drysolar' 
+                                  ? 'bg-drystore-green-sustainable text-white'
+                                  : 'bg-drystore-gray-light text-drystore-gray-medium'
+                            }`}>
                               <Icon className="w-5 h-5" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900">{system.name}</h3>
+                            <div>
+                              <h3 className="text-lg font-semibold text-drystore-gray-dark">{system.name}</h3>
+                              <span className="text-xs text-drystore-gray-medium">{system.division}</span>
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-blue-600">
+                          <span className="text-sm font-medium text-drystore-orange">
                             {system.estimatedValue}
                           </span>
                         </div>
-                        <p className="text-gray-600">{system.description}</p>
+                        <p className="text-drystore-gray-medium">{system.description}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -131,11 +151,11 @@ const SelectSystems = () => {
           </div>
 
           <div className="lg:col-span-1">
-            <Card className="sticky top-8 border-0 shadow-lg">
+            <Card className="sticky top-8 border border-drystore-gray-light shadow-sm">
               <CardHeader>
-                <CardTitle>Resumo da Seleção</CardTitle>
-                <CardDescription>
-                  {selectedSystems.length} sistema(s) selecionado(s)
+                <CardTitle className="text-drystore-gray-dark">Resumo da Seleção</CardTitle>
+                <CardDescription className="text-drystore-gray-medium">
+                  <span className="font-medium text-drystore-orange">{selectedSystems.length}</span> sistema(s) selecionado(s)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -147,17 +167,18 @@ const SelectSystems = () => {
                         if (!system) return null;
                         
                         return (
-                          <div key={systemId} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                            <span className="text-sm text-gray-600">{system.name}</span>
+                          <div key={systemId} className="flex items-center justify-between py-2 border-b border-drystore-gray-light last:border-0">
+                            <span className="text-sm text-drystore-gray-medium">{system.name}</span>
+                            <span className="text-xs text-drystore-gray-medium">{system.division}</span>
                           </div>
                         );
                       })}
                     </div>
                     
-                    <div className="pt-4 border-t">
+                    <div className="pt-4 border-t border-drystore-gray-light">
                       <Button 
                         onClick={handleNext}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full bg-drystore-orange hover:bg-drystore-orange-light text-white"
                         size="lg"
                       >
                         Gerar Proposta
@@ -167,7 +188,7 @@ const SelectSystems = () => {
                   </>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-drystore-gray-medium mb-4">
                       Selecione pelo menos um sistema para continuar
                     </p>
                     <Button disabled variant="outline" className="w-full">
