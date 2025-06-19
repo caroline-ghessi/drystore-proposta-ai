@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Phone, Clock, Star, ShoppingCart } from 'lucide-react';
+import { MessageCircle, Phone, Clock, Star, ShoppingCart, Sparkles, Plus } from 'lucide-react';
 
 const ProposalView = () => {
   const { id } = useParams();
@@ -190,6 +190,66 @@ const ProposalView = () => {
       <ProposalHeader proposal={proposal} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Produtos Recomendados em Destaque */}
+        <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-orange-50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-transparent">
+                    🎯 Maximize Seu Investimento!
+                  </h2>
+                  <p className="text-gray-600 text-sm">Produtos especiais selecionados especialmente para seu projeto</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {recommendedProducts.map((product) => (
+                <div key={product.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex space-x-4">
+                    <img 
+                      src={product.image} 
+                      alt={product.name}
+                      className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
+                      <p className="text-sm text-gray-600 mb-3">{product.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg font-bold text-green-600">
+                            R$ {product.price.toLocaleString('pt-BR')}
+                          </span>
+                          <span className="text-sm text-gray-500 line-through">
+                            R$ {product.originalPrice.toLocaleString('pt-BR')}
+                          </span>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                            -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Button className="w-full mt-3 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar à Proposta
+                  </Button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="text-center mt-6">
+              <p className="text-sm text-gray-600 bg-white px-4 py-2 rounded-full inline-block border">
+                💡 <strong>Oferta Limitada:</strong> Adicione agora e economize até R$ 1.400!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -287,44 +347,6 @@ const ProposalView = () => {
               technicalImages={proposal.technicalImages}
               solutions={proposal.solutions}
             />
-
-            {/* Produtos Recomendados */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Produtos Recomendados - Oferta Especial
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {recommendedProducts.map((product) => (
-                    <div key={product.id} className="border rounded-lg p-4 bg-white">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-32 object-cover rounded-lg mb-3"
-                      />
-                      <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
-                      <p className="text-sm text-gray-600 mb-3">{product.description}</p>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-lg font-bold text-green-600">
-                            R$ {product.price.toLocaleString('pt-BR')}
-                          </span>
-                          <span className="text-sm text-gray-500 line-through ml-2">
-                            R$ {product.originalPrice.toLocaleString('pt-BR')}
-                          </span>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          -{Math.round((1 - product.price / product.originalPrice) * 100)}%
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Enviar Dúvida */}
             <Card>
