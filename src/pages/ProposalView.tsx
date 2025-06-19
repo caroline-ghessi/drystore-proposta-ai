@@ -16,6 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, Phone, Clock, Star, ShoppingCart, Sparkles, Plus, Bot } from 'lucide-react';
 
+interface Interaction {
+  id: string;
+  type: 'edit' | 'send' | 'view' | 'accept' | 'reject' | 'question' | 'note';
+  description: string;
+  user: string;
+  timestamp: string;
+  details?: string;
+}
+
 const ProposalView = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -24,10 +33,10 @@ const ProposalView = () => {
   const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
   const [question, setQuestion] = useState('');
   const [internalNotes, setInternalNotes] = useState('Cliente demonstrou interesse em painéis solares adicionais.\nNegociar desconto se fechar até sexta-feira.');
-  const [interactions, setInteractions] = useState([
+  const [interactions, setInteractions] = useState<Interaction[]>([
     {
       id: '1',
-      type: 'edit' as const,
+      type: 'edit',
       description: 'Proposta criada',
       user: 'Carlos Vendedor',
       timestamp: '19/06/2025 09:00',
@@ -35,14 +44,14 @@ const ProposalView = () => {
     },
     {
       id: '2',
-      type: 'send' as const,
+      type: 'send',
       description: 'Proposta enviada por email',
       user: 'Sistema',
       timestamp: '19/06/2025 09:15'
     },
     {
       id: '3',
-      type: 'view' as const,
+      type: 'view',
       description: 'Cliente visualizou a proposta',
       user: 'João Silva',
       timestamp: '19/06/2025 14:30'
@@ -183,8 +192,8 @@ const ProposalView = () => {
     }
   ];
 
-  const addInteraction = (interaction: Omit<typeof interactions[0], 'id' | 'timestamp'>) => {
-    const newInteraction = {
+  const addInteraction = (interaction: Omit<Interaction, 'id' | 'timestamp'>) => {
+    const newInteraction: Interaction = {
       ...interaction,
       id: Date.now().toString(),
       timestamp: new Date().toLocaleString('pt-BR')

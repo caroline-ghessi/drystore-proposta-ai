@@ -26,13 +26,28 @@ import {
 import ClientTags from '@/components/clients/ClientTags';
 import ProposalStatus from '@/components/proposal/ProposalStatus';
 
+interface Proposal {
+  id: string;
+  number: string;
+  client: string;
+  project: string;
+  value: number;
+  status: string;
+  date: string;
+  validUntil: string;
+  lastUpdate: string;
+  clientTags: string[];
+  hasQuestions: boolean;
+  interactionCount: number;
+}
+
 const ProposalManagement = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Dados mockados das propostas com novas funcionalidades
-  const [proposals, setProposals] = useState([
+  const [proposals, setProposals] = useState<Proposal[]>([
     {
       id: '1',
       number: 'PROP-2024-001',
@@ -84,7 +99,10 @@ const ProposalManagement = () => {
       status: 'expirada',
       date: '2024-01-12',
       validUntil: '2024-01-27',
-      lastUpdate: '2024-01-12'
+      lastUpdate: '2024-01-12',
+      clientTags: [],
+      hasQuestions: false,
+      interactionCount: 2
     },
     {
       id: '5',
@@ -95,7 +113,10 @@ const ProposalManagement = () => {
       status: 'aberta',
       date: '2024-01-11',
       validUntil: '2024-01-26',
-      lastUpdate: '2024-01-11'
+      lastUpdate: '2024-01-11',
+      clientTags: [],
+      hasQuestions: false,
+      interactionCount: 1
     },
     {
       id: '6',
@@ -106,7 +127,10 @@ const ProposalManagement = () => {
       status: 'aceita',
       date: '2024-01-10',
       validUntil: '2024-01-25',
-      lastUpdate: '2024-01-12'
+      lastUpdate: '2024-01-12',
+      clientTags: [],
+      hasQuestions: false,
+      interactionCount: 4
     }
   ]);
 
@@ -193,7 +217,6 @@ const ProposalManagement = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* ... keep existing code (stats cards) */}
           <Card className="border-0 shadow-md">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
