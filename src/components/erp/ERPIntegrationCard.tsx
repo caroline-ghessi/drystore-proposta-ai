@@ -181,7 +181,7 @@ const ERPIntegrationCard = ({ proposalData, onIntegrationComplete }: ERPIntegrat
                 • XML formatado e pronto
               </p>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </PermissionGuard>
