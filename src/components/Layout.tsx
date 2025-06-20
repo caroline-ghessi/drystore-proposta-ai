@@ -102,6 +102,14 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                   >
                     Produtos
                   </Link>
+                  {(user?.role === 'vendedor_interno' || user?.role === 'representante' || user?.role === 'admin') && (
+                    <Link
+                      to="/smart-scheduler"
+                      className={`${isActive('/smart-scheduler')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+                    >
+                      Agenda IA
+                    </Link>
+                  )}
                   <Link
                     to="/follow-up-manager"
                     className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors"
@@ -209,6 +217,15 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                 >
                   Produtos
                 </Link>
+                {(user?.role === 'vendedor_interno' || user?.role === 'representante' || user?.role === 'admin') && (
+                  <Link
+                    to="/smart-scheduler"
+                    className={`${isActive('/smart-scheduler')} px-3 py-2 rounded-md text-base font-medium block transition-colors`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Agenda IA
+                  </Link>
+                )}
                 <Link
                   to="/follow-up-manager"
                   className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 rounded-md text-base font-medium block transition-colors"

@@ -11,8 +11,10 @@ import ProposalView from './pages/ProposalView';
 import ProposalPreview from './pages/ProposalPreview';
 import UploadDocument from './pages/UploadDocument';
 import EditProposal from './pages/EditProposal';
+import SmartScheduler from './pages/SmartScheduler';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import PermissionGuard from '@/components/PermissionGuard';
 import IntegrationConfigPanel from '@/components/erp/IntegrationConfigPanel';
 import RecommendationRules from '@/pages/admin/RecommendationRules';
 
@@ -34,6 +36,16 @@ function App() {
               <Route path="/proposal-preview" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
               <Route path="/upload-document" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
               <Route path="/edit-proposal" element={<ProtectedRoute><EditProposal /></ProtectedRoute>} />
+              <Route 
+                path="/smart-scheduler" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['vendedor_interno', 'representante', 'admin']}>
+                      <SmartScheduler />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationConfigPanel /></ProtectedRoute>} />
               <Route path="/admin/recommendation-rules" element={<ProtectedRoute><RecommendationRules /></ProtectedRoute>} />
             </Routes>
