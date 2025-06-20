@@ -18,7 +18,7 @@ interface ProposalMainContentProps {
   interactions: any[];
   addInteraction: (interaction: any) => void;
   onQuestionSubmit: (question: string) => void;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'aguardando_pagamento';
 }
 
 const ProposalMainContent = ({
