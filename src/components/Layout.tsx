@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
 import { Moon, Sun, ArrowLeft, Menu, X } from 'lucide-react';
-import { useTheme } from 'next-themes';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,10 +23,10 @@ interface LayoutProps {
 
 const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { setTheme, theme } = useTheme();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -46,12 +46,12 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
   };
 
   const isActive = (path: string) => {
-    return location.pathname === path ? 'text-blue-600' : 'text-gray-700 hover:text-gray-900';
+    return location.pathname === path ? 'text-drystore-orange' : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-lg border-b">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <nav className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -61,7 +61,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                   variant="ghost" 
                   size="sm"
                   onClick={handleBack}
-                  className="mr-2 md:mr-4"
+                  className="mr-2 md:mr-4 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
                 >
                   <ArrowLeft className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Voltar</span>
@@ -82,25 +82,25 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                 <div className="hidden lg:flex ml-8 space-x-6">
                   <Link
                     to="/proposals"
-                    className={`${isActive('/proposals')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap`}
+                    className={`${isActive('/proposals')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
                   >
                     Propostas
                   </Link>
                   <Link
                     to="/clients"
-                    className={`${isActive('/clients')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap`}
+                    className={`${isActive('/clients')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
                   >
                     Clientes
                   </Link>
                   <Link
                     to="/products"
-                    className={`${isActive('/products')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap`}
+                    className={`${isActive('/products')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
                   >
                     Produtos
                   </Link>
                   <Link
                     to="/follow-up-manager"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+                    className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors"
                   >
                     Follow-ups
                   </Link>
@@ -108,7 +108,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin/zapi-config"
-                      className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap`}
+                      className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
                     >
                       Config Z-API
                     </Link>
@@ -124,7 +124,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                   variant="ghost"
                   size="sm"
                   onClick={toggleMenu}
-                  className="lg:hidden mr-2"
+                  className="lg:hidden mr-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
                 >
                   {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </Button>
@@ -133,11 +133,14 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className="mr-2"
+                onClick={toggleTheme}
+                className="mr-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
               >
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                {theme === 'light' ? (
+                  <Moon className="h-[1.2rem] w-[1.2rem]" />
+                ) : (
+                  <Sun className="h-[1.2rem] w-[1.2rem]" />
+                )}
                 <span className="sr-only">Toggle theme</span>
               </Button>
               
@@ -150,17 +153,26 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/profile')}
+                    className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     Perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/settings')}
+                    className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     Configurações
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
                     Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -170,32 +182,32 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
           
           {/* Mobile Navigation Menu */}
           {isMenuOpen && user?.role !== 'cliente' && (
-            <div className="lg:hidden border-t border-gray-200 py-4">
+            <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-4 bg-white dark:bg-gray-800">
               <div className="flex flex-col space-y-2">
                 <Link
                   to="/proposals"
-                  className={`${isActive('/proposals')} px-3 py-2 rounded-md text-base font-medium block`}
+                  className={`${isActive('/proposals')} px-3 py-2 rounded-md text-base font-medium block transition-colors`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Propostas
                 </Link>
                 <Link
                   to="/clients"
-                  className={`${isActive('/clients')} px-3 py-2 rounded-md text-base font-medium block`}
+                  className={`${isActive('/clients')} px-3 py-2 rounded-md text-base font-medium block transition-colors`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Clientes
                 </Link>
                 <Link
                   to="/products"
-                  className={`${isActive('/products')} px-3 py-2 rounded-md text-base font-medium block`}
+                  className={`${isActive('/products')} px-3 py-2 rounded-md text-base font-medium block transition-colors`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Produtos
                 </Link>
                 <Link
                   to="/follow-up-manager"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium block"
+                  className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 rounded-md text-base font-medium block transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Follow-ups WhatsApp
@@ -203,7 +215,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                 {user?.role === 'admin' && (
                   <Link
                     to="/admin/zapi-config"
-                    className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-base font-medium block`}
+                    className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-base font-medium block transition-colors`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Config Z-API

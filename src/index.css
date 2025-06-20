@@ -28,24 +28,24 @@
   }
 
   .dark {
-    --background: 0 0% 25%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 25%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 25%;
-    --popover-foreground: 0 0% 100%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 50%;
-    --muted-foreground: 0 0% 88%;
-    --accent: 0 0% 50%;
-    --accent-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 50%;
-    --input: 0 0% 50%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
     --ring: 25 100% 50%;
   }
 }
@@ -101,6 +101,15 @@
     background: linear-gradient(135deg, #606060 0%, #404040 100%);
     transform: rotateY(90deg) translateZ(20px);
   }
+
+  /* Dark theme adaptations */
+  .dark .drystore-cube-front {
+    background: linear-gradient(135deg, #606060 0%, #404040 100%);
+  }
+
+  .dark .drystore-cube-right {
+    background: linear-gradient(135deg, #404040 0%, #303030 100%);
+  }
 }
 
 /* Custom animations */
@@ -132,4 +141,9 @@
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+/* Transition classes for smooth theme switching */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

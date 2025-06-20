@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Proposals from './pages/Proposals';
@@ -21,120 +21,122 @@ import { Toaster } from "@/components/ui/toaster"
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <RequireAuth>
-                <Profile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <RequireAuth>
-                <Settings />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/create-proposal"
-            element={
-              <RequireAuth>
-                <CreateProposal />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/upload-choice"
-            element={
-              <RequireAuth>
-                <ProposalUploadChoice />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/proposals"
-            element={
-              <RequireAuth>
-                <Proposals />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/proposal/:id"
-            element={
-              <RequireAuth>
-                <ProposalView />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/delivery-control/:proposalId"
-            element={
-              <RequireAuth>
-                <DeliveryControl />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/client-portal"
-            element={
-              <RequireAuth>
-                <ClientPortal />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/clients"
-            element={
-              <RequireAuth>
-                <Clients />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/delivery-tracking/:proposalId"
-            element={
-              <RequireAuth>
-                <DeliveryTracking />
-              </RequireAuth>
-            }
-          />
-          <Route path="/follow-up-manager" element={<FollowUpManager />} />
-          <Route 
-            path="/products" 
-            element={
-              <RequireAuth>
-                <ProductManagement />
-              </RequireAuth>
-            } 
-          />
-          <Route 
-            path="/admin/zapi-config" 
-            element={
-              <RequireAuth requiredRole="admin">
-                <ZAPIConfiguration />
-              </RequireAuth>
-            } 
-          />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <Dashboard />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <RequireAuth>
+                  <Profile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <RequireAuth>
+                  <Settings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/create-proposal"
+              element={
+                <RequireAuth>
+                  <CreateProposal />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/upload-choice"
+              element={
+                <RequireAuth>
+                  <ProposalUploadChoice />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/proposals"
+              element={
+                <RequireAuth>
+                  <Proposals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/proposal/:id"
+              element={
+                <RequireAuth>
+                  <ProposalView />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/delivery-control/:proposalId"
+              element={
+                <RequireAuth>
+                  <DeliveryControl />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/client-portal"
+              element={
+                <RequireAuth>
+                  <ClientPortal />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/clients"
+              element={
+                <RequireAuth>
+                  <Clients />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/delivery-tracking/:proposalId"
+              element={
+                <RequireAuth>
+                  <DeliveryTracking />
+                </RequireAuth>
+              }
+            />
+            <Route path="/follow-up-manager" element={<FollowUpManager />} />
+            <Route 
+              path="/products" 
+              element={
+                <RequireAuth>
+                  <ProductManagement />
+                </RequireAuth>
+              } 
+            />
+            <Route 
+              path="/admin/zapi-config" 
+              element={
+                <RequireAuth requiredRole="admin">
+                  <ZAPIConfiguration />
+                </RequireAuth>
+              } 
+            />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
