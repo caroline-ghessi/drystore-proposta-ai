@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export const useProposalStatus = (clientName: string, addInteraction: any) => {
-  const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
+  const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected' | 'aguardando_pagamento'>('pending');
   const { toast } = useToast();
 
   const handleAccept = () => {
@@ -15,7 +15,7 @@ export const useProposalStatus = (clientName: string, addInteraction: any) => {
     });
     toast({
       title: "Proposta Aceita!",
-      description: "O vendedor será notificado sobre sua decisão.",
+      description: "Você pode prosseguir com o pagamento.",
     });
   };
 
@@ -46,10 +46,20 @@ export const useProposalStatus = (clientName: string, addInteraction: any) => {
     });
   };
 
+  const handlePaymentPending = () => {
+    setStatus('aguardando_pagamento');
+    addInteraction({
+      type: 'payment_pending',
+      description: 'Aguardando confirmação de pagamento',
+      user: clientName
+    });
+  };
+
   return {
     status,
     handleAccept,
     handleReject,
-    handleQuestion
+    handleQuestion,
+    handlePaymentPending
   };
 };

@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Package, FileCheck } from 'lucide-react';
+import { Package, FileCheck, CreditCard } from 'lucide-react';
 
 interface ProposalAcceptedActionsProps {
   proposalId: string;
@@ -16,23 +16,23 @@ const ProposalAcceptedActions = ({
 }: ProposalAcceptedActionsProps) => {
   const navigate = useNavigate();
 
-  if (!contractGeneration && !deliveryControl) {
-    return (
-      <div className="p-4 bg-green-50 rounded-lg text-center">
-        <p className="text-green-700 font-medium">Proposta Aceita!</p>
-        <p className="text-sm text-green-600 mt-1">
-          O vendedor entrará em contato em breve
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
+      {/* Botão principal de pagamento */}
+      <Button 
+        onClick={() => navigate(`/payment-options/${proposalId}`)}
+        className="w-full bg-green-600 hover:bg-green-700"
+        size="lg"
+      >
+        <CreditCard className="w-5 h-5 mr-2" />
+        Pagar Agora
+      </Button>
+
       {deliveryControl && (
         <Button 
           onClick={() => navigate(`/delivery-tracking/${proposalId}`)}
-          className="w-full bg-green-600 hover:bg-green-700"
+          variant="outline"
+          className="w-full"
           size="lg"
         >
           <Package className="w-5 h-5 mr-2" />

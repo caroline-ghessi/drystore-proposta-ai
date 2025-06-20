@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Settings from './pages/Settings';
 import CreateProposal from './pages/CreateProposal';
 import ProposalView from './pages/ProposalView';
+import PaymentOptions from './pages/PaymentOptions';
 import ProposalPreview from './pages/ProposalPreview';
 import UploadDocument from './pages/UploadDocument';
 import EditProposal from './pages/EditProposal';
@@ -43,6 +44,7 @@ function App() {
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/create-proposal" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
               <Route path="/proposal/:id" element={<ProtectedRoute><ProposalView /></ProtectedRoute>} />
+              <Route path="/payment-options/:proposalId" element={<ProtectedRoute><PaymentOptions /></ProtectedRoute>} />
               <Route path="/proposal-preview" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
               <Route path="/upload-document" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
               <Route path="/edit-proposal" element={<ProtectedRoute><EditProposal /></ProtectedRoute>} />
