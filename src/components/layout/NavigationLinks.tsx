@@ -56,57 +56,53 @@ export const NavigationLinks = () => {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="hidden lg:flex ml-8 items-center">
+    <div className="hidden lg:flex ml-8 items-center space-x-6">
       {/* Main navigation links */}
-      <div className="flex space-x-6">
-        {mainLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
-          >
-            {link.label}
-          </Link>
-        ))}
-        
-        {conditionalLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
+      {mainLinks.map((link) => (
+        <Link
+          key={link.path}
+          to={link.path}
+          className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+        >
+          {link.label}
+        </Link>
+      ))}
+      
+      {conditionalLinks.map((link) => (
+        <Link
+          key={link.path}
+          to={link.path}
+          className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+        >
+          {link.label}
+        </Link>
+      ))}
 
       {/* Admin dropdown menu */}
       {isAdmin && adminOnlyLinks.length > 0 && (
-        <div className="ml-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 text-sm font-medium"
-              >
-                Admin
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {adminOnlyLinks.map((link) => (
-                <DropdownMenuItem key={link.path} asChild>
-                  <Link
-                    to={link.path}
-                    className={`w-full ${location.pathname === link.path ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-                  >
-                    {link.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 text-sm font-medium"
+            >
+              Admin
+              <ChevronDown className="ml-1 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            {adminOnlyLinks.map((link) => (
+              <DropdownMenuItem key={link.path} asChild>
+                <Link
+                  to={link.path}
+                  className={`w-full ${location.pathname === link.path ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+                >
+                  {link.label}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );
