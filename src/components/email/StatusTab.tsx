@@ -35,6 +35,18 @@ export const StatusTab = () => {
                 </p>
               </div>
 
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                    ⚠️ Pendente
+                  </Badge>
+                  <span className="font-medium">Sender Email</span>
+                </div>
+                <p className="text-sm text-yellow-700">
+                  Alterar para portal@propostas.drystore.com.br
+                </p>
+              </div>
+
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className="bg-blue-100 text-blue-800 border-blue-300">
@@ -46,33 +58,21 @@ export const StatusTab = () => {
                   Supabase usará apenas SMTP do Resend
                 </p>
               </div>
-
-              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                    ⏳ Teste
-                  </Badge>
-                  <span className="font-medium">Validação</span>
-                </div>
-                <p className="text-sm text-yellow-700">
-                  Pronto para testes na aba "Testes"
-                </p>
-              </div>
             </div>
 
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h5 className="font-medium mb-2">🔍 Diagnóstico Completo:</h5>
+              <h5 className="font-medium mb-2">🔍 Diagnóstico Atual:</h5>
               <ul className="text-sm space-y-1">
-                <li>✅ <strong>Problema identificado:</strong> Conflito entre Edge Function e SMTP direto</li>
-                <li>✅ <strong>Solução implementada:</strong> Remoção da Edge Function conflitante</li>
-                <li>✅ <strong>Configuração limpa:</strong> Apenas SMTP direto ativo</li>
-                <li>🔄 <strong>Próximo passo:</strong> Testar reset de senha</li>
+                <li>✅ <strong>Edge Function removida:</strong> Conflito eliminado</li>
+                <li>✅ <strong>SMTP direto ativo:</strong> Configuração limpa</li>
+                <li>⚠️ <strong>Email inconsistente:</strong> caroline@drystore.com.br → portal@propostas.drystore.com.br</li>
+                <li>🔄 <strong>Próximo passo:</strong> Alterar Sender Email no Supabase Dashboard</li>
               </ul>
             </div>
 
-            <div className="p-3 bg-green-100 border-l-4 border-green-500">
-              <p className="text-sm font-medium text-green-800">
-                🎉 Configuração otimizada! O conflito foi resolvido e agora o Supabase deve enviar emails corretamente via SMTP do Resend.
+            <div className="p-3 bg-orange-100 border-l-4 border-orange-500">
+              <p className="text-sm font-medium text-orange-800">
+                🎯 <strong>Ação Necessária:</strong> Altere o "Sender Email" no painel do Supabase de <code>caroline@drystore.com.br</code> para <code>portal@propostas.drystore.com.br</code> para resolver a inconsistência de domínio.
               </p>
             </div>
           </div>
