@@ -46,11 +46,12 @@ const Login = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar ao início
           </Link>
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 gradient-bg rounded-2xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">D</span>
-            </div>
-            <span className="text-2xl font-bold gradient-text">Drystore</span>
+          <div className="flex items-center justify-center mb-4">
+            <img 
+              className="h-16 w-auto" 
+              src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
+              alt="DryStore" 
+            />
           </div>
           <p className="text-gray-600">Acesse sua conta</p>
         </div>
