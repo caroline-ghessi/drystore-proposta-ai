@@ -22,6 +22,7 @@ import ApprovalWorkflow from './pages/ApprovalWorkflow';
 import UserRegistration from './pages/UserRegistration';
 import ClientLogin from './pages/ClientLogin';
 import ClientPortal from './pages/ClientPortal';
+import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PermissionGuard from '@/components/PermissionGuard';
@@ -125,6 +126,16 @@ function App() {
                   <ProtectedRoute>
                     <PermissionGuard requiredRole={['admin']}>
                       <UserRegistration />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/zapi-config" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['admin']}>
+                      <ZAPIConfiguration />
                     </PermissionGuard>
                   </ProtectedRoute>
                 } 
