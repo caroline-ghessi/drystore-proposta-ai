@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,19 +124,23 @@ const Proposals = () => {
         </div>
 
         <Tabs defaultValue="accepted" className="space-y-6">
-          <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 min-w-max lg:min-w-0">
-              <TabsTrigger value="accepted" className="text-xs sm:text-sm whitespace-nowrap">
-                Propostas Aceitas
-                {acceptedProposals.length > 0 && (
-                  <Badge className="ml-1 sm:ml-2 text-xs">{acceptedProposals.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="integration" className="text-xs sm:text-sm whitespace-nowrap">Automação ERP/CRM</TabsTrigger>
-              <TabsTrigger value="history" className="text-xs sm:text-sm whitespace-nowrap">Histórico</TabsTrigger>
-              <TabsTrigger value="config" className="text-xs sm:text-sm whitespace-nowrap">Configurações</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1">
+            <TabsTrigger value="accepted" className="text-xs sm:text-sm px-2 py-2 flex flex-col sm:flex-row items-center gap-1">
+              <span className="truncate">Propostas Aceitas</span>
+              {acceptedProposals.length > 0 && (
+                <Badge className="text-xs h-4 px-1">{acceptedProposals.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="integration" className="text-xs sm:text-sm px-2 py-2">
+              <span className="truncate">ERP/CRM</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs sm:text-sm px-2 py-2">
+              <span className="truncate">Histórico</span>
+            </TabsTrigger>
+            <TabsTrigger value="config" className="text-xs sm:text-sm px-2 py-2">
+              <span className="truncate">Config</span>
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="accepted" className="space-y-6">
             {acceptedProposals.length > 0 ? (
