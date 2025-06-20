@@ -1,162 +1,51 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import Login from './pages/Login';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { ThemeProvider } from './components/theme-provider';
+import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
-import Proposals from './pages/Proposals';
-import ProposalView from './pages/ProposalView';
-import DeliveryControl from './pages/DeliveryControl';
-import ClientPortal from './pages/ClientPortal';
-import Clients from './pages/Clients';
-import DeliveryTracking from './pages/DeliveryTracking';
-import FollowUpManager from './pages/FollowUpManager';
-import ProductManagement from './pages/ProductManagement';
-import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
-import CreateProposal from './pages/CreateProposal';
-import ProposalUploadChoice from './pages/ProposalUploadChoice';
-import Profile from './pages/Profile';
+import Login from './pages/Login';
 import Settings from './pages/Settings';
-import { Toaster } from "@/components/ui/toaster"
+import CreateProposal from './pages/CreateProposal';
+import ProposalView from './pages/ProposalView';
+import ProposalPreview from './pages/ProposalPreview';
+import UploadDocument from './pages/UploadDocument';
+import EditProposal from './pages/EditProposal';
+import ProductList from './pages/ProductList';
+import ProductImportPage from './pages/ProductImportPage';
+import { Toaster } from '@/components/ui/toaster';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import IntegrationConfigPanel from '@/components/erp/IntegrationConfigPanel';
+import RecommendationRules from '@/pages/admin/RecommendationRules';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <Dashboard />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <RequireAuth>
-                  <Profile />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <RequireAuth>
-                  <Settings />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/create-proposal"
-              element={
-                <RequireAuth>
-                  <CreateProposal />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/upload-choice"
-              element={
-                <RequireAuth>
-                  <ProposalUploadChoice />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/proposals"
-              element={
-                <RequireAuth>
-                  <Proposals />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/proposal/:id"
-              element={
-                <RequireAuth>
-                  <ProposalView />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/delivery-control/:proposalId"
-              element={
-                <RequireAuth>
-                  <DeliveryControl />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/client-portal"
-              element={
-                <RequireAuth>
-                  <ClientPortal />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/clients"
-              element={
-                <RequireAuth>
-                  <Clients />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/delivery-tracking/:proposalId"
-              element={
-                <RequireAuth>
-                  <DeliveryTracking />
-                </RequireAuth>
-              }
-            />
-            <Route path="/follow-up-manager" element={<FollowUpManager />} />
-            <Route 
-              path="/products" 
-              element={
-                <RequireAuth>
-                  <ProductManagement />
-                </RequireAuth>
-              } 
-            />
-            <Route 
-              path="/admin/zapi-config" 
-              element={
-                <RequireAuth requiredRole="admin">
-                  <ZAPIConfiguration />
-                </RequireAuth>
-              } 
-            />
-          </Routes>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/create-proposal" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
+              <Route path="/proposal/:id" element={<ProtectedRoute><ProposalView /></ProtectedRoute>} />
+              <Route path="/proposal-preview" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
+              <Route path="/upload-document" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
+              <Route path="/edit-proposal" element={<ProtectedRoute><EditProposal /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
+              <Route path="/import-products" element={<ProtectedRoute><ProductImportPage /></ProtectedRoute>} />
+              <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationConfigPanel /></ProtectedRoute>} />
+              <Route path="/admin/recommendation-rules" element={<ProtectedRoute><RecommendationRules /></ProtectedRoute>} />
+            </Routes>
+          </Router>
           <Toaster />
-        </BrowserRouter>
+        </ThemeProvider>
       </AuthProvider>
-    </ThemeProvider>
+    </QueryClientProvider>
   );
-}
-
-function RequireAuth({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) {
-  const { user } = useAuth();
-
-  console.log('RequireAuth - user:', user, 'requiredRole:', requiredRole);
-
-  if (!user) {
-    console.log('RequireAuth - redirecting to login (no user)');
-    return <Navigate to="/login" />;
-  }
-
-  if (requiredRole && user.role !== requiredRole) {
-    console.log('RequireAuth - redirecting to dashboard (insufficient role)');
-    return <Navigate to="/dashboard" />;
-  }
-
-  console.log('RequireAuth - rendering children');
-  return <>{children}</>;
 }
 
 export default App;
