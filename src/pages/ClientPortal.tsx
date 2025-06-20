@@ -63,6 +63,7 @@ const ClientPortal = () => {
         project: 'Residência Moderna',
         value: 48283.75,
         date: '2024-01-15',
+        validUntil: '2024-02-15',
         status: 'aceita' as const
       },
       {
@@ -71,6 +72,7 @@ const ClientPortal = () => {
         project: 'Reforma Comercial',
         value: 45000.00,
         date: '2024-01-10',
+        validUntil: '2024-02-10',
         status: 'aceita' as const
       }
     ];

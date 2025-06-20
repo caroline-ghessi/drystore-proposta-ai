@@ -12,7 +12,7 @@ interface Proposal {
   project: string;
   value: number;
   date: string;
-  validUntil: string;
+  validUntil?: string;
   status: 'aceita' | 'pendente' | 'expirada' | 'rejeitada';
 }
 
