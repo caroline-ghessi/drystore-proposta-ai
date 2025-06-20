@@ -153,7 +153,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
                     Perfil
                   </DropdownMenuItem>
                   <DropdownMenuItem>
