@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,11 +49,11 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
             
             {/* Center - Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-24 h-24 flex items-center justify-center">
+              <div className="w-32 h-32 flex items-center justify-center">
                 <img 
                   src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
                   alt="Drystore Logo" 
-                  className="w-24 h-24 object-contain dark:brightness-0 dark:invert"
+                  className="w-32 h-32 object-contain dark:brightness-0 dark:invert"
                 />
               </div>
             </div>
