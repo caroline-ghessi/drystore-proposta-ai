@@ -8,8 +8,6 @@ import { AuditTrail } from '@/components/workflow/AuditTrail';
 import { WorkflowNotifications } from '@/components/workflow/WorkflowNotifications';
 
 const ApprovalWorkflow = () => {
-  console.log('ApprovalWorkflow component mounted - should be visible now');
-  
   return (
     <Layout>
       <div className="min-h-screen bg-white p-8">
@@ -17,10 +15,6 @@ const ApprovalWorkflow = () => {
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">🔄 Sistema de Aprovações</h1>
             <p className="text-lg text-gray-600">Workflow automatizado de aprovações</p>
-          </div>
-
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <strong>DEBUG:</strong> Se você está vendo esta mensagem, a página está carregando corretamente!
           </div>
 
           <Tabs defaultValue="discounts" className="w-full">

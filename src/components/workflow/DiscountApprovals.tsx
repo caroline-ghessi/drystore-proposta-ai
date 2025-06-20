@@ -3,15 +3,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, XCircle, Clock, Percent, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export const DiscountApprovals = () => {
-  console.log('DiscountApprovals component rendering');
   const { toast } = useToast();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
-  const [comments, setComments] = useState('');
 
   // Mock data simplificado
   const discountRequests = [
@@ -30,7 +27,6 @@ export const DiscountApprovals = () => {
   ];
 
   const handleApprove = (requestId: string) => {
-    console.log('Approving request:', requestId);
     toast({
       title: "Desconto Aprovado",
       description: "O desconto foi aprovado com sucesso.",
@@ -38,7 +34,6 @@ export const DiscountApprovals = () => {
   };
 
   const handleReject = (requestId: string) => {
-    console.log('Rejecting request:', requestId);
     toast({
       title: "Desconto Rejeitado",
       description: "O desconto foi rejeitado.",
@@ -48,10 +43,6 @@ export const DiscountApprovals = () => {
 
   return (
     <div className="w-full space-y-6">
-      <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded">
-        <strong>DEBUG Descontos:</strong> Este componente está funcionando! Você deveria ver as solicitações abaixo.
-      </div>
-
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center">
