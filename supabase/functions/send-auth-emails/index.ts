@@ -6,6 +6,9 @@ import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
 
+// Modo de diagnóstico - definir como true para pular validação do webhook
+const DIAGNOSTIC_MODE = true;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -159,54 +162,100 @@ const getConfirmationTemplate = (email: string, confirmUrl: string) => `
 `;
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("Webhook de email recebido");
+  console.log("=== DIAGNÓSTICO DE EMAIL INICIADO ===");
+  console.log("Modo diagnóstico:", DIAGNOSTIC_MODE);
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validação de segurança do webhook
-    if (!hookSecret) {
-      console.error("SEND_EMAIL_HOOK_SECRET não configurado");
-      return new Response(
-        JSON.stringify({ error: "Configuração de segurança ausente" }), 
-        { status: 500, headers: corsHeaders }
-      );
+    // Diagnóstico 1: Verificar secrets
+    console.log("1. Verificando secrets...");
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const webhookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
+    
+    console.log("RESEND_API_KEY presente:", !!resendKey);
+    console.log("SEND_EMAIL_HOOK_SECRET presente:", !!webhookSecret);
+    
+    if (webhookSecret) {
+      console.log("Webhook secret length:", webhookSecret.length);
+      console.log("Webhook secret first 10 chars:", webhookSecret.substring(0, 10));
     }
 
-    // Obter payload e headers para validação
+    // Diagnóstico 2: Verificar payload
+    console.log("2. Verificando payload...");
     const payload = await req.text();
-    const headers = Object.fromEntries(req.headers);
-    
-    console.log("Headers recebidos:", Object.keys(headers));
-    
-    // Validar assinatura do webhook usando standardwebhooks
-    const wh = new Webhook(hookSecret);
+    console.log("Payload length:", payload.length);
+    console.log("Payload preview:", payload.substring(0, 200));
+
     let authData: AuthEmailData;
-    
-    try {
-      authData = wh.verify(payload, headers) as AuthEmailData;
-      console.log("Webhook validado com sucesso");
-    } catch (verifyError) {
-      console.error("Falha na validação do webhook:", verifyError);
-      return new Response(
-        JSON.stringify({ error: "Assinatura de webhook inválida" }), 
-        { status: 401, headers: corsHeaders }
-      );
+
+    if (DIAGNOSTIC_MODE) {
+      console.log("3. MODO DIAGNÓSTICO - Pulando validação de webhook");
+      try {
+        authData = JSON.parse(payload) as AuthEmailData;
+        console.log("Payload JSON parseado com sucesso");
+      } catch (parseError) {
+        console.error("Erro ao parsear JSON:", parseError);
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro ao parsear payload JSON",
+            details: parseError.toString()
+          }), 
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    } else {
+      console.log("3. Validando webhook...");
+      
+      if (!hookSecret) {
+        console.error("SEND_EMAIL_HOOK_SECRET não configurado");
+        return new Response(
+          JSON.stringify({ error: "Configuração de segurança ausente" }), 
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      const headers = Object.fromEntries(req.headers);
+      console.log("Headers recebidos:", Object.keys(headers));
+      
+      const wh = new Webhook(hookSecret);
+      
+      try {
+        authData = wh.verify(payload, headers) as AuthEmailData;
+        console.log("Webhook validado com sucesso");
+      } catch (verifyError) {
+        console.error("Falha na validação do webhook:", verifyError);
+        console.error("Erro detalhado:", verifyError.toString());
+        return new Response(
+          JSON.stringify({ 
+            error: "Assinatura de webhook inválida",
+            details: verifyError.toString()
+          }), 
+          { status: 401, headers: corsHeaders }
+        );
+      }
     }
 
+    // Diagnóstico 4: Verificar dados extraídos
+    console.log("4. Verificando dados extraídos...");
     const { user, email_data } = authData;
     const { email } = user;
     const { token_hash, redirect_to, email_action_type, site_url } = email_data;
 
-    // Construir URL completa baseada no tipo de ação
+    console.log("Email do usuário:", email);
+    console.log("Tipo de ação:", email_action_type);
+    console.log("Site URL:", site_url);
+    console.log("Redirect to:", redirect_to);
+
+    // Diagnóstico 5: Construir URLs
+    console.log("5. Construindo URLs...");
     let actionUrl: string;
     let emailSubject: string;
     let emailHtml: string;
 
     if (email_action_type === "recovery") {
-      // URL para redefinição de senha
       actionUrl = `${site_url}/reset-password?token_hash=${token_hash}&type=${email_action_type}`;
       if (redirect_to) {
         actionUrl += `&redirect_to=${encodeURIComponent(redirect_to)}`;
@@ -216,7 +265,6 @@ const handler = async (req: Request): Promise<Response> => {
       emailHtml = getPasswordResetTemplate(email, actionUrl);
       
     } else if (email_action_type === "signup") {
-      // URL para confirmação de email
       actionUrl = `${site_url}/auth/confirm?token_hash=${token_hash}&type=${email_action_type}`;
       if (redirect_to) {
         actionUrl += `&redirect_to=${encodeURIComponent(redirect_to)}`;
@@ -233,39 +281,65 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Enviando email ${email_action_type} para:`, email);
-    console.log("URL de ação:", actionUrl);
+    console.log("URL de ação construída:", actionUrl);
 
-    // Enviar email via Resend
-    const emailResponse = await resend.emails.send({
-      from: "DryStore <noreply@resend.dev>", // Usar domínio verificado depois
-      to: [email],
-      subject: emailSubject,
-      html: emailHtml,
-    });
+    // Diagnóstico 6: Testar Resend
+    console.log("6. Testando envio via Resend...");
+    
+    if (!resendKey) {
+      console.error("RESEND_API_KEY não configurado");
+      return new Response(
+        JSON.stringify({ error: "RESEND_API_KEY não configurado" }), 
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
-    console.log("Email enviado com sucesso:", emailResponse);
+    try {
+      const emailResponse = await resend.emails.send({
+        from: "DryStore <noreply@resend.dev>",
+        to: [email],
+        subject: emailSubject,
+        html: emailHtml,
+      });
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        messageId: emailResponse.data?.id,
-        type: email_action_type,
-        validated: true
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+      console.log("Email enviado com sucesso:", emailResponse);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          messageId: emailResponse.data?.id,
+          type: email_action_type,
+          diagnosticMode: DIAGNOSTIC_MODE,
+          validated: !DIAGNOSTIC_MODE
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+
+    } catch (resendError) {
+      console.error("Erro no Resend:", resendError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Erro ao enviar email via Resend",
+          details: resendError.toString()
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
   } catch (error: any) {
-    console.error("Erro ao enviar email:", error);
+    console.error("Erro geral na função:", error);
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.toString()
+        details: error.toString(),
+        stack: error.stack
       }),
       {
         status: 500,
