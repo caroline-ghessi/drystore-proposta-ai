@@ -62,12 +62,12 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
                 alt="DryStore" 
               />
             </Link>
-            
-            {/* Desktop Navigation Links */}
-            <NavigationLinks />
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
+            {/* Desktop Navigation Links */}
+            <NavigationLinks />
+            
             {/* Mobile menu button */}
             {user?.role !== 'cliente' && (
               <Button
