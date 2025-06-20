@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X, Phone, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
@@ -19,9 +18,10 @@ interface InvestmentCardProps {
   status: 'pending' | 'accepted' | 'rejected';
   onAccept: () => void;
   onQuestion: () => void;
+  onReject?: () => void;
 }
 
-export const InvestmentCard = ({ proposal, status, onAccept, onQuestion }: InvestmentCardProps) => {
+export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onReject }: InvestmentCardProps) => {
   return (
     <Card className="sticky top-8">
       <CardHeader className="text-center">
@@ -81,6 +81,16 @@ export const InvestmentCard = ({ proposal, status, onAccept, onQuestion }: Inves
             >
               <Phone className="w-5 h-5 mr-2" />
               Falar com Consultor
+            </Button>
+
+            <Button 
+              onClick={onReject}
+              variant="outline"
+              className="w-full border-red-300 text-red-600 hover:bg-red-50"
+              size="lg"
+            >
+              <X className="w-5 h-5 mr-2" />
+              Recusar Proposta
             </Button>
           </div>
         ) : status === 'accepted' ? (

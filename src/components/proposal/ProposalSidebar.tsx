@@ -1,4 +1,3 @@
-
 import { InvestmentCard } from '@/components/proposal/InvestmentCard';
 import AIScoreCard from '@/components/ai/AIScoreCard';
 import NextStepSuggestions from '@/components/ai/NextStepSuggestions';
@@ -39,6 +38,7 @@ const ProposalSidebar = ({
         status={status}
         onAccept={onAccept}
         onQuestion={() => {}}
+        onReject={onReject}
       />
 
       {showAI && (
