@@ -1,14 +1,21 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { CRMDeal } from '@/types/erp';
 
 export const useCRMIntegration = () => {
   const [isCreatingDeal, setIsCreatingDeal] = useState(false);
   const [isUpdatingDeal, setIsUpdatingDeal] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const createCRMDeal = async (proposalData: any): Promise<CRMDeal> => {
+    // Verificar permissões de administrador
+    if (user?.role !== 'admin') {
+      throw new Error('Acesso negado: Apenas administradores podem criar negócios no CRM');
+    }
+
     setIsCreatingDeal(true);
     
     try {
@@ -46,7 +53,7 @@ export const useCRMIntegration = () => {
       console.error('Erro ao criar negócio no CRM:', error);
       toast({
         title: "Erro no CRM",
-        description: "Não foi possível criar o negócio no CRM",
+        description: error instanceof Error ? error.message : "Não foi possível criar o negócio no CRM",
         variant: "destructive"
       });
       throw error;
@@ -56,6 +63,11 @@ export const useCRMIntegration = () => {
   };
 
   const updateDealStatus = async (dealId: string, status: CRMDeal['status'], stage?: string): Promise<void> => {
+    // Verificar permissões de administrador
+    if (user?.role !== 'admin') {
+      throw new Error('Acesso negado: Apenas administradores podem atualizar negócios no CRM');
+    }
+
     setIsUpdatingDeal(true);
     
     try {
@@ -79,6 +91,11 @@ export const useCRMIntegration = () => {
       });
     } catch (error) {
       console.error('Erro ao atualizar negócio:', error);
+      toast({
+        title: "Erro no CRM",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o negócio",
+        variant: "destructive"
+      });
       throw error;
     } finally {
       setIsUpdatingDeal(false);

@@ -1,14 +1,21 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { ERPOrder, XMLOrderData } from '@/types/erp';
 
 export const useERPIntegration = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isGeneratingXML, setIsGeneratingXML] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const createERPOrder = async (proposalData: any): Promise<ERPOrder> => {
+    // Verificar permissões de administrador
+    if (user?.role !== 'admin') {
+      throw new Error('Acesso negado: Apenas administradores podem criar pedidos no ERP');
+    }
+
     setIsCreatingOrder(true);
     
     try {
@@ -55,7 +62,7 @@ export const useERPIntegration = () => {
       console.error('Erro ao criar pedido no ERP:', error);
       toast({
         title: "Erro no ERP",
-        description: "Não foi possível criar o pedido no ERP",
+        description: error instanceof Error ? error.message : "Não foi possível criar o pedido no ERP",
         variant: "destructive"
       });
       throw error;
@@ -65,6 +72,11 @@ export const useERPIntegration = () => {
   };
 
   const generateOrderXML = async (orderData: XMLOrderData): Promise<string> => {
+    // Verificar permissões de administrador
+    if (user?.role !== 'admin') {
+      throw new Error('Acesso negado: Apenas administradores podem gerar XMLs');
+    }
+
     setIsGeneratingXML(true);
     
     try {
@@ -112,7 +124,7 @@ export const useERPIntegration = () => {
       console.error('Erro ao gerar XML:', error);
       toast({
         title: "Erro na Geração XML",
-        description: "Não foi possível gerar o XML do pedido",
+        description: error instanceof Error ? error.message : "Não foi possível gerar o XML do pedido",
         variant: "destructive"
       });
       throw error;

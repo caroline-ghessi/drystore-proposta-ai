@@ -1,13 +1,21 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { WhatsAppMessageHistory } from '@/types/followup';
 
 export const useWhatsAppAPI = () => {
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const getVendorZAPIConfig = (vendorId: string) => {
+    // Verificar se o usuário tem permissão para acessar configurações
+    if (user?.role !== 'admin') {
+      console.warn('Acesso negado: Apenas administradores podem acessar configurações Z-API');
+      return null;
+    }
+
     // Em produção, isso viria da API
     // Por enquanto, simula busca no localStorage
     const configs = JSON.parse(localStorage.getItem('zapi_configs') || '[]');
