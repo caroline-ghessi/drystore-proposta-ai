@@ -33,9 +33,12 @@ interface Interaction {
 const ProposalView = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const showAI = searchParams.get('ai') === 'true';
   const { toast } = useToast();
   const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [internalNotes, setInternalNotes] = useState<string[]>([]);
   
   // Dados mockados da proposta
   const proposal = {

@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -21,6 +20,8 @@ interface Proposal {
   clientTags: string[];
   hasQuestions: boolean;
   interactionCount: number;
+  aiScore?: number;
+  needsApproval?: boolean;
 }
 
 const ProposalManagement = () => {

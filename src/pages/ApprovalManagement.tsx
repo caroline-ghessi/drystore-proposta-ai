@@ -5,10 +5,24 @@ import ApprovalWorkflow from '@/components/approval/ApprovalWorkflow';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+interface PendingApproval {
+  id: string;
+  proposalId: string;
+  proposalNumber: string;
+  clientName: string;
+  projectName: string;
+  value: number;
+  requestedBy: string;
+  requestedAt: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approverComments?: string;
+}
+
 const ApprovalManagement = () => {
   const { toast } = useToast();
   
-  const [pendingApprovals, setPendingApprovals] = useState([
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([
     {
       id: '1',
       proposalId: 'prop-1',
@@ -19,7 +33,7 @@ const ApprovalManagement = () => {
       requestedBy: 'Carlos Vendedor',
       requestedAt: '2024-06-19T09:00:00',
       reason: 'Valor acima do limite de R$ 300.000',
-      status: 'pending' as const
+      status: 'pending'
     },
     {
       id: '2',
@@ -31,7 +45,7 @@ const ApprovalManagement = () => {
       requestedBy: 'Ana Vendedora',
       requestedAt: '2024-06-19T10:30:00',
       reason: 'Valor acima do limite de R$ 300.000 + desconto especial de 15%',
-      status: 'pending' as const
+      status: 'pending'
     }
   ]);
 
