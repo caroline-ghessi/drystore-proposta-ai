@@ -1,29 +1,29 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
-
 interface VideoProposalProps {
   videoUrl: string;
   vendorName: string;
   vendorTitle: string;
   duration: string;
 }
-
-const VideoProposal = ({ videoUrl, vendorName, vendorTitle, duration }: VideoProposalProps) => {
+const VideoProposal = ({
+  videoUrl,
+  vendorName,
+  vendorTitle,
+  duration
+}: VideoProposalProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-
-  return (
-    <Card className="border-0 shadow-lg overflow-hidden">
+  return <Card className="border-0 shadow-lg overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Mensagem Personalizada</CardTitle>
           <Badge variant="secondary">{duration}</Badge>
         </div>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-slate-200">
           {vendorName} preparou uma mensagem especial para você
         </p>
       </CardHeader>
@@ -45,28 +45,14 @@ const VideoProposal = ({ videoUrl, vendorName, vendorTitle, duration }: VideoPro
             <div className="absolute bottom-4 left-4 right-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="bg-white/20 hover:bg-white/30 text-white border-0"
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => setIsPlaying(!isPlaying)} className="bg-white/20 hover:bg-white/30 text-white border-0">
                     {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsMuted(!isMuted)}
-                    className="bg-white/20 hover:bg-white/30 text-white border-0"
-                  >
+                  <Button size="sm" variant="secondary" onClick={() => setIsMuted(!isMuted)} className="bg-white/20 hover:bg-white/30 text-white border-0">
                     {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                   </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="bg-white/20 hover:bg-white/30 text-white border-0"
-                >
+                <Button size="sm" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-0">
                   <Maximize className="w-4 h-4" />
                 </Button>
               </div>
@@ -90,8 +76,6 @@ const VideoProposal = ({ videoUrl, vendorName, vendorTitle, duration }: VideoPro
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default VideoProposal;
