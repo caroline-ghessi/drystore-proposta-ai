@@ -37,7 +37,7 @@ export const TechnicalDetails = ({
         
         {/* Imagens Técnicas */}
         <div className="mb-8">
-          <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
+          <h4 className="font-semibold mb-4 flex items-center text-slate-100">
             <Calendar className="w-4 h-4 mr-2" />
             Imagens Técnicas Explicativas
           </h4>
