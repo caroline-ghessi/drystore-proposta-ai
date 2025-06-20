@@ -18,6 +18,8 @@ import AICenter from './pages/AICenter';
 import Gamification from './pages/Gamification';
 import Reports from './pages/Reports';
 import ApprovalWorkflow from './pages/ApprovalWorkflow';
+import ClientLogin from './pages/ClientLogin';
+import ClientPortal from './pages/ClientPortal';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PermissionGuard from '@/components/PermissionGuard';
@@ -34,6 +36,8 @@ function App() {
           <Router>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/client-login" element={<ClientLogin />} />
+              <Route path="/client-portal" element={<ClientPortal />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
