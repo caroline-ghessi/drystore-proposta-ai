@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Check, X } from 'lucide-react';
 
 interface StatusMessageProps {
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'aguardando_pagamento';
 }
 
 export const StatusMessage = ({ status }: StatusMessageProps) => {

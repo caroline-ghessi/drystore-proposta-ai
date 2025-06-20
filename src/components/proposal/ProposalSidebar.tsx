@@ -1,3 +1,4 @@
+
 import { InvestmentCard } from '@/components/proposal/InvestmentCard';
 import AIScoreCard from '@/components/ai/AIScoreCard';
 import NextStepSuggestions from '@/components/ai/NextStepSuggestions';
@@ -8,7 +9,7 @@ import { AIScore, NextStepSuggestion } from '@/types/aiScore';
 
 interface ProposalSidebarProps {
   proposal: any;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'aguardando_pagamento';
   onAccept: () => void;
   onReject: () => void;
   showAI: boolean;
