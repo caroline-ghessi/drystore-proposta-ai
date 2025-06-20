@@ -16,6 +16,7 @@ import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
 import CreateProposal from './pages/CreateProposal';
 import ProposalUploadChoice from './pages/ProposalUploadChoice';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -38,6 +39,14 @@ function App() {
             element={
               <RequireAuth>
                 <Profile />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <Settings />
               </RequireAuth>
             }
           />
