@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -55,10 +56,6 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
                   alt="Drystore Logo" 
                   className="w-10 h-10 object-contain dark:brightness-0 dark:invert"
                 />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="font-semibold text-gray-900 dark:text-white">Drystore</h1>
-                <p className="text-xs text-orange-500 dark:text-orange-400">Sua Solução Completa</p>
               </div>
             </div>
             
@@ -132,3 +129,4 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
     </>
   );
 };
+
