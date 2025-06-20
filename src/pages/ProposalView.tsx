@@ -38,7 +38,7 @@ const ProposalView = () => {
   const { toast } = useToast();
   const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
   const [interactions, setInteractions] = useState<Interaction[]>([]);
-  const [internalNotes, setInternalNotes] = useState<string[]>([]);
+  const [internalNotes, setInternalNotes] = useState<string>('');
   
   // Dados mockados da proposta
   const proposal = {
