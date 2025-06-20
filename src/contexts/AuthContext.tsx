@@ -1,5 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { sessionTracker } from '@/services/sessionTracking';
 
 interface User {
@@ -32,42 +34,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simular verificação de token/sessão
-    const savedUser = localStorage.getItem('drystore_user');
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUser(userData);
-      
-      // Track activity para usuário já logado
-      sessionTracker.trackActivity(userData.id);
-    }
-    setLoading(false);
+    // Verificar sessão atual
+    const getSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await loadUserProfile(session.user);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getSession();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulação de login - aceita qualquer email/senha válida
-    if (email && password) {
-      const userData: User = {
-        id: '1',
-        name: email.split('@')[0],
-        email,
-        role: email.includes('admin') ? 'admin' : 'vendedor_interno'
-      };
-      
-      setUser(userData);
-      localStorage.setItem('drystore_user', JSON.stringify(userData));
-      
-      // Track login session
-      await sessionTracker.trackLogin(userData.id, userData.email);
-      
-      return true;
+  const loadUserProfile = async (supabaseUser: SupabaseUser) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', supabaseUser.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        return;
+      }
+
+      if (profile) {
+        const userData: User = {
+          id: supabaseUser.id,
+          name: profile.nome,
+          email: supabaseUser.email || '',
+          role: profile.role
+        };
+        
+        setUser(userData);
+        
+        // Track activity para usuário já logado
+        sessionTracker.trackActivity(userData.id);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('drystore_user');
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login error:', error.message);
+        return false;
+      }
+
+      if (data.user) {
+        await loadUserProfile(data.user);
+        
+        // Track login session
+        await sessionTracker.trackLogin(data.user.id, data.user.email || '');
+        
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const value = {

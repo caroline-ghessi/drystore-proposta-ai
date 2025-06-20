@@ -9,16 +9,227 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string
+          empresa: string | null
+          endereco: string | null
+          freshsales_id: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email: string
+          empresa?: string | null
+          endereco?: string | null
+          freshsales_id?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string
+          empresa?: string | null
+          endereco?: string | null
+          freshsales_id?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          created_at: string
+          descricao: string | null
+          estoque_disponivel: number | null
+          id: string
+          marca: string | null
+          nome: string
+          preco: number
+          sku: string | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          estoque_disponivel?: number | null
+          id?: string
+          marca?: string | null
+          nome: string
+          preco?: number
+          sku?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descricao?: string | null
+          estoque_disponivel?: number | null
+          id?: string
+          marca?: string | null
+          nome?: string
+          preco?: number
+          sku?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      proposal_items: {
+        Row: {
+          created_at: string
+          descricao_item: string | null
+          id: string
+          preco_total: number
+          preco_unit: number
+          produto_nome: string
+          proposal_id: string
+          quantidade: number
+        }
+        Insert: {
+          created_at?: string
+          descricao_item?: string | null
+          id?: string
+          preco_total?: number
+          preco_unit?: number
+          produto_nome: string
+          proposal_id: string
+          quantidade?: number
+        }
+        Update: {
+          created_at?: string
+          descricao_item?: string | null
+          id?: string
+          preco_total?: number
+          preco_unit?: number
+          produto_nome?: string
+          proposal_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          client_id: string
+          created_at: string
+          desconto_percentual: number | null
+          id: string
+          link_acesso: string | null
+          observacoes: string | null
+          status: Database["public"]["Enums"]["proposal_status"]
+          updated_at: string
+          user_id: string | null
+          validade: string
+          valor_total: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          desconto_percentual?: number | null
+          id?: string
+          link_acesso?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          updated_at?: string
+          user_id?: string | null
+          validade?: string
+          valor_total?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          desconto_percentual?: number | null
+          id?: string
+          link_acesso?: string | null
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          updated_at?: string
+          user_id?: string | null
+          validade?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      proposal_status:
+        | "draft"
+        | "sent"
+        | "viewed"
+        | "accepted"
+        | "rejected"
+        | "expired"
+      user_role: "admin" | "vendedor_interno" | "representante" | "cliente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +344,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      proposal_status: [
+        "draft",
+        "sent",
+        "viewed",
+        "accepted",
+        "rejected",
+        "expired",
+      ],
+      user_role: ["admin", "vendedor_interno", "representante", "cliente"],
+    },
   },
 } as const
