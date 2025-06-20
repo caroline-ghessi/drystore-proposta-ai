@@ -7,6 +7,7 @@ import VideoProposal from '@/components/proposal/VideoProposal';
 import ProposalMainContent from '@/components/proposal/ProposalMainContent';
 import ProposalSidebar from '@/components/proposal/ProposalSidebar';
 import ProposalFeatureToggles from '@/components/proposal/ProposalFeatureToggles';
+import UrgencyCard from '@/components/proposal/UrgencyCard';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
 import { useProposalFeatures } from '@/hooks/useProposalFeatures';
@@ -50,7 +51,10 @@ const ProposalView = () => {
       <ProposalHeader proposal={proposal} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <RecommendedProducts products={recommendedProducts} />
+        {/* Urgency Card moved to top for better conversion */}
+        <div className="mb-6">
+          <UrgencyCard validUntil={proposal.validUntil} />
+        </div>
 
         {/* Video Proposal */}
         <div className="mb-6">
@@ -99,6 +103,11 @@ const ProposalView = () => {
             contractGeneration={features.contractGeneration}
             deliveryControl={features.deliveryControl}
           />
+        </div>
+
+        {/* Recommended Products moved below main content for better flow */}
+        <div className="mt-8">
+          <RecommendedProducts products={recommendedProducts} />
         </div>
       </div>
     </div>

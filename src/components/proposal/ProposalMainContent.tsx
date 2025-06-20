@@ -1,5 +1,5 @@
+
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
-import UrgencyCard from '@/components/proposal/UrgencyCard';
 import { ProposalBenefits } from '@/components/proposal/ProposalBenefits';
 import { TechnicalDetails } from '@/components/proposal/TechnicalDetails';
 import InteractionLog from '@/components/proposal/InteractionLog';
@@ -32,8 +32,6 @@ const ProposalMainContent = ({
   return (
     <div className="lg:col-span-2 space-y-6">
       <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
-
-      <UrgencyCard validUntil={proposal.validUntil} />
 
       <ProposalBenefits benefits={proposal.benefits} />
       
