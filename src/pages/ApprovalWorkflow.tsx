@@ -8,9 +8,11 @@ import { AuditTrail } from '@/components/workflow/AuditTrail';
 import { WorkflowNotifications } from '@/components/workflow/WorkflowNotifications';
 
 const ApprovalWorkflow = () => {
+  console.log('ApprovalWorkflow component rendering');
+  
   return (
     <Layout>
-      <div className="space-y-6 w-full max-w-7xl mx-auto">
+      <div className="space-y-6 w-full max-w-7xl mx-auto p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">🔄 Sistema de Aprovações</h1>
           <p className="text-gray-600">Workflow automatizado de aprovações</p>
