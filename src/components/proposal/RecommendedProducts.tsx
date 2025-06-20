@@ -20,8 +20,8 @@ const RecommendedProducts = ({
       <CardContent className="p-6">
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-              <Percent className="w-5 h-5 text-orange-500" />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Percent className="w-6 h-6 text-orange-500" />
             </div>
             <div className="text-center">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-orange-600">
