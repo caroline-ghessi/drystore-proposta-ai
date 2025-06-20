@@ -34,6 +34,24 @@ export const NavigationLinks = () => {
       >
         Produtos
       </Link>
+      <Link
+        to="/analytics"
+        className={`${isActive('/analytics')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+      >
+        Analytics
+      </Link>
+      <Link
+        to="/crm"
+        className={`${isActive('/crm')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+      >
+        CRM
+      </Link>
+      <Link
+        to="/gamification"
+        className={`${isActive('/gamification')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+      >
+        🏆 Ranking
+      </Link>
       {(user?.role === 'vendedor_interno' || user?.role === 'representante' || user?.role === 'admin') && (
         <Link
           to="/smart-scheduler"
@@ -49,12 +67,32 @@ export const NavigationLinks = () => {
         Follow-ups
       </Link>
       {user?.role === 'admin' && (
-        <Link
-          to="/admin/zapi-config"
-          className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
-        >
-          Config Z-API
-        </Link>
+        <>
+          <Link
+            to="/ai-center"
+            className={`${isActive('/ai-center')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+          >
+            🤖 IA Center
+          </Link>
+          <Link
+            to="/reports"
+            className={`${isActive('/reports')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+          >
+            📊 Relatórios
+          </Link>
+          <Link
+            to="/approval-workflow"
+            className={`${isActive('/approval-workflow')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+          >
+            🔄 Aprovações
+          </Link>
+          <Link
+            to="/admin/zapi-config"
+            className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+          >
+            Config Z-API
+          </Link>
+        </>
       )}
     </div>
   );

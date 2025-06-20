@@ -12,6 +12,12 @@ import ProposalPreview from './pages/ProposalPreview';
 import UploadDocument from './pages/UploadDocument';
 import EditProposal from './pages/EditProposal';
 import SmartScheduler from './pages/SmartScheduler';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import CRMDashboard from './pages/CRMDashboard';
+import AICenter from './pages/AICenter';
+import Gamification from './pages/Gamification';
+import Reports from './pages/Reports';
+import ApprovalWorkflow from './pages/ApprovalWorkflow';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import PermissionGuard from '@/components/PermissionGuard';
@@ -42,6 +48,66 @@ function App() {
                   <ProtectedRoute>
                     <PermissionGuard requiredRole={['vendedor_interno', 'representante', 'admin']}>
                       <SmartScheduler />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['vendedor_interno', 'representante', 'admin']}>
+                      <AnalyticsDashboard />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/crm" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['vendedor_interno', 'representante', 'admin']}>
+                      <CRMDashboard />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/gamification" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['vendedor_interno', 'representante', 'admin']}>
+                      <Gamification />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/ai-center" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['admin']}>
+                      <AICenter />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reports" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['admin']}>
+                      <Reports />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/approval-workflow" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['admin']}>
+                      <ApprovalWorkflow />
                     </PermissionGuard>
                   </ProtectedRoute>
                 } 
