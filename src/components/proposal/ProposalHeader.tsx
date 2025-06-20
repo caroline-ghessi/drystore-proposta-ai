@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +31,7 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
   return (
     <>
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left Side - Back Button */}
@@ -39,7 +40,7 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="text-gray-600 mr-4"
+                className="text-gray-600 dark:text-gray-300 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
@@ -48,12 +49,16 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
             
             {/* Center - Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">D</span>
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
+                  alt="Drystore Logo" 
+                  className="w-10 h-10 object-contain dark:brightness-0 dark:invert"
+                />
               </div>
               <div className="hidden sm:block">
-                <h1 className="font-semibold text-gray-900">Drystore</h1>
-                <p className="text-xs text-orange-500">Sua Solução Completa</p>
+                <h1 className="font-semibold text-gray-900 dark:text-white">Drystore</h1>
+                <p className="text-xs text-orange-500 dark:text-orange-400">Sua Solução Completa</p>
               </div>
             </div>
             
@@ -62,7 +67,7 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="text-orange-500 border-orange-500"
+                className="text-orange-500 border-orange-500 dark:text-orange-400 dark:border-orange-400"
                 onClick={handleShare}
               >
                 <Share className="w-4 h-4 mr-2" />
@@ -82,9 +87,9 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
 
       {/* Alerta de Expiração */}
       {proposal.isExpired && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-3 text-red-700">
+            <div className="flex items-center space-x-3 text-red-700 dark:text-red-300">
               <AlertTriangle className="w-5 h-5" />
               <div>
                 <p className="font-medium">Proposta Expirada</p>
@@ -96,26 +101,26 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
       )}
 
       {/* Cabeçalho da Proposta */}
-      <Card>
+      <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardContent className="p-6">
           <div className="flex items-start space-x-4">
-            <div className="w-16 h-16 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-16 h-16 bg-orange-500 dark:bg-orange-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <TrendingUp className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{proposal.title}</h1>
-              <p className="text-gray-600 mb-4">{proposal.subtitle}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{proposal.title}</h1>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">{proposal.subtitle}</p>
               
               <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 dark:text-gray-300">
                   <Mail className="w-4 h-4 mr-2" />
                   <span>{proposal.clientName}</span>
                 </div>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 dark:text-gray-300">
                   <Calendar className="w-4 h-4 mr-2" />
                   <span>{proposal.date}</span>
                 </div>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 dark:text-gray-300">
                   <Clock className="w-4 h-4 mr-2" />
                   <span>Válido até {proposal.validUntil}</span>
                 </div>
