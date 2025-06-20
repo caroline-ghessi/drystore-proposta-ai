@@ -1,6 +1,8 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X, MessageCircle, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
+
 interface InvestmentCardProps {
   proposal: {
     originalPrice: number;
@@ -14,11 +16,12 @@ interface InvestmentCardProps {
     economy: string;
     validUntil: string;
   };
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'aguardando_pagamento';
   onAccept: () => void;
   onQuestion: () => void;
   onReject?: () => void;
 }
+
 export const InvestmentCard = ({
   proposal,
   status,
@@ -80,10 +83,14 @@ export const InvestmentCard = ({
               <X className="w-5 h-5 mr-2" />
               Recusar Proposta
             </Button>
-          </div> : status === 'accepted' ? <div className="text-green-600 py-4">
+          </div> : status === 'accepted' || status === 'aguardando_pagamento' ? <div className="text-green-600 py-4">
             <Check className="w-8 h-8 mx-auto mb-2" />
-            <p className="font-semibold">Proposta Aceita!</p>
-            <p className="text-sm text-gray-600">Aguarde o contato do vendedor</p>
+            <p className="font-semibold">
+              {status === 'accepted' ? 'Proposta Aceita!' : 'Aguardando Pagamento'}
+            </p>
+            <p className="text-sm text-gray-600">
+              {status === 'accepted' ? 'Aguarde o contato do vendedor' : 'Finalize o pagamento para confirmar'}
+            </p>
           </div> : <div className="text-red-600 py-4">
             <X className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">Proposta Rejeitada</p>
