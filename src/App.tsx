@@ -9,6 +9,7 @@ import DeliveryControl from './pages/DeliveryControl';
 import ClientPortal from './pages/ClientPortal';
 import DeliveryTracking from './pages/DeliveryTracking';
 import FollowUpManager from './pages/FollowUpManager';
+import ProductManagement from './pages/ProductManagement';
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -67,6 +68,14 @@ function App() {
             }
           />
           <Route path="/follow-up-manager" element={<FollowUpManager />} />
+          <Route 
+            path="/products" 
+            element={
+              <RequireAuth>
+                <ProductManagement />
+              </RequireAuth>
+            } 
+          />
         </Routes>
         <Toaster />
       </BrowserRouter>
