@@ -8,7 +8,7 @@ export const useSignUp = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const signUp = async (email: string, password: string, nome: string, role: 'vendedor_interno' | 'representante' = 'vendedor_interno') => {
+  const signUp = async (email: string, password: string, nome: string, role: 'admin' | 'vendedor_interno' | 'representante' = 'vendedor_interno') => {
     setLoading(true);
     
     try {

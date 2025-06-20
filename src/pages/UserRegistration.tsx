@@ -6,17 +6,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users, Shield, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface UserRegistrationForm {
   name: string;
   email: string;
   phone: string;
-  role: 'vendedor_interno' | 'representante';
+  role: 'admin' | 'vendedor_interno' | 'representante';
   territory?: string;
   password: string;
 }
@@ -24,6 +34,8 @@ interface UserRegistrationForm {
 const UserRegistration = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAdminConfirmation, setShowAdminConfirmation] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<UserRegistrationForm | null>(null);
   const { signUp } = useAuthFlow();
   
   const form = useForm<UserRegistrationForm>({
@@ -38,6 +50,17 @@ const UserRegistration = () => {
   });
 
   const onSubmit = async (data: UserRegistrationForm) => {
+    // Se é admin, mostrar confirmação
+    if (data.role === 'admin') {
+      setPendingFormData(data);
+      setShowAdminConfirmation(true);
+      return;
+    }
+
+    await createUser(data);
+  };
+
+  const createUser = async (data: UserRegistrationForm) => {
     setIsSubmitting(true);
     
     try {
@@ -47,12 +70,20 @@ const UserRegistration = () => {
       const result = await signUp(data.email, tempPassword, data.name, data.role);
       
       if (result.success) {
+        const roleDisplay = {
+          admin: 'Administrador',
+          vendedor_interno: 'Vendedor Interno',
+          representante: 'Representante'
+        };
+
         toast({
           title: "Usuário cadastrado com sucesso!",
-          description: `${data.name} foi adicionado como ${data.role}. ${!data.password ? 'Uma senha temporária foi gerada.' : ''}`,
+          description: `${data.name} foi adicionado como ${roleDisplay[data.role]}. ${!data.password ? 'Uma senha temporária foi gerada.' : ''}`,
         });
         
         form.reset();
+        setShowAdminConfirmation(false);
+        setPendingFormData(null);
       }
     } catch (error) {
       toast({
@@ -65,6 +96,14 @@ const UserRegistration = () => {
     }
   };
 
+  const handleAdminConfirmation = () => {
+    if (pendingFormData) {
+      createUser(pendingFormData);
+    }
+  };
+
+  const selectedRole = form.watch('role');
+
   return (
     <Layout>
       <div className="min-h-screen bg-white p-8">
@@ -74,7 +113,7 @@ const UserRegistration = () => {
               <UserPlus className="w-10 h-10 mr-3 text-blue-600" />
               Cadastro de Usuários
             </h1>
-            <p className="text-lg text-gray-600">Adicionar novos vendedores e representantes ao sistema</p>
+            <p className="text-lg text-gray-600">Adicionar novos usuários ao sistema</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -150,6 +189,12 @@ const UserRegistration = () => {
                                 <SelectContent>
                                   <SelectItem value="vendedor_interno">Vendedor Interno</SelectItem>
                                   <SelectItem value="representante">Representante</SelectItem>
+                                  <SelectItem value="admin">
+                                    <div className="flex items-center">
+                                      <Shield className="w-4 h-4 mr-2 text-red-500" />
+                                      Administrador
+                                    </div>
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -157,6 +202,21 @@ const UserRegistration = () => {
                           )}
                         />
                       </div>
+
+                      {selectedRole === 'admin' && (
+                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-start">
+                            <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 mr-3" />
+                            <div>
+                              <h4 className="font-medium text-red-900">Atenção: Privilégios de Administrador</h4>
+                              <p className="text-sm text-red-700 mt-1">
+                                Administradores têm acesso total ao sistema, incluindo criação/exclusão de usuários,
+                                configurações do sistema e todos os dados. Use com extrema cautela.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <FormField
                         control={form.control}
@@ -172,19 +232,21 @@ const UserRegistration = () => {
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="territory"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Território (Opcional)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: São Paulo - Capital, Rio de Janeiro..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {selectedRole === 'representante' && (
+                        <FormField
+                          control={form.control}
+                          name="territory"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Território</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: São Paulo - Capital, Rio de Janeiro..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <Button 
                         type="submit" 
@@ -217,6 +279,13 @@ const UserRegistration = () => {
                     <h4 className="font-medium text-purple-900">Representante</h4>
                     <p className="text-sm text-purple-700">Vendedor externo com acesso específico ao seu território.</p>
                   </div>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 className="font-medium text-red-900 flex items-center">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Administrador
+                    </h4>
+                    <p className="text-sm text-red-700">Acesso total ao sistema, incluindo gestão de usuários e configurações.</p>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -231,6 +300,13 @@ const UserRegistration = () => {
                     <li>• Relatórios de vendas</li>
                     <li>• CRM e follow-ups</li>
                     <li>• Agenda inteligente</li>
+                    {selectedRole === 'admin' && (
+                      <>
+                        <li className="text-red-600 font-medium">• Gestão de usuários</li>
+                        <li className="text-red-600 font-medium">• Configurações do sistema</li>
+                        <li className="text-red-600 font-medium">• Acesso a todos os dados</li>
+                      </>
+                    )}
                   </ul>
                 </CardContent>
               </Card>
@@ -238,6 +314,43 @@ const UserRegistration = () => {
           </div>
         </div>
       </div>
+
+      {/* Dialog de Confirmação para Admin */}
+      <AlertDialog open={showAdminConfirmation} onOpenChange={setShowAdminConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <Shield className="w-5 h-5 mr-2 text-red-500" />
+              Confirmar Criação de Administrador
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a criar um usuário com privilégios de <strong>Administrador</strong>.
+              Este usuário terá acesso total ao sistema, incluindo:
+              <br /><br />
+              • Criar e gerenciar outros usuários<br />
+              • Acessar todas as configurações do sistema<br />
+              • Visualizar todos os dados e relatórios<br />
+              • Modificar permissões e configurações críticas<br />
+              <br />
+              <strong>Tem certeza que deseja continuar?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowAdminConfirmation(false);
+              setPendingFormData(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleAdminConfirmation}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sim, Criar Administrador
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
