@@ -103,10 +103,10 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               Olá, {user?.name}! 👋
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Aqui está um resumo das suas atividades
             </p>
           </div>
@@ -125,21 +125,21 @@ const Dashboard = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="animate-slide-in border-0 shadow-md hover:shadow-lg transition-shadow">
+              <Card key={index} className="animate-slide-in border-0 shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                         {stat.title}
                       </p>
-                      <p className="text-2xl font-bold text-gray-900 mb-1">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                         {stat.value}
                       </p>
-                      <p className="text-sm text-green-600">
+                      <p className="text-sm text-green-600 dark:text-green-400">
                         {stat.change}
                       </p>
                     </div>
-                    <div className={`p-3 rounded-full bg-gray-50 ${stat.color}`}>
+                    <div className={`p-3 rounded-full bg-gray-50 dark:bg-gray-700 ${stat.color}`}>
                       <Icon className="w-6 h-6" />
                     </div>
                   </div>
@@ -150,18 +150,19 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Proposals */}
-        <Card className="border-0 shadow-md animate-slide-in">
+        <Card className="border-0 shadow-md animate-slide-in bg-white dark:bg-gray-800">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">Propostas Recentes</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Propostas Recentes</CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">
                   Suas últimas atividades de vendas
                 </CardDescription>
               </div>
               <Button 
                 variant="outline" 
                 onClick={() => navigate('/proposals')}
+                className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Ver Todas
               </Button>
@@ -172,7 +173,7 @@ const Dashboard = () => {
               {recentProposals.map((proposal) => (
                 <div 
                   key={proposal.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                   onClick={() => navigate(`/proposal/${proposal.id}`)}
                 >
                   <div className="flex items-center space-x-4">
@@ -180,14 +181,14 @@ const Dashboard = () => {
                       <FileText className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{proposal.client}</p>
-                      <p className="text-sm text-gray-600">{proposal.project}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{proposal.client}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{proposal.project}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">{proposal.value}</p>
-                      <p className="text-sm text-gray-500">{proposal.date}</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{proposal.value}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{proposal.date}</p>
                     </div>
                     {getStatusBadge(proposal.status)}
                   </div>
