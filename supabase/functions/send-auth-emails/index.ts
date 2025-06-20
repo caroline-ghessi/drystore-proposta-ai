@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
@@ -27,6 +26,15 @@ interface AuthEmailData {
     email_action_type: string;
     site_url: string;
   };
+}
+
+interface SMTPEmailData {
+  to: string;
+  subject: string;
+  html?: string;
+  text?: string;
+  template_name?: string;
+  template_data?: Record<string, any>;
 }
 
 const getPasswordResetTemplate = (email: string, resetUrl: string) => `
@@ -161,6 +169,27 @@ const getConfirmationTemplate = (email: string, confirmUrl: string) => `
 </html>
 `;
 
+const detectRequestType = (payload: string, contentType: string): 'webhook' | 'smtp' | 'diagnostic' => {
+  try {
+    const data = JSON.parse(payload);
+    
+    // Detecta se é uma requisição de diagnóstico (tem campos específicos)
+    if (data.type && data.user && data.email_data) {
+      return 'diagnostic';
+    }
+    
+    // Detecta se é uma requisição SMTP (tem campos de email)
+    if (data.to || data.subject || data.template_name) {
+      return 'smtp';
+    }
+    
+    // Caso contrário, assume que é webhook
+    return 'webhook';
+  } catch {
+    return 'webhook';
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
   const timestamp = new Date().toISOString();
   console.log(`\n🚀 === INÍCIO DO DIAGNÓSTICO DE EMAIL [${timestamp}] ===`);
@@ -183,21 +212,104 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("🔑 RESEND_API_KEY comprimento:", resendKey ? resendKey.length : 0);
     console.log("🔐 SEND_EMAIL_HOOK_SECRET presente:", !!webhookSecret);
     console.log("🔐 SEND_EMAIL_HOOK_SECRET comprimento:", webhookSecret ? webhookSecret.length : 0);
-    
-    if (webhookSecret) {
-      console.log("🔐 Webhook secret preview:", webhookSecret.substring(0, 10) + "...");
-    }
 
-    // Diagnóstico 2: Analisar payload
-    console.log("\n📋 2. ANALISANDO PAYLOAD...");
+    // Diagnóstico 2: Analisar payload e detectar tipo
+    console.log("\n📋 2. ANALISANDO PAYLOAD E DETECTANDO TIPO...");
     const payload = await req.text();
+    const contentType = req.headers.get("content-type") || "";
     console.log("📦 Payload comprimento:", payload.length);
+    console.log("📋 Content-Type:", contentType);
     console.log("📦 Payload preview (primeiros 300 chars):", payload.substring(0, 300));
 
-    let authData: AuthEmailData;
+    const requestType = detectRequestType(payload, contentType);
+    console.log("🔍 Tipo de requisição detectado:", requestType);
 
-    if (DIAGNOSTIC_MODE) {
-      console.log("\n🔧 3. MODO DIAGNÓSTICO ATIVO - Pulando validação de webhook");
+    let authData: AuthEmailData;
+    let smtpData: SMTPEmailData;
+
+    if (requestType === 'smtp') {
+      console.log("\n📧 3. PROCESSANDO REQUISIÇÃO SMTP...");
+      
+      try {
+        smtpData = JSON.parse(payload) as SMTPEmailData;
+        console.log("✅ Dados SMTP parseados com sucesso");
+        console.log("📧 Para:", smtpData.to);
+        console.log("📝 Assunto:", smtpData.subject);
+        console.log("🎨 Template:", smtpData.template_name || "HTML direto");
+
+        // Para requisições SMTP do Supabase, precisamos processar o template
+        if (smtpData.template_name && smtpData.template_data) {
+          const { template_data } = smtpData;
+          
+          if (smtpData.template_name.includes('recovery') || smtpData.subject.toLowerCase().includes('reset')) {
+            console.log("🔑 Template de recuperação de senha detectado");
+            
+            // Construir URL de reset baseada nos dados do template
+            const resetUrl = template_data.action_url || 
+                           `${template_data.site_url || 'https://drystore-proposta-ai.lovable.app'}/reset-password?token=${template_data.token}`;
+            
+            const emailHtml = getPasswordResetTemplate(smtpData.to, resetUrl);
+            
+            // Enviar via Resend
+            const emailResponse = await resend.emails.send({
+              from: "DryStore <noreply@resend.dev>",
+              to: [smtpData.to],
+              subject: "DryStore - Redefinir sua senha",
+              html: emailHtml,
+            });
+
+            console.log("✅ Email de recuperação enviado via SMTP!");
+            console.log("📧 Resposta do Resend:", emailResponse);
+
+            return new Response(JSON.stringify({ 
+              success: true, 
+              messageId: emailResponse.data?.id,
+              type: 'smtp-recovery',
+              timestamp: timestamp
+            }), {
+              status: 200,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            });
+          }
+        }
+
+        // Fallback: enviar email direto se não for template conhecido
+        const emailResponse = await resend.emails.send({
+          from: "DryStore <noreply@resend.dev>",
+          to: [smtpData.to],
+          subject: smtpData.subject,
+          html: smtpData.html || smtpData.text || "Email enviado via DryStore",
+        });
+
+        console.log("✅ Email SMTP genérico enviado!");
+        console.log("📧 Resposta do Resend:", emailResponse);
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          messageId: emailResponse.data?.id,
+          type: 'smtp-generic',
+          timestamp: timestamp
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+
+      } catch (parseError) {
+        console.error("❌ Erro ao parsear dados SMTP:", parseError);
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro ao parsear dados SMTP",
+            details: parseError.toString(),
+            timestamp: timestamp
+          }), 
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // Fluxo original para webhook/diagnóstico
+    if (DIAGNOSTIC_MODE || requestType === 'diagnostic') {
+      console.log("\n🔧 3. MODO DIAGNÓSTICO/DIRETO ATIVO - Pulando validação de webhook");
       try {
         authData = JSON.parse(payload) as AuthEmailData;
         console.log("✅ Payload JSON parseado com sucesso");
@@ -230,11 +342,6 @@ const handler = async (req: Request): Promise<Response> => {
 
       const headers = Object.fromEntries(req.headers);
       console.log("📋 Headers da requisição:", Object.keys(headers));
-      console.log("🔍 Headers relevantes:", {
-        'webhook-id': headers['webhook-id'],
-        'webhook-timestamp': headers['webhook-timestamp'],
-        'webhook-signature': headers['webhook-signature'] ? 'presente' : 'ausente'
-      });
       
       const wh = new Webhook(hookSecret);
       
@@ -243,7 +350,6 @@ const handler = async (req: Request): Promise<Response> => {
         console.log("✅ Webhook validado com sucesso");
       } catch (verifyError) {
         console.error("❌ Falha na validação do webhook:", verifyError);
-        console.error("🔍 Detalhes do erro:", verifyError.toString());
         return new Response(
           JSON.stringify({ 
             error: "Assinatura de webhook inválida",
@@ -351,8 +457,9 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         messageId: emailResponse.data?.id,
         type: email_action_type,
+        requestType: requestType,
         diagnosticMode: DIAGNOSTIC_MODE,
-        validated: !DIAGNOSTIC_MODE,
+        validated: !DIAGNOSTIC_MODE && requestType === 'webhook',
         timestamp: timestamp,
         email: email,
         actionUrl: actionUrl

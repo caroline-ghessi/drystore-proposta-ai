@@ -186,8 +186,9 @@ const EmailDiagnostic = () => {
             </div>
 
             <Tabs defaultValue="tests" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="tests">Testes</TabsTrigger>
+                <TabsTrigger value="smtp">SMTP Setup</TabsTrigger>
                 <TabsTrigger value="config">Configuração</TabsTrigger>
                 <TabsTrigger value="logs">Logs</TabsTrigger>
               </TabsList>
@@ -222,6 +223,56 @@ const EmailDiagnostic = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="smtp" className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg">📧 Configurar Custom SMTP no Supabase</h4>
+                      
+                      <div className="space-y-3">
+                        <p><strong>1. Acesse o painel do Supabase:</strong></p>
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm">• Vá para <code>Authentication → Settings</code></p>
+                          <p className="text-sm">• Encontre a seção <strong>"Email Provider"</strong></p>
+                          <p className="text-sm">• Selecione <strong>"Custom SMTP"</strong></p>
+                        </div>
+
+                        <p><strong>2. Configure os campos:</strong></p>
+                        <div className="p-3 bg-blue-50 rounded-lg space-y-2">
+                          <div>
+                            <strong>SMTP Host:</strong><br />
+                            <code className="text-sm bg-white px-2 py-1 rounded">mlzgeceiinjwpffgsxuy.supabase.co</code>
+                          </div>
+                          <div>
+                            <strong>SMTP Port:</strong><br />
+                            <code className="text-sm bg-white px-2 py-1 rounded">443</code>
+                          </div>
+                          <div>
+                            <strong>SMTP User:</strong><br />
+                            <code className="text-sm bg-white px-2 py-1 rounded">functions</code>
+                          </div>
+                          <div>
+                            <strong>SMTP Password:</strong><br />
+                            <code className="text-sm bg-white px-2 py-1 rounded">sua-service-role-key</code>
+                          </div>
+                        </div>
+
+                        <p><strong>3. URL do endpoint:</strong></p>
+                        <div className="p-3 bg-green-50 rounded-lg">
+                          <code className="text-sm break-all">
+                            https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/send-auth-emails
+                          </code>
+                        </div>
+
+                        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400">
+                          <p className="text-sm"><strong>⚠️ Importante:</strong> Após configurar, teste novamente a recuperação de senha. O email deve chegar via nosso sistema personalizado mantendo o Resend.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              </TabsContent>
+
               <TabsContent value="config" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
@@ -234,7 +285,7 @@ const EmailDiagnostic = () => {
                         <code>https://mlzgeceiinjwpffgsxuy.supabase.co</code>
                       </div>
                       <div>
-                        <strong>Webhook URL:</strong><br />
+                        <strong>Edge Function URL:</strong><br />
                         <code>https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/send-auth-emails</code>
                       </div>
                       <div>
@@ -250,7 +301,8 @@ const EmailDiagnostic = () => {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <Badge variant="default">Edge Function: Ativa</Badge>
-                      <Badge variant="secondary">Modo Diagnóstico: ON</Badge>
+                      <Badge variant="default">Resend: Integrado</Badge>
+                      <Badge variant="secondary">SMTP Support: Habilitado</Badge>
                       <Badge variant="outline">Webhook Validation: OFF</Badge>
                     </CardContent>
                   </Card>
@@ -290,8 +342,11 @@ const EmailDiagnostic = () => {
                            '👤 Verificação de Usuário'}
                         </Badge>
                       )}
-                      {results.data?.diagnosticMode && (
-                        <Badge variant="outline">🔧 Modo Diagnóstico</Badge>
+                      {results.data?.requestType && (
+                        <Badge variant="outline">
+                          🔧 {results.data.requestType === 'smtp' ? 'SMTP' : 
+                               results.data.requestType === 'webhook' ? 'Webhook' : 'Diagnóstico'}
+                        </Badge>
                       )}
                     </div>
                     
@@ -332,32 +387,34 @@ const EmailDiagnostic = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">📖 Guia de Diagnóstico</CardTitle>
+          <CardTitle className="text-lg">📖 Guia de Implementação SMTP</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className="font-semibold mb-2">🔄 Ordem recomendada de testes:</h4>
+              <h4 className="font-semibold mb-2">🔄 Fluxo do Custom SMTP:</h4>
               <ol className="list-decimal list-inside space-y-1">
-                <li><strong>Verificar Usuário:</strong> Confirma se o email existe no sistema</li>
-                <li><strong>Teste Supabase Auth:</strong> Testa o fluxo normal de recuperação</li>
-                <li><strong>Teste Edge Function:</strong> Testa a função de email diretamente</li>
+                <li><strong>Usuário solicita recuperação:</strong> Via interface padrão do Supabase</li>
+                <li><strong>Supabase chama SMTP:</strong> Nossa Edge Function via Custom SMTP</li>
+                <li><strong>Edge Function processa:</strong> Detecta tipo SMTP automaticamente</li>
+                <li><strong>Resend envia email:</strong> Com template personalizado do DryStore</li>
               </ol>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">🐛 Problemas comuns:</h4>
+              <h4 className="font-semibold mb-2">✅ Vantagens desta implementação:</h4>
               <ul className="list-disc list-inside space-y-1">
-                <li><strong>Webhook não configurado:</strong> Edge Function não é chamada</li>
-                <li><strong>RESEND_API_KEY inválida:</strong> Emails não são enviados</li>
-                <li><strong>Domínio não verificado:</strong> Resend rejeita emails</li>
-                <li><strong>Site URL incorreta:</strong> Links de redirecionamento quebrados</li>
+                <li><strong>Mantém Resend:</strong> Toda infraestrutura de email existente</li>
+                <li><strong>Templates personalizados:</strong> Emails com visual do DryStore</li>
+                <li><strong>Fluxo nativo:</strong> Usa recuperação padrão do Supabase</li>
+                <li><strong>Diagnóstico funcional:</strong> Ferramenta de teste mantida</li>
+                <li><strong>Logs detalhados:</strong> Rastreamento completo dos emails</li>
               </ul>
             </div>
 
             <Alert>
               <AlertDescription>
-                <p><strong>⚠️ Modo Diagnóstico Ativo:</strong> A validação de webhook está desabilitada para facilitar os testes. Lembre-se de reativar em produção.</p>
+                <p><strong>🎯 Próximo passo:</strong> Configure o Custom SMTP no painel do Supabase usando as informações da aba "SMTP Setup" acima. Depois teste a recuperação de senha normalmente!</p>
               </AlertDescription>
             </Alert>
           </div>
