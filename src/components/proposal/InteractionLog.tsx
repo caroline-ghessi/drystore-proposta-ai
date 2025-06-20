@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, User, Edit, Send, Eye, MessageCircle, Plus, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Interaction {
   id: string;
@@ -21,12 +21,27 @@ interface InteractionLogProps {
   proposalId: string;
   interactions: Interaction[];
   onAddInteraction: (interaction: Omit<Interaction, 'id' | 'timestamp'>) => void;
+  proposalCreatedBy?: string; // ID do usuário que criou a proposta
 }
 
-const InteractionLog = ({ proposalId, interactions, onAddInteraction }: InteractionLogProps) => {
+const InteractionLog = ({ proposalId, interactions, onAddInteraction, proposalCreatedBy }: InteractionLogProps) => {
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Verifica se o usuário tem permissão para ver o log
+  const hasPermission = user && (
+    user.role === 'admin' || 
+    user.role === 'vendedor_interno' || 
+    user.role === 'representante' ||
+    (proposalCreatedBy && user.id === proposalCreatedBy)
+  );
+
+  // Só mostra para usuários com permissão
+  if (!hasPermission) {
+    return null;
+  }
 
   const getInteractionIcon = (type: string) => {
     const iconMap: Record<string, any> = {

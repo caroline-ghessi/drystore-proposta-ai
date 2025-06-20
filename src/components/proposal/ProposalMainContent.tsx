@@ -1,4 +1,3 @@
-
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import UrgencyCard from '@/components/proposal/UrgencyCard';
 import { ProposalBenefits } from '@/components/proposal/ProposalBenefits';
@@ -56,6 +55,7 @@ const ProposalMainContent = ({
         proposalId={proposal.id!}
         interactions={interactions}
         onAddInteraction={addInteraction}
+        proposalCreatedBy={proposal.createdBy}
       />
 
       <ClientQuestionForm onQuestionSubmit={onQuestionSubmit} />

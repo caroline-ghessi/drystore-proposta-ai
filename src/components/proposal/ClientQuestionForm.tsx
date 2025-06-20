@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClientQuestionFormProps {
   onQuestionSubmit: (question: string) => void;
@@ -13,6 +14,12 @@ interface ClientQuestionFormProps {
 const ClientQuestionForm = ({ onQuestionSubmit }: ClientQuestionFormProps) => {
   const [question, setQuestion] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Só mostra para clientes
+  if (!user || user.role !== 'cliente') {
+    return null;
+  }
 
   const handleSubmit = () => {
     if (!question.trim()) {
