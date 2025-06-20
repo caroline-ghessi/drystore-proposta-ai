@@ -28,7 +28,7 @@ const ProposalUploadChoice = () => {
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="animate-fade-in">
         {/* Header */}
         <div className="flex items-center mb-8">
           <Button 
