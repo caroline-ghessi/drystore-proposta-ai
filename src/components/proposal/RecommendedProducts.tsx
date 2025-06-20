@@ -54,7 +54,7 @@ const RecommendedProducts = ({
                   </div>
                 </div>
               </div>
-              <Button className="w-full mt-3 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white" size="sm">
+              <Button className="w-full mt-3 bg-drystore-orange hover:bg-drystore-orange-light text-white" size="sm">
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar à Proposta
               </Button>
