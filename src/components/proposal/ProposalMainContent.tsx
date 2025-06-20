@@ -1,5 +1,6 @@
 
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
+import RecommendedProducts from '@/components/proposal/RecommendedProducts';
 import { ProposalBenefits } from '@/components/proposal/ProposalBenefits';
 import { TechnicalDetails } from '@/components/proposal/TechnicalDetails';
 import InteractionLog from '@/components/proposal/InteractionLog';
@@ -7,6 +8,7 @@ import InternalNotes from '@/components/proposal/InternalNotes';
 import ClientQuestionForm from '@/components/proposal/ClientQuestionForm';
 import { StatusMessage } from '@/components/proposal/StatusMessage';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
+import { getMockRecommendedProducts } from '@/data/mockProposalData';
 
 interface ProposalMainContentProps {
   proposalItems: any[];
@@ -29,9 +31,14 @@ const ProposalMainContent = ({
   onQuestionSubmit,
   status
 }: ProposalMainContentProps) => {
+  const recommendedProducts = getMockRecommendedProducts();
+
   return (
     <div className="lg:col-span-2 space-y-6">
       <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
+
+      {/* Maximize Seu Investimento - positioned between items and benefits */}
+      <RecommendedProducts products={recommendedProducts} />
 
       <ProposalBenefits benefits={proposal.benefits} />
       

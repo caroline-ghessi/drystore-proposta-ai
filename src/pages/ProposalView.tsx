@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ProposalHeader } from '@/components/proposal/ProposalHeader';
-import RecommendedProducts from '@/components/proposal/RecommendedProducts';
 import VideoProposal from '@/components/proposal/VideoProposal';
 import ProposalMainContent from '@/components/proposal/ProposalMainContent';
 import ProposalSidebar from '@/components/proposal/ProposalSidebar';
@@ -103,11 +102,6 @@ const ProposalView = () => {
             contractGeneration={features.contractGeneration}
             deliveryControl={features.deliveryControl}
           />
-        </div>
-
-        {/* Recommended Products moved below main content for better flow */}
-        <div className="mt-8">
-          <RecommendedProducts products={recommendedProducts} />
         </div>
       </div>
     </div>
