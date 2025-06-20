@@ -65,8 +65,8 @@ const ProposalView = () => {
           />
         </div>
 
-        {/* Feature Toggles - Only visible for vendors */}
-        {isVendor && (
+        {/* Feature Toggles - Only visible for vendors, representatives and admins */}
+        {isVendor && ['admin', 'vendedor_interno', 'representante'].includes(user?.role || '') && (
           <div className="mb-6">
             <ProposalFeatureToggles
               proposalId={id || '1'}
