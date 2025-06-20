@@ -43,7 +43,7 @@ const ProposalView = () => {
   const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || '1');
 
   // Check if current user is a vendor (not client)
-  const isVendor = user?.role !== 'client';
+  const isVendor = user?.role !== 'cliente';
 
   return (
     <div className="min-h-screen bg-gray-50">
