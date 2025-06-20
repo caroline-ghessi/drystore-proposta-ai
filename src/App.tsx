@@ -1,177 +1,87 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import CreateProposal from "./pages/CreateProposal";
-import UploadPDF from "./pages/UploadPDF";
-import UploadDocument from "./pages/UploadDocument";
-import SelectSystems from "./pages/SelectSystems";
-import ProposalPreview from "./pages/ProposalPreview";
-import EditProposal from "./pages/EditProposal";
-import ProposalView from "./pages/ProposalView";
-import ProposalManagement from "./pages/ProposalManagement";
-import DeliveryControl from "./pages/DeliveryControl";
-import DeliveryTracking from "./pages/DeliveryTracking";
-import ExportData from "./pages/admin/ExportData";
-import AIPromptTester from "./pages/admin/AIPromptTester";
-import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
-import TechnicalAnalysis from "./pages/TechnicalAnalysis";
-import TechnicalTable from "./pages/TechnicalTable";
-import ClientPortal from "./pages/ClientPortal";
-import ApprovalManagement from "./pages/ApprovalManagement";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Proposals from './pages/Proposals';
+import ProposalView from './pages/ProposalView';
+import DeliveryControl from './pages/DeliveryControl';
+import ClientPortal from './pages/ClientPortal';
+import DeliveryTracking from './pages/DeliveryTracking';
+import FollowUpManager from './pages/FollowUpManager';
+import { Toaster } from "@/components/ui/toaster"
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+function App() {
+  return (
+    <AuthProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/create-proposal" 
-              element={
-                <ProtectedRoute>
-                  <CreateProposal />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/upload-pdf" 
-              element={
-                <ProtectedRoute>
-                  <UploadPDF />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/upload-document" 
-              element={
-                <ProtectedRoute>
-                  <UploadDocument />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/technical-analysis" 
-              element={
-                <ProtectedRoute>
-                  <TechnicalAnalysis />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/technical-table" 
-              element={
-                <ProtectedRoute>
-                  <TechnicalTable />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/select-systems" 
-              element={
-                <ProtectedRoute>
-                  <SelectSystems />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/proposal-preview" 
-              element={
-                <ProtectedRoute>
-                  <ProposalPreview />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/edit-proposal/:id" 
-              element={
-                <ProtectedRoute>
-                  <EditProposal />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/proposal/:id" 
-              element={<ProposalView />}
-            />
-            <Route 
-              path="/proposals" 
-              element={
-                <ProtectedRoute>
-                  <ProposalManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/delivery-control" 
-              element={
-                <ProtectedRoute>
-                  <DeliveryControl />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/delivery-tracking/:id" 
-              element={<DeliveryTracking />}
-            />
-            <Route 
-              path="/client-portal" 
-              element={
-                <ProtectedRoute>
-                  <ClientPortal />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/approvals" 
-              element={
-                <ProtectedRoute>
-                  <ApprovalManagement />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/export" 
-              element={
-                <ProtectedRoute>
-                  <ExportData />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/ai-prompts" 
-              element={
-                <ProtectedRoute>
-                  <AIPromptTester />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/proposals"
+            element={
+              <RequireAuth>
+                <Proposals />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/proposal/:id"
+            element={
+              <RequireAuth>
+                <ProposalView />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/delivery-control/:proposalId"
+            element={
+              <RequireAuth>
+                <DeliveryControl />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/client-portal"
+            element={
+              <RequireAuth>
+                <ClientPortal />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/delivery-tracking/:proposalId"
+            element={
+              <RequireAuth>
+                <DeliveryTracking />
+              </RequireAuth>
+            }
+          />
+          <Route path="/follow-up-manager" element={<FollowUpManager />} />
+        </Routes>
+        <Toaster />
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </AuthProvider>
+  );
+}
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+}
 
 export default App;

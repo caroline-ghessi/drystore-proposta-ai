@@ -1,124 +1,117 @@
-
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { 
-  LogOut, 
-  Home, 
-  FileText, 
-  Settings,
-  User,
-  Download,
-  Bot
-} from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { MoonIcon, SunIcon } from '@radix-ui/react-icons';
+import { useTheme } from 'next-themes';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout = ({ children }: LayoutProps) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { setTheme } = useTheme();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Propostas', href: '/proposals', icon: FileText },
-  ];
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
-  const adminNavigation = [
-    { name: 'Exportar Dados', href: '/admin/export', icon: Download },
-    { name: 'Prompts IA', href: '/admin/ai-prompts', icon: Bot },
-  ];
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
-  const isAdmin = user?.role === 'admin';
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'text-blue-600' : 'text-gray-700 hover:text-gray-900';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link to="/dashboard" className="flex items-center space-x-3">
-                <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">D</span>
-                </div>
-                <span className="text-xl font-semibold gradient-text">
-                  Drystore
-                </span>
+      <nav className="bg-white shadow-lg border-b">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center space-x-8">
+              <Link to="/" className="flex-shrink-0">
+                <img className="h-8 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600" alt="Logo" />
+              </Link>
+              <Link
+                to="/proposals"
+                className={`${isActive('/proposals')} px-3 py-2 rounded-md text-sm font-medium`}
+              >
+                Propostas
+              </Link>
+              <Link
+                to="/clients"
+                className={`${isActive('/clients')} px-3 py-2 rounded-md text-sm font-medium`}
+              >
+                Clientes
+              </Link>
+              <Link
+                to="/products"
+                className={`${isActive('/products')} px-3 py-2 rounded-md text-sm font-medium`}
+              >
+                Produtos
+              </Link>
+              <Link
+                to="/follow-up-manager"
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Follow-ups WhatsApp
               </Link>
             </div>
-
-            <nav className="hidden md:flex space-x-8">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'text-drystore-blue bg-blue-50'
-                        : 'text-gray-600 hover:text-drystore-blue hover:bg-gray-50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-              
-              {isAdmin && (
-                <>
-                  <div className="border-l border-gray-200 mx-2" />
-                  {adminNavigation.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location.pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          isActive
-                            ? 'text-purple-600 bg-purple-50'
-                            : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </>
-              )}
-            </nav>
-
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-drystore-blue rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs text-gray-500">{user?.role}</p>
-                </div>
-              </div>
+            <div className="flex items-center ml-4 md:ml-6">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={logout}
-                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setTheme(theme => theme === "light" ? "dark" : "light")}
               >
-                <LogOut className="w-4 h-4" />
+                <SunIcon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <MoonIcon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="ml-3 h-8 w-8 p-0">
+                    <Avatar>
+                      <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                      <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    Perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Configurações
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      </nav>
+      
+      <main className="flex-1 py-8">
         {children}
       </main>
     </div>
