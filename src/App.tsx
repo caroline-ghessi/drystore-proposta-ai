@@ -13,6 +13,8 @@ import DeliveryTracking from './pages/DeliveryTracking';
 import FollowUpManager from './pages/FollowUpManager';
 import ProductManagement from './pages/ProductManagement';
 import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
+import CreateProposal from './pages/CreateProposal';
+import ProposalUploadChoice from './pages/ProposalUploadChoice';
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -27,6 +29,22 @@ function App() {
             element={
               <RequireAuth>
                 <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/create-proposal"
+            element={
+              <RequireAuth>
+                <CreateProposal />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/upload-choice"
+            element={
+              <RequireAuth>
+                <ProposalUploadChoice />
               </RequireAuth>
             }
           />
