@@ -6,7 +6,7 @@ export const SMTPConfigurationTab = () => {
     <Alert>
       <AlertDescription>
         <div className="space-y-4">
-          <h4 className="font-semibold text-lg">📧 Configurar SMTP do Resend no Supabase</h4>
+          <h4 className="font-semibold text-lg">📧 Configuração SMTP do Resend no Supabase</h4>
           
           <div className="space-y-3">
             <p><strong>1. Acesse o painel do Supabase:</strong></p>
@@ -48,23 +48,23 @@ export const SMTPConfigurationTab = () => {
               </div>
             </div>
 
-            <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400">
-              <p className="text-sm"><strong>⚠️ Importante:</strong></p>
+            <div className="p-3 bg-green-50 border-l-4 border-green-400">
+              <p className="text-sm"><strong>✅ Situação Atual:</strong></p>
               <ul className="text-xs space-y-1 mt-2">
-                <li>• Use sua API Key do Resend como senha SMTP</li>
-                <li>• Certifique-se que o domínio está verificado no Resend</li>
-                <li>• O email do remetente deve usar um domínio verificado</li>
-                <li>• Teste após a configuração para confirmar funcionamento</li>
+                <li>• Edge Function conflitante removida</li>
+                <li>• Configuração limpa para usar apenas SMTP direto</li>
+                <li>• Supabase agora usará exclusivamente o SMTP do Resend</li>
+                <li>• Sem mais conflitos entre Edge Function e SMTP</li>
               </ul>
             </div>
 
-            <div className="p-3 bg-green-50 border-l-4 border-green-400">
-              <p className="text-sm"><strong>✅ Vantagens desta configuração:</strong></p>
+            <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400">
+              <p className="text-sm"><strong>⚠️ Próximos passos:</strong></p>
               <ul className="text-xs space-y-1 mt-2">
-                <li>• Configuração mais simples e direta</li>
-                <li>• Usa a infraestrutura SMTP nativa do Supabase</li>
-                <li>• Menos complexidade de código</li>
-                <li>• Funciona com templates padrão do Supabase</li>
+                <li>• Confirme que a configuração SMTP está ativa no Supabase</li>
+                <li>• Teste o reset de senha usando a aba "Testes"</li>
+                <li>• Verifique se o email chega na caixa de entrada</li>
+                <li>• Monitore os logs do Supabase para confirmar funcionamento</li>
               </ul>
             </div>
           </div>
