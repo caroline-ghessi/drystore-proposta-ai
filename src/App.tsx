@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -10,6 +11,7 @@ import ClientPortal from './pages/ClientPortal';
 import DeliveryTracking from './pages/DeliveryTracking';
 import FollowUpManager from './pages/FollowUpManager';
 import ProductManagement from './pages/ProductManagement';
+import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
 import { Toaster } from "@/components/ui/toaster"
 
 function App() {
@@ -76,6 +78,14 @@ function App() {
               </RequireAuth>
             } 
           />
+          <Route 
+            path="/admin/zapi-config" 
+            element={
+              <RequireAuth requiredRole="admin">
+                <ZAPIConfiguration />
+              </RequireAuth>
+            } 
+          />
         </Routes>
         <Toaster />
       </BrowserRouter>
@@ -83,11 +93,15 @@ function App() {
   );
 }
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function RequireAuth({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) {
   const { user } = useAuth();
 
   if (!user) {
     return <Navigate to="/login" />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    return <Navigate to="/dashboard" />;
   }
 
   return <>{children}</>;

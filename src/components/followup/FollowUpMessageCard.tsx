@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MessageCircle, Send, Edit, Sparkles, Phone } from 'lucide-react';
+import { MessageCircle, Send, Edit, Sparkles, Settings } from 'lucide-react';
 import { FollowUpMessage } from '@/types/followup';
 import { useFollowUpAI } from '@/hooks/useFollowUpAI';
 import { useWhatsAppAPI } from '@/hooks/useWhatsAppAPI';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FollowUpMessageCardProps {
   followUpMessage: FollowUpMessage;
@@ -19,10 +19,14 @@ interface FollowUpMessageCardProps {
 const FollowUpMessageCard = ({ followUpMessage, onMessageSent }: FollowUpMessageCardProps) => {
   const [editedMessage, setEditedMessage] = useState(followUpMessage.editedMessage || followUpMessage.originalMessage);
   const [improvementInstruction, setImprovementInstruction] = useState('');
-  const [zapiToken, setZapiToken] = useState(localStorage.getItem('zapi_token') || '');
   
+  const { user } = useAuth();
   const { improveMessage, isImproving } = useFollowUpAI();
-  const { sendWhatsAppMessage, isSending } = useWhatsAppAPI();
+  const { sendWhatsAppMessage, isSending, getVendorZAPIConfig } = useWhatsAppAPI();
+
+  // Verificar se o vendedor tem configuração Z-API
+  const vendorConfig = getVendorZAPIConfig(followUpMessage.vendorId || 'default');
+  const hasZAPIConfig = vendorConfig && vendorConfig.token;
 
   const handleImproveMessage = async () => {
     if (!improvementInstruction.trim()) return;
@@ -37,19 +41,17 @@ const FollowUpMessageCard = ({ followUpMessage, onMessageSent }: FollowUpMessage
   };
 
   const handleSendMessage = async () => {
-    if (!zapiToken.trim()) {
-      alert('Configure o token Z-API primeiro');
+    if (!hasZAPIConfig) {
+      alert('Configuração Z-API não encontrada. Entre em contato com o administrador.');
       return;
     }
-
-    localStorage.setItem('zapi_token', zapiToken);
     
     try {
       await sendWhatsAppMessage(
         followUpMessage.clientPhone,
         followUpMessage.vendorPhone,
         editedMessage,
-        zapiToken
+        followUpMessage.vendorId || 'default'
       );
       onMessageSent(followUpMessage.id);
     } catch (error) {
@@ -108,22 +110,26 @@ const FollowUpMessageCard = ({ followUpMessage, onMessageSent }: FollowUpMessage
 
         <Separator />
 
-        {/* Configuração Z-API */}
+        {/* Status da Configuração Z-API */}
         <div>
           <h4 className="font-medium mb-2 flex items-center">
-            <Phone className="w-4 h-4 mr-2 text-orange-600" />
-            Token Z-API
+            <Settings className="w-4 h-4 mr-2 text-orange-600" />
+            Status Z-API
           </h4>
-          <Input
-            type="password"
-            placeholder="Cole seu token Z-API aqui..."
-            value={zapiToken}
-            onChange={(e) => setZapiToken(e.target.value)}
-            className="mb-2"
-          />
-          <p className="text-xs text-gray-500">
-            Configure seu token Z-API para enviar mensagens via WhatsApp
-          </p>
+          {hasZAPIConfig ? (
+            <div className="flex items-center text-green-600">
+              <span className="text-sm">✅ Configurado para {followUpMessage.vendorName}</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-red-600">
+              <span className="text-sm">❌ Não configurado para {followUpMessage.vendorName}</span>
+              {user?.role === 'admin' && (
+                <span className="text-xs ml-2 text-gray-500">
+                  (Configure nas configurações administrativas)
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -146,7 +152,8 @@ const FollowUpMessageCard = ({ followUpMessage, onMessageSent }: FollowUpMessage
         <div>
           <h4 className="font-medium mb-2">🧠 Instrução para IA Melhorar</h4>
           <div className="flex space-x-2">
-            <Input
+            <input
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
               placeholder='Ex: "Deixa mais direta", "Mais técnica", "Mais urgente"'
               value={improvementInstruction}
               onChange={(e) => setImprovementInstruction(e.target.value)}
@@ -165,7 +172,7 @@ const FollowUpMessageCard = ({ followUpMessage, onMessageSent }: FollowUpMessage
         {/* Botão Enviar */}
         <Button
           onClick={handleSendMessage}
-          disabled={isSending || !zapiToken.trim()}
+          disabled={isSending || !hasZAPIConfig}
           className="w-full bg-green-600 hover:bg-green-700"
           size="lg"
         >

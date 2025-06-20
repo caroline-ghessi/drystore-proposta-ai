@@ -105,6 +105,15 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
                   >
                     Follow-ups WhatsApp
                   </Link>
+                  {/* Admin only links */}
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/admin/zapi-config"
+                      className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium`}
+                    >
+                      Config Z-API
+                    </Link>
+                  )}
                 </>
               )}
             </div>
