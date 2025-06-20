@@ -1,9 +1,7 @@
-
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Plus } from 'lucide-react';
-
 interface RecommendedProduct {
   id: number;
   name: string;
@@ -12,14 +10,13 @@ interface RecommendedProduct {
   originalPrice: number;
   image: string;
 }
-
 interface RecommendedProductsProps {
   products: RecommendedProduct[];
 }
-
-const RecommendedProducts = ({ products }: RecommendedProductsProps) => {
-  return (
-    <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-orange-50">
+const RecommendedProducts = ({
+  products
+}: RecommendedProductsProps) => {
+  return <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-orange-50">
       <CardContent className="p-6">
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-3">
@@ -27,7 +24,7 @@ const RecommendedProducts = ({ products }: RecommendedProductsProps) => {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div className="text-center">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-orange-600">
                 🎯 Maximize Seu Investimento!
               </h2>
               <p className="text-gray-600 text-sm">Produtos especiais selecionados especialmente para seu projeto</p>
@@ -36,14 +33,9 @@ const RecommendedProducts = ({ products }: RecommendedProductsProps) => {
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all">
+          {products.map(product => <div key={product.id} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all">
               <div className="flex space-x-4">
-                <img 
-                  src={product.image} 
-                  alt={product.name}
-                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
-                />
+                <img src={product.image} alt={product.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 mb-1">{product.name}</h4>
                   <p className="text-sm text-gray-600 mb-3">{product.description}</p>
@@ -66,8 +58,7 @@ const RecommendedProducts = ({ products }: RecommendedProductsProps) => {
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar à Proposta
               </Button>
-            </div>
-          ))}
+            </div>)}
         </div>
         
         <div className="text-center mt-6">
@@ -76,8 +67,6 @@ const RecommendedProducts = ({ products }: RecommendedProductsProps) => {
           </p>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default RecommendedProducts;
