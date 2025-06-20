@@ -1,6 +1,7 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, X, Phone, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
+import { Check, X, MessageCircle, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
 
 interface InvestmentCardProps {
   proposal: {
@@ -79,7 +80,7 @@ export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onRejec
               className="w-full"
               size="lg"
             >
-              <Phone className="w-5 h-5 mr-2" />
+              <MessageCircle className="w-5 h-5 mr-2" />
               Falar com Consultor
             </Button>
 
