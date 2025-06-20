@@ -3,22 +3,70 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+const sanitizeInput = (input: string): string => {
+  return input.trim().replace(/[<>]/g, '');
+};
+
+const validatePassword = (password: string): { isValid: boolean; message?: string } => {
+  if (password.length < 8) {
+    return { isValid: false, message: 'A senha deve ter pelo menos 8 caracteres' };
+  }
+  
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+    return { 
+      isValid: false, 
+      message: 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número' 
+    };
+  }
+  
+  return { isValid: true };
+};
+
 export const useAuthFlow = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const signUp = async (email: string, password: string, nome: string, role: 'vendedor_interno' | 'representante' = 'vendedor_interno') => {
     setLoading(true);
+    
     try {
+      // Sanitize inputs
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedNome = sanitizeInput(nome);
+      
+      // Validate email format
+      const { data: isValidEmail } = await supabase
+        .rpc('validate_email_format', { email_input: sanitizedEmail });
+
+      if (!isValidEmail) {
+        toast({
+          title: "Email inválido",
+          description: "Por favor, insira um email válido.",
+          variant: "destructive"
+        });
+        return { success: false, error: 'Email inválido' };
+      }
+
+      // Validate password strength
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        toast({
+          title: "Senha fraca",
+          description: passwordValidation.message,
+          variant: "destructive"
+        });
+        return { success: false, error: passwordValidation.message };
+      }
+
       const redirectUrl = `${window.location.origin}/dashboard`;
       
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: sanitizedEmail,
         password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            nome: nome,
+            nome: sanitizedNome,
             role: role
           }
         }
@@ -31,10 +79,16 @@ export const useAuthFlow = () => {
             description: "Este email já está registrado. Tente fazer login ou recuperar a senha.",
             variant: "destructive"
           });
+        } else if (error.message.includes('Password should be at least')) {
+          toast({
+            title: "Senha muito simples",
+            description: "Use uma senha mais forte com pelo menos 8 caracteres.",
+            variant: "destructive"
+          });
         } else {
           toast({
             title: "Erro no cadastro",
-            description: error.message,
+            description: "Tente novamente mais tarde.",
             variant: "destructive"
           });
         }
@@ -55,6 +109,7 @@ export const useAuthFlow = () => {
 
       return { success: true, data };
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Erro inesperado",
         description: "Tente novamente mais tarde.",
@@ -68,17 +123,33 @@ export const useAuthFlow = () => {
 
   const resetPassword = async (email: string) => {
     setLoading(true);
+    
     try {
+      const sanitizedEmail = sanitizeInput(email);
+      
+      // Validate email format
+      const { data: isValidEmail } = await supabase
+        .rpc('validate_email_format', { email_input: sanitizedEmail });
+
+      if (!isValidEmail) {
+        toast({
+          title: "Email inválido",
+          description: "Por favor, insira um email válido.",
+          variant: "destructive"
+        });
+        return { success: false, error: 'Email inválido' };
+      }
+
       const redirectUrl = `${window.location.origin}/reset-password`;
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
         redirectTo: redirectUrl
       });
 
       if (error) {
         toast({
           title: "Erro ao enviar email",
-          description: error.message,
+          description: "Verifique o email e tente novamente.",
           variant: "destructive"
         });
         return { success: false, error };
@@ -91,6 +162,7 @@ export const useAuthFlow = () => {
 
       return { success: true };
     } catch (error: any) {
+      console.error('Reset password error:', error);
       toast({
         title: "Erro inesperado",
         description: "Tente novamente mais tarde.",
@@ -104,7 +176,19 @@ export const useAuthFlow = () => {
 
   const updatePassword = async (newPassword: string) => {
     setLoading(true);
+    
     try {
+      // Validate password strength
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.isValid) {
+        toast({
+          title: "Senha fraca",
+          description: passwordValidation.message,
+          variant: "destructive"
+        });
+        return { success: false, error: passwordValidation.message };
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -112,7 +196,7 @@ export const useAuthFlow = () => {
       if (error) {
         toast({
           title: "Erro ao atualizar senha",
-          description: error.message,
+          description: "Tente novamente mais tarde.",
           variant: "destructive"
         });
         return { success: false, error };
@@ -125,6 +209,7 @@ export const useAuthFlow = () => {
 
       return { success: true };
     } catch (error: any) {
+      console.error('Update password error:', error);
       toast({
         title: "Erro inesperado",
         description: "Tente novamente mais tarde.",

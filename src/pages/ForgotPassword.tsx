@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, Shield } from 'lucide-react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
 const ForgotPassword = () => {
@@ -15,10 +15,20 @@ const ForgotPassword = () => {
   
   const { resetPassword, loading } = useAuthFlow();
 
+  const sanitizeInput = (input: string): string => {
+    return input.trim().replace(/[<>]/g, '');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = await resetPassword(email);
+    const sanitizedEmail = sanitizeInput(email);
+    
+    if (!sanitizedEmail) {
+      return;
+    }
+
+    const result = await resetPassword(sanitizedEmail);
     
     if (result.success) {
       setSent(true);
@@ -38,14 +48,39 @@ const ForgotPassword = () => {
             </CardHeader>
             <CardContent>
               <div className="text-center space-y-4">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-700 mb-2">
+                    📧 Email enviado para: <strong>{email}</strong>
+                  </p>
+                  <p className="text-xs text-green-600">
+                    O link expira em 1 hora por segurança
+                  </p>
+                </div>
+                
                 <p className="text-sm text-gray-600">
                   Não recebeu o email? Verifique sua pasta de spam ou tente novamente.
                 </p>
-                <Link to="/login">
-                  <Button className="w-full">
-                    Voltar ao Login
+                
+                <div className="space-y-2">
+                  <Link to="/login">
+                    <Button className="w-full">
+                      Voltar ao Login
+                    </Button>
+                  </Link>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setSent(false)}
+                  >
+                    Tentar outro email
                   </Button>
-                </Link>
+                </div>
+
+                <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Link seguro e temporário
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -94,26 +129,39 @@ const ForgotPassword = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    maxLength={254}
+                    autoComplete="email"
                   />
                 </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  🛡️ Por segurança, um email será enviado apenas se a conta existir
+                </p>
               </div>
 
               <Button 
                 type="submit" 
                 className="w-full gradient-bg hover:opacity-90"
-                disabled={loading}
+                disabled={loading || !email.trim()}
               >
                 {loading ? 'Enviando...' : 'Enviar Instruções'}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-4">
               <p className="text-sm text-gray-600">
                 Lembrou da senha?{' '}
                 <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
                   Faça login
                 </Link>
               </p>
+
+              <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
+                <Shield className="w-3 h-3" />
+                Processo seguro e verificado
+              </div>
             </div>
           </CardContent>
         </Card>

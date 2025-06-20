@@ -14,9 +14,11 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
+  checkRateLimit: (identifier: string) => Promise<boolean>;
+  getRedirectRoute: (userRole: string) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,8 +98,102 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const checkRateLimit = async (identifier: string): Promise<boolean> => {
     try {
+      const { data: rateLimit } = await supabase
+        .from('auth_rate_limits')
+        .select('*')
+        .eq('identifier', identifier)
+        .single();
+
+      if (rateLimit) {
+        const now = new Date();
+        const blockedUntil = rateLimit.blocked_until ? new Date(rateLimit.blocked_until) : null;
+        
+        if (blockedUntil && blockedUntil > now) {
+          return false; // Still blocked
+        }
+
+        if (rateLimit.attempt_count >= 5) {
+          // Block for 15 minutes after 5 failed attempts
+          const blockUntil = new Date(now.getTime() + 15 * 60 * 1000);
+          await supabase
+            .from('auth_rate_limits')
+            .update({ 
+              blocked_until: blockUntil.toISOString(),
+              attempt_count: rateLimit.attempt_count + 1,
+              last_attempt: now.toISOString()
+            })
+            .eq('identifier', identifier);
+          return false;
+        }
+      }
+      
+      return true; // Not rate limited
+    } catch (error) {
+      console.error('Error checking rate limit:', error);
+      return true; // Allow on error
+    }
+  };
+
+  const updateRateLimit = async (identifier: string, success: boolean) => {
+    try {
+      const now = new Date();
+      
+      if (success) {
+        // Reset rate limit on successful login
+        await supabase
+          .from('auth_rate_limits')
+          .delete()
+          .eq('identifier', identifier);
+      } else {
+        // Increment failed attempts
+        const { data: existing } = await supabase
+          .from('auth_rate_limits')
+          .select('*')
+          .eq('identifier', identifier)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('auth_rate_limits')
+            .update({
+              attempt_count: existing.attempt_count + 1,
+              last_attempt: now.toISOString()
+            })
+            .eq('identifier', identifier);
+        } else {
+          await supabase
+            .from('auth_rate_limits')
+            .insert({
+              identifier,
+              attempt_count: 1,
+              first_attempt: now.toISOString(),
+              last_attempt: now.toISOString()
+            });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating rate limit:', error);
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Validate email format
+      const { data: isValidEmail } = await supabase
+        .rpc('validate_email_format', { email_input: email });
+
+      if (!isValidEmail) {
+        return { success: false, error: 'Formato de email inválido' };
+      }
+
+      // Check rate limiting
+      const isAllowed = await checkRateLimit(email);
+      if (!isAllowed) {
+        return { success: false, error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -105,22 +201,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Login error:', error.message);
-        return false;
+        await updateRateLimit(email, false);
+        
+        if (error.message.includes('Invalid login credentials')) {
+          return { success: false, error: 'Email ou senha inválidos' };
+        }
+        
+        return { success: false, error: 'Erro ao fazer login. Tente novamente.' };
       }
 
       if (data.user) {
         await loadUserProfile(data.user);
+        await updateRateLimit(email, true);
         
         // Track login session
         await sessionTracker.trackLogin(data.user.id, data.user.email || '');
         
-        return true;
+        return { success: true };
       }
 
-      return false;
+      return { success: false, error: 'Erro inesperado durante o login' };
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      await updateRateLimit(email, false);
+      return { success: false, error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
@@ -155,6 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     loading,
+    checkRateLimit,
     getRedirectRoute
   };
 
