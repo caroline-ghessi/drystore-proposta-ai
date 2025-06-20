@@ -72,7 +72,7 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
               <Link to="/" className="flex-shrink-0 flex items-center">
                 <img 
                   className="h-8 w-auto sm:h-10" 
-                  src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
+                  src={theme === 'dark' ? "/lovable-uploads/a7ae23c6-cbea-470d-be2a-44e24862efea.png" : "/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png"}
                   alt="DryStore" 
                 />
               </Link>
