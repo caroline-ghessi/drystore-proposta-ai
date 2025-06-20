@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,19 +10,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/theme-provider';
 import { Settings as SettingsIcon, Bell, Shield, Moon, Sun, Globe } from 'lucide-react';
 import { useState } from 'react';
-
 const Settings = () => {
-  const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const {
+    user
+  } = useAuth();
+  const {
+    theme,
+    setTheme
+  } = useTheme();
   const [darkModeEnabled, setDarkModeEnabled] = useState(theme === 'dark');
-
   const handleThemeToggle = (checked: boolean) => {
     setDarkModeEnabled(checked);
     setTheme(checked ? 'dark' : 'light');
   };
-
-  return (
-    <Layout>
+  return <Layout>
       <div className="animate-fade-in">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Configurações</h1>
@@ -46,21 +46,11 @@ const Settings = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="company" className="text-gray-900 dark:text-gray-100">Empresa</Label>
-                  <Input
-                    id="company"
-                    placeholder="Nome da empresa"
-                    defaultValue="DryStore"
-                    className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                  />
+                  <Input id="company" placeholder="Nome da empresa" defaultValue="DryStore" className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="timezone" className="text-gray-900 dark:text-gray-100">Fuso Horário</Label>
-                  <Input
-                    id="timezone"
-                    defaultValue="America/Sao_Paulo"
-                    disabled
-                    className="bg-gray-50 dark:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                  />
+                  <Input id="timezone" defaultValue="America/Sao_Paulo" disabled className="bg-gray-50 dark:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
 
@@ -90,7 +80,7 @@ const Settings = () => {
                     <Label className="text-base text-gray-900 dark:text-gray-100">Relatórios Semanais</Label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Receber resumo semanal por email</p>
                   </div>
-                  <Switch />
+                  <Switch className="bg-slate-50" />
                 </div>
               </div>
 
@@ -104,10 +94,7 @@ const Settings = () => {
                     <Label className="text-base text-gray-900 dark:text-gray-100">Tema Escuro</Label>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Usar tema escuro na interface</p>
                   </div>
-                  <Switch 
-                    checked={darkModeEnabled}
-                    onCheckedChange={handleThemeToggle}
-                  />
+                  <Switch checked={darkModeEnabled} onCheckedChange={handleThemeToggle} />
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -193,8 +180,6 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Settings;
