@@ -8,6 +8,7 @@ import Proposals from './pages/Proposals';
 import ProposalView from './pages/ProposalView';
 import DeliveryControl from './pages/DeliveryControl';
 import ClientPortal from './pages/ClientPortal';
+import Clients from './pages/Clients';
 import DeliveryTracking from './pages/DeliveryTracking';
 import FollowUpManager from './pages/FollowUpManager';
 import ProductManagement from './pages/ProductManagement';
@@ -58,6 +59,14 @@ function App() {
             element={
               <RequireAuth>
                 <ClientPortal />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <RequireAuth>
+                <Clients />
               </RequireAuth>
             }
           />
