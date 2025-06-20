@@ -52,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
       if (session?.user) {
         await loadUserProfile(session.user);
       } else {
@@ -131,12 +133,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Função para obter a rota de redirecionamento baseada na role
+  const getRedirectRoute = (userRole: string) => {
+    switch (userRole) {
+      case 'admin':
+        return '/dashboard';
+      case 'vendedor_interno':
+        return '/dashboard';
+      case 'representante':
+        return '/dashboard';
+      case 'cliente':
+        return '/client-portal';
+      default:
+        return '/dashboard';
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
     login,
     logout,
-    loading
+    loading,
+    getRedirectRoute
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

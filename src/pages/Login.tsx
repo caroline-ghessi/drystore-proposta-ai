@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, Lock, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -82,7 +81,12 @@ const Login = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Senha</Label>
+                  <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800">
+                    Esqueceu a senha?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -112,13 +116,22 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">Para testar a plataforma:</p>
-              <p className="text-xs text-gray-500">
-                • Use qualquer email válido<br/>
-                • Use qualquer senha<br/>
-                • Exemplo: vendedor@drystore.com
+            <div className="mt-6 text-center space-y-4">
+              <p className="text-sm text-gray-600">
+                Não tem uma conta?{' '}
+                <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+                  Cadastre-se
+                </Link>
               </p>
+              
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Para testar a plataforma:</p>
+                <p className="text-xs text-gray-500">
+                  • Use qualquer email válido<br/>
+                  • Use qualquer senha<br/>
+                  • Exemplo: vendedor@drystore.com
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

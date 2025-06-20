@@ -10,6 +10,7 @@ import { UserPlus, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { useAuthFlow } from '@/hooks/useAuthFlow';
 
 interface UserRegistrationForm {
   name: string;
@@ -17,11 +18,13 @@ interface UserRegistrationForm {
   phone: string;
   role: 'vendedor_interno' | 'representante';
   territory?: string;
+  password: string;
 }
 
 const UserRegistration = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signUp } = useAuthFlow();
   
   const form = useForm<UserRegistrationForm>({
     defaultValues: {
@@ -29,7 +32,8 @@ const UserRegistration = () => {
       email: '',
       phone: '',
       role: 'vendedor_interno',
-      territory: ''
+      territory: '',
+      password: ''
     }
   });
 
@@ -37,18 +41,19 @@ const UserRegistration = () => {
     setIsSubmitting(true);
     
     try {
-      // Aqui seria integrado com o backend para criar o usuário
-      console.log('Cadastrando usuário:', data);
+      // Gerar senha temporária se não fornecida
+      const tempPassword = data.password || `temp${Math.random().toString(36).slice(-8)}`;
       
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await signUp(data.email, tempPassword, data.name, data.role);
       
-      toast({
-        title: "Usuário cadastrado com sucesso!",
-        description: `${data.name} foi adicionado como ${data.role}.`,
-      });
-      
-      form.reset();
+      if (result.success) {
+        toast({
+          title: "Usuário cadastrado com sucesso!",
+          description: `${data.name} foi adicionado como ${data.role}. ${!data.password ? 'Uma senha temporária foi gerada.' : ''}`,
+        });
+        
+        form.reset();
+      }
     } catch (error) {
       toast({
         title: "Erro ao cadastrar usuário",
@@ -152,6 +157,20 @@ const UserRegistration = () => {
                           )}
                         />
                       </div>
+
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Senha (Opcional)</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Deixe em branco para gerar automaticamente" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={form.control}
