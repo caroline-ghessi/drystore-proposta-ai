@@ -6,8 +6,11 @@ import RecommendedProducts from '@/components/proposal/RecommendedProducts';
 import VideoProposal from '@/components/proposal/VideoProposal';
 import ProposalMainContent from '@/components/proposal/ProposalMainContent';
 import ProposalSidebar from '@/components/proposal/ProposalSidebar';
+import ProposalFeatureToggles from '@/components/proposal/ProposalFeatureToggles';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
+import { useProposalFeatures } from '@/hooks/useProposalFeatures';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   getMockProposal, 
   getMockProposalItems, 
@@ -19,6 +22,7 @@ import { getMockAIScore, getMockNextSteps } from '@/data/mockAIData';
 const ProposalView = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const showAI = searchParams.get('ai') === 'true';
   const [internalNotes, setInternalNotes] = useState<string>('');
   
@@ -36,6 +40,10 @@ const ProposalView = () => {
     proposal.clientName, 
     addInteraction
   );
+  const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || '1');
+
+  // Check if current user is a vendor (not client)
+  const isVendor = user?.role !== 'client';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -53,6 +61,19 @@ const ProposalView = () => {
             duration="2:35"
           />
         </div>
+
+        {/* Feature Toggles - Only visible for vendors */}
+        {isVendor && (
+          <div className="mb-6">
+            <ProposalFeatureToggles
+              proposalId={id || '1'}
+              contractGeneration={features.contractGeneration}
+              deliveryControl={features.deliveryControl}
+              onToggleContractGeneration={toggleContractGeneration}
+              onToggleDeliveryControl={toggleDeliveryControl}
+            />
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           <ProposalMainContent
@@ -75,6 +96,8 @@ const ProposalView = () => {
             mockAIScore={mockAIScore}
             mockNextSteps={mockNextSteps}
             clientQuestions={clientQuestions}
+            contractGeneration={features.contractGeneration}
+            deliveryControl={features.deliveryControl}
           />
         </div>
       </div>

@@ -16,6 +16,8 @@ interface ProposalSidebarProps {
   mockAIScore: AIScore;
   mockNextSteps: NextStepSuggestion;
   clientQuestions: string[];
+  contractGeneration?: boolean;
+  deliveryControl?: boolean;
 }
 
 const ProposalSidebar = ({
@@ -26,7 +28,9 @@ const ProposalSidebar = ({
   showAI,
   mockAIScore,
   mockNextSteps,
-  clientQuestions
+  clientQuestions,
+  contractGeneration = false,
+  deliveryControl = false
 }: ProposalSidebarProps) => {
   return (
     <div className="space-y-6">
@@ -58,7 +62,11 @@ const ProposalSidebar = ({
       />
 
       {status === 'accepted' && (
-        <ProposalAcceptedActions proposalId={proposal.id} />
+        <ProposalAcceptedActions 
+          proposalId={proposal.id}
+          contractGeneration={contractGeneration}
+          deliveryControl={deliveryControl}
+        />
       )}
     </div>
   );
