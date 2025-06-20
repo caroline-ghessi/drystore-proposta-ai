@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Upload, FileText, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, FileText, Check, AlertCircle, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const UploadDocument = () => {
@@ -87,22 +87,22 @@ const UploadDocument = () => {
         <div className="flex items-center mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/create-proposal')}
+            onClick={() => navigate('/proposal-upload-choice')}
             className="mr-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Upload do Documento</h1>
-            <p className="text-gray-600 mt-1">Faça upload do projeto arquitetônico ou lista de materiais</p>
+            <h1 className="text-3xl font-bold text-gray-900">Upload do Projeto Arquitetônico</h1>
+            <p className="text-gray-600 mt-1">A IA fará a quantificação automática dos materiais</p>
           </div>
         </div>
 
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span>Passo 2 de 4</span>
+            <span>Passo 3 de 4</span>
             <span>50% concluído</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -113,11 +113,11 @@ const UploadDocument = () => {
         <Card className="border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Upload className="w-5 h-5 mr-2 text-drystore-blue" />
-              Upload de Documento
+              <Building2 className="w-5 h-5 mr-2 text-drystore-blue" />
+              Projeto Arquitetônico
             </CardTitle>
             <CardDescription>
-              Aceita arquivos PDF de até 10MB com projetos arquitetônicos ou listas de materiais
+              Upload de plantas baixas, projetos técnicos ou documentos arquitetônicos em PDF (até 10MB)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -131,12 +131,12 @@ const UploadDocument = () => {
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Arraste o arquivo aqui ou clique para selecionar
+                  Arraste o projeto arquitetônico aqui ou clique para selecionar
                 </h3>
                 <p className="text-gray-500 mb-4">
-                  Projetos arquitetônicos, plantas baixas ou listas de materiais em PDF
+                  Plantas baixas, projetos técnicos, detalhamentos construtivos
                 </p>
                 <input
                   type="file"
@@ -147,7 +147,7 @@ const UploadDocument = () => {
                 />
                 <label htmlFor="file-upload">
                   <Button variant="outline" className="cursor-pointer" asChild>
-                    <span>Selecionar Arquivo</span>
+                    <span>Selecionar Projeto</span>
                   </Button>
                 </label>
               </div>
