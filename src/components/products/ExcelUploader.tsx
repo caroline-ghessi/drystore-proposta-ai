@@ -10,27 +10,31 @@ interface ExcelUploaderProps {
 }
 
 export const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFileUpload, isUploading }) => {
+  const validateAndUploadFile = useCallback((file: File) => {
+    if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel' ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls')) {
+      onFileUpload(file);
+    } else {
+      alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
+    }
+  }, [onFileUpload]);
+
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-          file.type === 'application/vnd.ms-excel' ||
-          file.name.endsWith('.xlsx') ||
-          file.name.endsWith('.xls')) {
-        onFileUpload(file);
-      } else {
-        alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
-      }
+      validateAndUploadFile(file);
     }
-  }, [onFileUpload]);
+  }, [validateAndUploadFile]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) {
-      handleFileChange({ target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>);
+      validateAndUploadFile(file);
     }
-  }, [handleFileChange]);
+  }, [validateAndUploadFile]);
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
