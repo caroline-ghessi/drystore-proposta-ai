@@ -14,8 +14,12 @@ import UrgencyCard from '@/components/proposal/UrgencyCard';
 import RecommendedProducts from '@/components/proposal/RecommendedProducts';
 import ClientQuestionForm from '@/components/proposal/ClientQuestionForm';
 import ProposalActions from '@/components/proposal/ProposalActions';
+import VideoProposal from '@/components/proposal/VideoProposal';
+import AIScoreCard from '@/components/ai/AIScoreCard';
+import NextStepSuggestions from '@/components/ai/NextStepSuggestions';
 import { Button } from '@/components/ui/button';
-import { Package } from 'lucide-react';
+import { Package, MessageCircle } from 'lucide-react';
+import { AIScore, NextStepSuggestion } from '@/types/aiScore';
 
 interface Interaction {
   id: string;
@@ -32,32 +36,7 @@ const ProposalView = () => {
   const showAI = searchParams.get('ai') === 'true';
   const { toast } = useToast();
   const [status, setStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
-  const [internalNotes, setInternalNotes] = useState('Cliente demonstrou interesse em painéis solares adicionais.\nNegociar desconto se fechar até sexta-feira.');
-  const [interactions, setInteractions] = useState<Interaction[]>([
-    {
-      id: '1',
-      type: 'edit',
-      description: 'Proposta criada',
-      user: 'Carlos Vendedor',
-      timestamp: '19/06/2025 09:00',
-      details: 'Proposta inicial baseada na planta enviada pelo cliente'
-    },
-    {
-      id: '2',
-      type: 'send',
-      description: 'Proposta enviada por email',
-      user: 'Sistema',
-      timestamp: '19/06/2025 09:15'
-    },
-    {
-      id: '3',
-      type: 'view',
-      description: 'Cliente visualizou a proposta',
-      user: 'João Silva',
-      timestamp: '19/06/2025 14:30'
-    }
-  ]);
-
+  
   // Dados mockados da proposta
   const proposal = {
     id: id,
@@ -192,6 +171,54 @@ const ProposalView = () => {
     }
   ];
 
+  // Mock AI Score data
+  const mockAIScore: AIScore = {
+    proposalId: id || '1',
+    score: 78,
+    factors: {
+      clientProfile: 85,
+      responseTime: 92,
+      ticketSize: 65,
+      textSentiment: 75,
+      pastInteractions: 70
+    },
+    recommendations: [
+      'Cliente responde rapidamente - aproveite o momento',
+      'Destaque a garantia estendida no próximo contato',
+      'Considere oferecer parcelamento em 12x'
+    ],
+    confidence: 'high',
+    lastCalculated: new Date().toISOString()
+  };
+
+  // Mock Next Step Suggestions for rejected proposals
+  const mockNextSteps: NextStepSuggestion = {
+    id: '1',
+    proposalId: id || '1',
+    rejectionReason: 'Preço muito alto',
+    suggestedActions: [
+      {
+        action: 'Oferecer desconto de 10%',
+        description: 'Propor desconto progressivo baseado no volume de compra',
+        priority: 'high',
+        estimatedSuccess: 75
+      },
+      {
+        action: 'Parcelamento em 18x',
+        description: 'Estender o parcelamento para reduzir valor das parcelas',
+        priority: 'medium',
+        estimatedSuccess: 60
+      },
+      {
+        action: 'Agendar reunião técnica',
+        description: 'Demonstrar valor agregado com apresentação técnica',
+        priority: 'medium',
+        estimatedSuccess: 55
+      }
+    ],
+    createdAt: new Date().toISOString()
+  };
+
   const addInteraction = (interaction: Omit<Interaction, 'id' | 'timestamp'>) => {
     const newInteraction: Interaction = {
       ...interaction,
@@ -248,6 +275,16 @@ const ProposalView = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <RecommendedProducts products={recommendedProducts} />
 
+        {/* Video Proposal */}
+        <div className="mb-6">
+          <VideoProposal
+            videoUrl="https://example.com/video.mp4"
+            vendorName="Carlos Vendedor"
+            vendorTitle="Especialista em Soluções Residenciais"
+            duration="2:35"
+          />
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Coluna Principal */}
           <div className="lg:col-span-2 space-y-6">
@@ -262,6 +299,20 @@ const ProposalView = () => {
               technicalImages={proposal.technicalImages}
               solutions={proposal.solutions}
             />
+
+            {/* Chat com IA Técnica */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-medium text-blue-900">Dúvidas Técnicas?</h3>
+                <MessageCircle className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-sm text-blue-800 mb-3">
+                Converse com nossa IA especializada para esclarecer detalhes técnicos sobre os produtos e soluções.
+              </p>
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                Iniciar Chat Técnico
+              </Button>
+            </div>
 
             <InternalNotes
               proposalId={proposal.id!}
@@ -290,11 +341,17 @@ const ProposalView = () => {
             />
 
             {showAI && (
-              <AIAssistant
-                proposalId={proposal.id!}
-                clientQuestions={clientQuestions}
-                proposalData={proposal}
-              />
+              <>
+                <AIScoreCard aiScore={mockAIScore} />
+                {status === 'rejected' && (
+                  <NextStepSuggestions suggestions={mockNextSteps} />
+                )}
+                <AIAssistant
+                  proposalId={proposal.id!}
+                  clientQuestions={clientQuestions}
+                  proposalData={proposal}
+                />
+              </>
             )}
 
             <ProposalActions 
@@ -302,6 +359,27 @@ const ProposalView = () => {
               onAccept={handleAccept}
               onReject={handleReject}
             />
+
+            {status === 'accepted' && (
+              <div className="space-y-4">
+                <Button 
+                  onClick={() => navigate(`/delivery-tracking/${proposal.id}`)}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  <Package className="w-5 h-5 mr-2" />
+                  Acompanhar Entregas
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
+                  Assinar Contrato Digitalmente
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

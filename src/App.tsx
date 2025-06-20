@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,8 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import TechnicalAnalysis from "./pages/TechnicalAnalysis";
 import TechnicalTable from "./pages/TechnicalTable";
+import ClientPortal from "./pages/ClientPortal";
+import ApprovalManagement from "./pages/ApprovalManagement";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,34 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProposalManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/delivery-control" 
+              element={
+                <ProtectedRoute>
+                  <DeliveryControl />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/delivery-tracking/:id" 
+              element={<DeliveryTracking />}
+            />
+            <Route 
+              path="/client-portal" 
+              element={
+                <ProtectedRoute>
+                  <ClientPortal />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/approvals" 
+              element={
+                <ProtectedRoute>
+                  <ApprovalManagement />
                 </ProtectedRoute>
               } 
             />

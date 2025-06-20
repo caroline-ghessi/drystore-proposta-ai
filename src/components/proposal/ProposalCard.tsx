@@ -8,7 +8,9 @@ import {
   Eye, 
   Edit, 
   Bot, 
-  MessageCircle 
+  MessageCircle,
+  Brain,
+  AlertTriangle
 } from 'lucide-react';
 import ClientTags from '@/components/clients/ClientTags';
 import ProposalStatus from '@/components/proposal/ProposalStatus';
@@ -26,6 +28,8 @@ interface Proposal {
   clientTags: string[];
   hasQuestions: boolean;
   interactionCount: number;
+  aiScore?: number;
+  needsApproval?: boolean;
 }
 
 interface ProposalCardProps {
@@ -36,6 +40,18 @@ interface ProposalCardProps {
 
 const ProposalCard = ({ proposal, onUpdateTags, onUpdateStatus }: ProposalCardProps) => {
   const navigate = useNavigate();
+
+  const getAIScoreColor = (score: number) => {
+    if (score >= 80) return 'bg-green-100 text-green-800';
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
+  };
+
+  const getAIScoreLabel = (score: number) => {
+    if (score >= 80) return 'Alta';
+    if (score >= 60) return 'Média';
+    return 'Baixa';
+  };
 
   return (
     <div className="p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -57,6 +73,18 @@ const ProposalCard = ({ proposal, onUpdateTags, onUpdateStatus }: ProposalCardPr
                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                   <MessageCircle className="w-3 h-3 mr-1" />
                   Dúvidas
+                </Badge>
+              )}
+              {proposal.needsApproval && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Aprovação
+                </Badge>
+              )}
+              {proposal.aiScore && (
+                <Badge className={getAIScoreColor(proposal.aiScore)}>
+                  <Brain className="w-3 h-3 mr-1" />
+                  {getAIScoreLabel(proposal.aiScore)} ({proposal.aiScore}%)
                 </Badge>
               )}
             </div>

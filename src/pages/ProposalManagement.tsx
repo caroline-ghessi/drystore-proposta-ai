@@ -28,7 +28,7 @@ const ProposalManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Dados mockados das propostas com novas funcionalidades
+  // Enhanced mock data with AI scores and approval flags
   const [proposals, setProposals] = useState<Proposal[]>([
     {
       id: '1',
@@ -42,7 +42,9 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-15',
       clientTags: ['Cliente Quente', 'Follow-up'],
       hasQuestions: true,
-      interactionCount: 5
+      interactionCount: 5,
+      aiScore: 82,
+      needsApproval: false
     },
     {
       id: '2',
@@ -56,7 +58,9 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-16',
       clientTags: ['Negociação'],
       hasQuestions: false,
-      interactionCount: 8
+      interactionCount: 8,
+      aiScore: 65,
+      needsApproval: false
     },
     {
       id: '3',
@@ -70,7 +74,9 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-14',
       clientTags: ['Cliente Frio'],
       hasQuestions: true,
-      interactionCount: 3
+      interactionCount: 3,
+      aiScore: 45,
+      needsApproval: false
     },
     {
       id: '4',
@@ -84,7 +90,9 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-12',
       clientTags: [],
       hasQuestions: false,
-      interactionCount: 2
+      interactionCount: 2,
+      aiScore: 38,
+      needsApproval: false
     },
     {
       id: '5',
@@ -98,7 +106,9 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-11',
       clientTags: [],
       hasQuestions: false,
-      interactionCount: 1
+      interactionCount: 1,
+      aiScore: 72,
+      needsApproval: false
     },
     {
       id: '6',
@@ -112,7 +122,25 @@ const ProposalManagement = () => {
       lastUpdate: '2024-01-12',
       clientTags: [],
       hasQuestions: false,
-      interactionCount: 4
+      interactionCount: 4,
+      aiScore: 88,
+      needsApproval: false
+    },
+    {
+      id: '7',
+      number: 'PROP-2024-007',
+      client: 'Construtora ABC',
+      project: 'Galpão Industrial 2000m²',
+      value: 350000.00,
+      status: 'aguardando_aprovacao',
+      date: '2024-01-09',
+      validUntil: '2024-01-24',
+      lastUpdate: '2024-01-09',
+      clientTags: ['Grande Cliente'],
+      hasQuestions: false,
+      interactionCount: 2,
+      aiScore: 75,
+      needsApproval: true
     }
   ]);
 
@@ -168,14 +196,23 @@ const ProposalManagement = () => {
               Acompanhe o status e gerencie suas propostas comerciais
             </p>
           </div>
-          <Button 
-            onClick={() => navigate('/create-proposal')}
-            className="gradient-bg hover:opacity-90 mt-4 sm:mt-0"
-            size="lg"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nova Proposta
-          </Button>
+          <div className="flex space-x-3 mt-4 sm:mt-0">
+            <Button 
+              onClick={() => navigate('/approvals')}
+              variant="outline"
+              size="lg"
+            >
+              Aprovações Pendentes
+            </Button>
+            <Button 
+              onClick={() => navigate('/create-proposal')}
+              className="gradient-bg hover:opacity-90"
+              size="lg"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Nova Proposta
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
