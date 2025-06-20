@@ -8,18 +8,18 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme } from '@/components/theme-provider';
 import { Settings as SettingsIcon, Bell, Shield, Moon, Sun, Globe } from 'lucide-react';
 import { useState } from 'react';
 
 const Settings = () => {
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [darkModeEnabled, setDarkModeEnabled] = useState(theme === 'dark');
 
   const handleThemeToggle = (checked: boolean) => {
     setDarkModeEnabled(checked);
-    toggleTheme();
+    setTheme(checked ? 'dark' : 'light');
   };
 
   return (
