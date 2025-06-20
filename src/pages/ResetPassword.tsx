@@ -10,12 +10,15 @@ import { Progress } from '@/components/ui/progress';
 import { Lock, Shield, Check, X } from 'lucide-react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [sessionVerified, setSessionVerified] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   
   const { updatePassword, loading } = useAuthFlow();
   const navigate = useNavigate();
@@ -50,23 +53,92 @@ const ResetPassword = () => {
   const passwordCriteria = getPasswordCriteria(password);
 
   useEffect(() => {
-    // Verificar se há tokens de recuperação de senha na URL
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    
-    if (!accessToken || !refreshToken) {
-      toast({
-        title: "Link inválido",
-        description: "Este link de recuperação é inválido ou expirou.",
-        variant: "destructive"
+    const verifyResetToken = async () => {
+      console.log('🔍 Verificando parâmetros da URL para reset de senha...');
+      
+      // Verificar parâmetros específicos do Custom SMTP
+      const tokenHash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+      
+      console.log('📋 Parâmetros encontrados:', {
+        token_hash: tokenHash ? tokenHash.substring(0, 10) + '...' : 'null',
+        type,
+        allParams: Object.fromEntries(searchParams.entries())
       });
-      navigate('/login');
-    }
+
+      if (!tokenHash || type !== 'recovery') {
+        console.log('❌ Parâmetros de reset inválidos');
+        toast({
+          title: "Link inválido",
+          description: "Este link de recuperação é inválido ou expirou.",
+          variant: "destructive"
+        });
+        navigate('/login');
+        return;
+      }
+
+      try {
+        console.log('🔐 Verificando token de recuperação via OTP...');
+        
+        // Usar verifyOtp para estabelecer a sessão
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery'
+        });
+
+        console.log('📥 Resposta da verificação OTP:', { data: !!data, error });
+
+        if (error) {
+          console.error('❌ Erro na verificação do token:', error);
+          toast({
+            title: "Token inválido",
+            description: "Este link de recuperação é inválido ou expirou.",
+            variant: "destructive"
+          });
+          navigate('/login');
+          return;
+        }
+
+        if (data.session) {
+          console.log('✅ Sessão estabelecida com sucesso');
+          setSessionVerified(true);
+          toast({
+            title: "Link verificado!",
+            description: "Agora você pode definir sua nova senha.",
+          });
+        } else {
+          console.log('❌ Sessão não estabelecida');
+          toast({
+            title: "Erro na verificação",
+            description: "Não foi possível verificar o link. Tente novamente.",
+            variant: "destructive"
+          });
+          navigate('/login');
+        }
+      } catch (err: any) {
+        console.error('💥 Erro inesperado na verificação:', err);
+        toast({
+          title: "Erro inesperado",
+          description: "Ocorreu um erro ao verificar o link. Tente novamente.",
+          variant: "destructive"
+        });
+        navigate('/login');
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyResetToken();
   }, [searchParams, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!sessionVerified) {
+      setError('Sessão não verificada. Tente acessar o link novamente.');
+      return;
+    }
 
     if (password.length < 8) {
       setError('A senha deve ter pelo menos 8 caracteres');
@@ -83,14 +155,35 @@ const ResetPassword = () => {
       return;
     }
 
+    console.log('🔄 Atualizando senha...');
     const result = await updatePassword(password);
     
     if (result.success) {
+      console.log('✅ Senha atualizada com sucesso');
+      toast({
+        title: "Senha atualizada!",
+        description: "Redirecionando para o dashboard...",
+      });
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
     }
   };
+
+  if (verifying) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-sm text-gray-600">Verificando link de recuperação...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
@@ -200,7 +293,7 @@ const ResetPassword = () => {
               <Button 
                 type="submit" 
                 className="w-full gradient-bg hover:opacity-90"
-                disabled={loading || passwordStrength < 100 || password !== confirmPassword}
+                disabled={loading || passwordStrength < 100 || password !== confirmPassword || !sessionVerified}
               >
                 {loading ? 'Atualizando...' : 'Atualizar Senha'}
               </Button>
