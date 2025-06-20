@@ -121,37 +121,42 @@ const FollowUpManager = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto animate-fade-in px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Follow-ups WhatsApp com IA</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">
-              Automatize o acompanhamento e sugestão de produtos via WhatsApp
-            </p>
+      <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-center sm:text-left min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+                Follow-ups WhatsApp
+              </h1>
+              <p className="text-gray-600 text-xs sm:text-sm lg:text-base mt-1">
+                Automatize mensagens via WhatsApp
+              </p>
+            </div>
+            <Button 
+              onClick={generateNewFollowUp} 
+              disabled={isGenerating}
+              className="w-full sm:w-auto shrink-0 text-xs sm:text-sm"
+              size="sm"
+            >
+              <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              {isGenerating ? 'Gerando...' : 'Gerar Follow-up'}
+            </Button>
           </div>
-          <Button 
-            onClick={generateNewFollowUp} 
-            disabled={isGenerating}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {isGenerating ? 'Gerando...' : 'Gerar Follow-up'}
-          </Button>
+
+          <FollowUpStats 
+            followUpMessages={followUpMessages}
+            triggers={triggers}
+          />
+
+          <FollowUpTabs
+            followUpMessages={followUpMessages}
+            triggers={triggers}
+            onMessageSent={handleMessageSent}
+            onTriggersChange={handleTriggersChange}
+            onGenerateFollowUp={generateNewFollowUp}
+            isGenerating={isGenerating}
+          />
         </div>
-
-        <FollowUpStats 
-          followUpMessages={followUpMessages}
-          triggers={triggers}
-        />
-
-        <FollowUpTabs
-          followUpMessages={followUpMessages}
-          triggers={triggers}
-          onMessageSent={handleMessageSent}
-          onTriggersChange={handleTriggersChange}
-          onGenerateFollowUp={generateNewFollowUp}
-          isGenerating={isGenerating}
-        />
       </div>
     </Layout>
   );
