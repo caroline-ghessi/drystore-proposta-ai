@@ -22,6 +22,7 @@ import ApprovalWorkflow from './pages/ApprovalWorkflow';
 import UserRegistration from './pages/UserRegistration';
 import ClientLogin from './pages/ClientLogin';
 import ClientPortal from './pages/ClientPortal';
+import Clients from './pages/Clients';
 import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -50,6 +51,7 @@ function App() {
               <Route path="/proposal-preview" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
               <Route path="/upload-document" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
               <Route path="/edit-proposal" element={<ProtectedRoute><EditProposal /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
               <Route 
                 path="/smart-scheduler" 
                 element={
