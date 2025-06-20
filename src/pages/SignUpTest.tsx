@@ -18,7 +18,7 @@ const SignUpTest = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🧪 Teste de cadastro iniciado:', { email, nome, role });
+    console.log('🧪 Teste de cadastro com nova função iniciado:', { email, nome, role });
     
     const result = await signUp(email, password, nome, role);
     console.log('🧪 Resultado do teste:', result);
@@ -36,9 +36,9 @@ const SignUpTest = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">🧪 Teste de Cadastro</h1>
+          <h1 className="text-3xl font-bold text-gray-900">🧪 Teste do Sistema Corrigido</h1>
           <p className="text-gray-600 mt-2">
-            Página para testar e debugar o sistema de cadastro
+            Sistema com nova função handle_new_user e validação robusta
           </p>
         </div>
 
@@ -46,7 +46,7 @@ const SignUpTest = () => {
           {/* Formulário de Teste */}
           <Card>
             <CardHeader>
-              <CardTitle>📝 Formulário de Teste</CardTitle>
+              <CardTitle>📝 Teste de Cadastro</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -113,41 +113,51 @@ const SignUpTest = () => {
                     disabled={loading}
                     className="w-full"
                   >
-                    {loading ? 'Criando usuário...' : '🚀 Criar Usuário'}
+                    {loading ? 'Criando usuário...' : '🚀 Testar Nova Função'}
                   </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
 
-          {/* Diagnóstico */}
+          {/* Diagnóstico Avançado */}
           <SignUpDiagnostic />
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>📋 Instruções</CardTitle>
+            <CardTitle>🔧 Status da Correção</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-              <h4 className="font-medium text-blue-900">1. Execute o Diagnóstico</h4>
-              <p className="text-sm text-blue-700">
-                Clique em "Executar Diagnóstico" para verificar se tudo está funcionando.
-              </p>
-            </div>
-            
             <div className="p-3 bg-green-50 border border-green-200 rounded">
-              <h4 className="font-medium text-green-900">2. Gere Dados de Teste</h4>
+              <h4 className="font-medium text-green-900">✅ Função Recriada</h4>
               <p className="text-sm text-green-700">
-                Use "Gerar Dados de Teste" para preencher o formulário automaticamente.
+                A função handle_new_user foi completamente recriada com validação robusta do enum user_role.
               </p>
             </div>
             
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <h4 className="font-medium text-yellow-900">3. Monitore o Console</h4>
-              <p className="text-sm text-yellow-700">
-                Abra o console do navegador (F12) para ver logs detalhados do processo.
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+              <h4 className="font-medium text-blue-900">🔍 Validação Melhorada</h4>
+              <p className="text-sm text-blue-700">
+                Agora usa CASE statement para validar roles e inclui fallback automático para 'cliente'.
               </p>
+            </div>
+            
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded">
+              <h4 className="font-medium text-purple-900">🛡️ Tratamento de Erros</h4>
+              <p className="text-sm text-purple-700">
+                Sistema com logs detalhados e fallback manual no frontend caso a função falhe.
+              </p>
+            </div>
+
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <h4 className="font-medium text-yellow-900">📊 Como Testar</h4>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                <li>1. Execute o diagnóstico para verificar se tudo está funcionando</li>
+                <li>2. Gere dados de teste e faça um cadastro</li>
+                <li>3. Monitore o console para logs detalhados</li>
+                <li>4. Verifique se o perfil foi criado corretamente</li>
+              </ul>
             </div>
           </CardContent>
         </Card>

@@ -16,7 +16,7 @@ export const useSignUp = () => {
       const sanitizedEmail = sanitizeInput(email);
       const sanitizedNome = sanitizeInput(nome);
       
-      console.log('🔧 Iniciando cadastro:', { 
+      console.log('🔧 Iniciando cadastro com dados sanitizados:', { 
         email: sanitizedEmail, 
         nome: sanitizedNome, 
         role 
@@ -48,7 +48,7 @@ export const useSignUp = () => {
 
       const redirectUrl = `${window.location.origin}/dashboard`;
       
-      console.log('🚀 Enviando dados para Supabase:', {
+      console.log('🚀 Enviando dados para Supabase com nova função:', {
         email: sanitizedEmail,
         metadata: {
           nome: sanitizedNome,
@@ -74,6 +74,7 @@ export const useSignUp = () => {
       if (error) {
         console.error('❌ Erro no signup:', error);
         
+        // Tratamento de erros mais específico
         if (error.message.includes('User already registered')) {
           toast({
             title: "Usuário já cadastrado",
@@ -87,9 +88,17 @@ export const useSignUp = () => {
             variant: "destructive"
           });
         } else if (error.message.includes('Database error') || error.message.includes('500')) {
+          console.error('🔴 Erro de banco detectado - nova função pode ter falhado');
           toast({
             title: "Erro no servidor",
-            description: "Problema na criação do perfil do usuário. Tente novamente em alguns minutos.",
+            description: "Problema na criação do perfil. A nova função de cadastro pode estar falhando. Verifique os logs do Supabase.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('invalid input syntax')) {
+          console.error('🔴 Erro de sintaxe - possível problema com enum');
+          toast({
+            title: "Erro de configuração",
+            description: "Problema com o tipo de usuário. Entre em contato com o suporte.",
             variant: "destructive"
           });
         } else {
@@ -116,9 +125,13 @@ export const useSignUp = () => {
         });
       }
 
-      // Verificar se o perfil foi criado corretamente
+      // Verificação robusta do perfil criado
       if (data.user) {
-        console.log('🔍 Verificando criação do perfil...');
+        console.log('🔍 Verificando criação do perfil com nova função...');
+        
+        // Aguardar um pouco para dar tempo da função processar
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         try {
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -128,8 +141,24 @@ export const useSignUp = () => {
           
           if (profileError) {
             console.error('⚠️ Erro ao verificar perfil:', profileError);
+            
+            // Tentar criar perfil manualmente como fallback
+            console.log('🔄 Tentando criar perfil manualmente...');
+            const { error: manualCreateError } = await supabase
+              .from('profiles')
+              .insert({
+                user_id: data.user.id,
+                nome: sanitizedNome,
+                role: role
+              });
+            
+            if (manualCreateError) {
+              console.error('❌ Falha no fallback manual:', manualCreateError);
+            } else {
+              console.log('✅ Perfil criado manualmente como fallback');
+            }
           } else {
-            console.log('✅ Perfil criado com sucesso:', profile);
+            console.log('✅ Perfil criado com sucesso pela nova função:', profile);
           }
         } catch (verifyError) {
           console.error('⚠️ Erro na verificação do perfil:', verifyError);

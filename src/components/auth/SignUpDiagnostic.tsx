@@ -17,78 +17,99 @@ export const SignUpDiagnostic = () => {
     };
 
     try {
-      // 1. Verificar se o enum user_role existe
-      console.log('🔍 Verificando enum user_role...');
-      const { data: enumData, error: enumError } = await supabase
-        .rpc('validate_email_format', { email_input: 'test@test.com' });
+      // 1. Testar a nova função test_user_role_enum
+      console.log('🔍 Testando enum user_role...');
+      const { data: enumTestData, error: enumTestError } = await supabase
+        .rpc('test_user_role_enum');
       
-      diagnosticResults.checks.enumExists = !enumError;
+      diagnosticResults.checks.enumTest = {
+        success: !enumTestError,
+        result: enumTestData,
+        error: enumTestError?.message
+      };
 
-      // 2. Verificar se a tabela profiles existe e tem a estrutura correta
+      // 2. Verificar se a tabela profiles existe
       console.log('🔍 Verificando tabela profiles...');
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .limit(1);
       
-      diagnosticResults.checks.profilesTableExists = !profilesError;
+      diagnosticResults.checks.profilesTable = {
+        success: !profilesError,
+        error: profilesError?.message
+      };
 
-      // 3. Verificar se a função get_user_role funciona
+      // 3. Verificar função get_user_role
       console.log('🔍 Verificando função get_user_role...');
       try {
         const { data: roleData, error: roleError } = await supabase
           .rpc('get_user_role', { user_uuid: '00000000-0000-0000-0000-000000000000' });
         
-        diagnosticResults.checks.getUserRoleWorks = !roleError;
-      } catch (err) {
-        diagnosticResults.checks.getUserRoleWorks = false;
+        diagnosticResults.checks.getUserRole = {
+          success: !roleError,
+          result: roleData,
+          error: roleError?.message
+        };
+      } catch (err: any) {
+        diagnosticResults.checks.getUserRole = {
+          success: false,
+          error: err.message
+        };
       }
 
-      // 4. Verificar conexão com Supabase
+      // 4. Verificar conexão geral
       console.log('🔍 Verificando conexão...');
       const { data: sessionData } = await supabase.auth.getSession();
-      diagnosticResults.checks.connectionWorks = true;
-      diagnosticResults.currentSession = !!sessionData.session;
+      diagnosticResults.checks.connection = {
+        success: true,
+        hasSession: !!sessionData.session
+      };
 
-      // 5. Verificar se há usuários órfãos
-      console.log('🔍 Verificando usuários órfãos...');
-      try {
-        const { count } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
-        
-        diagnosticResults.checks.profileCount = count || 0;
-      } catch (err) {
-        diagnosticResults.checks.profileCount = 'error';
-      }
+      // 5. Contar perfis existentes
+      console.log('🔍 Contando perfis...');
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      diagnosticResults.checks.profileCount = {
+        success: !countError,
+        count: count || 0,
+        error: countError?.message
+      };
 
       setResults(diagnosticResults);
-      console.log('📊 Resultados do diagnóstico:', diagnosticResults);
+      console.log('📊 Resultados completos:', diagnosticResults);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Erro no diagnóstico:', error);
-      diagnosticResults.error = error;
+      diagnosticResults.error = error.message;
       setResults(diagnosticResults);
     } finally {
       setDiagnosing(false);
     }
   };
 
-  const getStatusBadge = (status: boolean | string) => {
-    if (typeof status === 'boolean') {
-      return status ? (
+  const getStatusBadge = (check: any) => {
+    if (typeof check === 'boolean') {
+      return check ? (
         <Badge className="bg-green-100 text-green-800">✅ OK</Badge>
       ) : (
         <Badge className="bg-red-100 text-red-800">❌ Erro</Badge>
       );
     }
-    return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
+    
+    if (check?.success) {
+      return <Badge className="bg-green-100 text-green-800">✅ OK</Badge>;
+    } else {
+      return <Badge className="bg-red-100 text-red-800">❌ Erro</Badge>;
+    }
   };
 
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>🔧 Diagnóstico de Cadastro</CardTitle>
+        <CardTitle>🔧 Diagnóstico Avançado do Sistema</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button 
@@ -96,7 +117,7 @@ export const SignUpDiagnostic = () => {
           disabled={diagnosing}
           className="w-full"
         >
-          {diagnosing ? 'Executando diagnóstico...' : 'Executar Diagnóstico'}
+          {diagnosing ? 'Executando diagnóstico...' : '🚀 Executar Diagnóstico Completo'}
         </Button>
 
         {results && (
@@ -109,35 +130,61 @@ export const SignUpDiagnostic = () => {
 
             <div className="grid grid-cols-1 gap-3">
               <div className="flex justify-between items-center p-3 border rounded">
-                <span>Enum user_role</span>
-                {getStatusBadge(results.checks.enumExists)}
+                <div>
+                  <span className="font-medium">Teste Enum user_role</span>
+                  {results.checks.enumTest?.result && (
+                    <p className="text-xs text-gray-600">{results.checks.enumTest.result}</p>
+                  )}
+                </div>
+                {getStatusBadge(results.checks.enumTest)}
               </div>
               
               <div className="flex justify-between items-center p-3 border rounded">
                 <span>Tabela profiles</span>
-                {getStatusBadge(results.checks.profilesTableExists)}
+                {getStatusBadge(results.checks.profilesTable)}
               </div>
               
               <div className="flex justify-between items-center p-3 border rounded">
-                <span>Função get_user_role</span>
-                {getStatusBadge(results.checks.getUserRoleWorks)}
+                <div>
+                  <span className="font-medium">Função get_user_role</span>
+                  {results.checks.getUserRole?.result && (
+                    <p className="text-xs text-gray-600">Retorno: {results.checks.getUserRole.result}</p>
+                  )}
+                </div>
+                {getStatusBadge(results.checks.getUserRole)}
               </div>
               
               <div className="flex justify-between items-center p-3 border rounded">
                 <span>Conexão Supabase</span>
-                {getStatusBadge(results.checks.connectionWorks)}
+                {getStatusBadge(results.checks.connection)}
               </div>
               
               <div className="flex justify-between items-center p-3 border rounded">
-                <span>Total de perfis</span>
+                <div>
+                  <span className="font-medium">Total de perfis</span>
+                  <p className="text-xs text-gray-600">
+                    {results.checks.profileCount?.count || 0} perfis encontrados
+                  </p>
+                </div>
                 {getStatusBadge(results.checks.profileCount)}
               </div>
             </div>
 
+            {/* Mostrar erros específicos */}
+            {Object.entries(results.checks).map(([key, check]: [string, any]) => (
+              check?.error && (
+                <div key={key} className="p-3 bg-red-50 border border-red-200 rounded">
+                  <p className="text-sm text-red-800">
+                    <strong>Erro em {key}:</strong> {check.error}
+                  </p>
+                </div>
+              )
+            ))}
+
             {results.error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded">
                 <p className="text-sm text-red-800">
-                  <strong>Erro:</strong> {results.error.message}
+                  <strong>Erro geral:</strong> {results.error}
                 </p>
               </div>
             )}

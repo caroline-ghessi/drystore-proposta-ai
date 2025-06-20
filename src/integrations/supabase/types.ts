@@ -289,6 +289,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      test_user_role_enum: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       validate_email_format: {
         Args: { email_input: string }
         Returns: boolean
