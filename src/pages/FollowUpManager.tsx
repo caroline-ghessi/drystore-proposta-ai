@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -128,65 +127,69 @@ const FollowUpManager = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto animate-fade-in">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Follow-ups WhatsApp com IA</h1>
-            <p className="text-gray-600 mt-1">
+      <div className="max-w-6xl mx-auto animate-fade-in px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Follow-ups WhatsApp com IA</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">
               Automatize o acompanhamento e sugestão de produtos via WhatsApp
             </p>
           </div>
-          <Button onClick={generateNewFollowUp} disabled={isGenerating}>
+          <Button 
+            onClick={generateNewFollowUp} 
+            disabled={isGenerating}
+            className="w-full sm:w-auto"
+          >
             <Plus className="w-4 h-4 mr-2" />
             {isGenerating ? 'Gerando...' : 'Gerar Follow-up'}
           </Button>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <MessageCircle className="w-8 h-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{pendingMessages.length}</p>
-                  <p className="text-gray-600">Pendentes</p>
+                <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-lg sm:text-2xl font-bold">{pendingMessages.length}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Pendentes</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Zap className="w-8 h-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{sentMessages.length}</p>
-                  <p className="text-gray-600">Enviados</p>
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-lg sm:text-2xl font-bold">{sentMessages.length}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Enviados</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Settings className="w-8 h-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{triggers.filter(t => t.isActive).length}</p>
-                  <p className="text-gray-600">Gatilhos Ativos</p>
+                <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-lg sm:text-2xl font-bold">{triggers.filter(t => t.isActive).length}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Gatilhos Ativos</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <History className="w-8 h-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{followUpMessages.length}</p>
-                  <p className="text-gray-600">Total Histórico</p>
+                <History className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-lg sm:text-2xl font-bold">{followUpMessages.length}</p>
+                  <p className="text-gray-600 text-xs sm:text-sm">Total Histórico</p>
                 </div>
               </div>
             </CardContent>
@@ -194,20 +197,32 @@ const FollowUpManager = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="pending" className="relative">
-              Pendentes
-              {pendingMessages.length > 0 && (
-                <Badge className="ml-2 bg-red-500">{pendingMessages.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="sent">Enviados</TabsTrigger>
-            <TabsTrigger value="triggers">Configurações</TabsTrigger>
-            <TabsTrigger value="history">Histórico</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="pending" className="space-y-4 sm:space-y-6">
+          <div className="overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-4 min-w-[400px]">
+              <TabsTrigger value="pending" className="relative text-xs sm:text-sm">
+                <span className="hidden sm:inline">Pendentes</span>
+                <span className="sm:hidden">Pend.</span>
+                {pendingMessages.length > 0 && (
+                  <Badge className="ml-1 sm:ml-2 bg-red-500 text-xs">{pendingMessages.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Enviados</span>
+                <span className="sm:hidden">Env.</span>
+              </TabsTrigger>
+              <TabsTrigger value="triggers" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Configurações</span>
+                <span className="sm:hidden">Config</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Histórico</span>
+                <span className="sm:hidden">Hist.</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="pending" className="space-y-6">
+          <TabsContent value="pending" className="space-y-4 sm:space-y-6">
             {pendingMessages.length > 0 ? (
               pendingMessages.map((message) => (
                 <FollowUpMessageCard
@@ -218,15 +233,19 @@ const FollowUpManager = () => {
               ))
             ) : (
               <Card>
-                <CardContent className="p-12 text-center">
-                  <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <CardContent className="p-8 sm:p-12 text-center">
+                  <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                     Nenhum follow-up pendente
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                     Clique em "Gerar Follow-up" para criar uma nova mensagem personalizada
                   </p>
-                  <Button onClick={generateNewFollowUp} disabled={isGenerating}>
+                  <Button 
+                    onClick={generateNewFollowUp} 
+                    disabled={isGenerating}
+                    className="w-full sm:w-auto"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     {isGenerating ? 'Gerando...' : 'Gerar Primeiro Follow-up'}
                   </Button>
@@ -235,22 +254,22 @@ const FollowUpManager = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="sent" className="space-y-6">
+          <TabsContent value="sent" className="space-y-4 sm:space-y-6">
             {sentMessages.map((message) => (
               <Card key={message.id} className="border-0 shadow-lg">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <h3 className="font-medium">{message.clientName}</h3>
                       <p className="text-sm text-gray-600">{message.clientPhone}</p>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800 text-xs sm:text-sm self-start sm:self-auto">
                       Enviado em {new Date(message.sentAt!).toLocaleString('pt-BR')}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
                     <p className="text-sm whitespace-pre-wrap">{message.finalMessage}</p>
                   </div>
                 </CardContent>
