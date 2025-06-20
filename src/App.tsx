@@ -123,14 +123,19 @@ function App() {
 function RequireAuth({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) {
   const { user } = useAuth();
 
+  console.log('RequireAuth - user:', user, 'requiredRole:', requiredRole);
+
   if (!user) {
+    console.log('RequireAuth - redirecting to login (no user)');
     return <Navigate to="/login" />;
   }
 
   if (requiredRole && user.role !== requiredRole) {
+    console.log('RequireAuth - redirecting to dashboard (insufficient role)');
     return <Navigate to="/dashboard" />;
   }
 
+  console.log('RequireAuth - rendering children');
   return <>{children}</>;
 }
 

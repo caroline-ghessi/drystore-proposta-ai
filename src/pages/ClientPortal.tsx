@@ -5,6 +5,8 @@ import { ClientProfile, CashbackTransaction } from '@/types/client';
 import { DeliveryProgress } from '@/types/delivery';
 
 const ClientPortal = () => {
+  console.log('ClientPortal component mounted');
+  
   // Mock data - em produção viria da API
   const mockClient: ClientProfile = {
     id: '1',
@@ -74,6 +76,8 @@ const ClientPortal = () => {
       deliveries: []
     }
   ];
+
+  console.log('ClientPortal rendering with data:', { mockClient, mockProposalsAccepted });
 
   return (
     <Layout showBackButton={false}>
