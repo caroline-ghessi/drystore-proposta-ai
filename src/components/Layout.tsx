@@ -71,11 +71,10 @@ const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
               {/* Logo */}
               <Link to="/" className="flex-shrink-0 flex items-center">
                 <img 
-                  className="h-6 w-auto sm:h-8" 
-                  src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600" 
-                  alt="Logo da Empresa" 
+                  className="h-8 w-auto sm:h-10" 
+                  src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
+                  alt="DryStore" 
                 />
-                <span className="ml-2 text-lg sm:text-xl font-bold text-gray-900">DryStore</span>
               </Link>
               
               {/* Desktop Navigation Links */}
