@@ -59,7 +59,7 @@ export const ConversionMetrics = () => {
                   <span className="text-sm text-green-600">{metric.growth}</span>
                 </div>
               )}
-              {metric.target && (
+              {metric.target && typeof metric.value === 'number' && (
                 <div className="w-20">
                   <Progress value={(metric.value / metric.target) * 100} />
                 </div>
