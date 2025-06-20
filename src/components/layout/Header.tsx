@@ -67,14 +67,14 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             <NavigationLinks />
           </div>
           
-          <div className="flex items-center ml-4 md:ml-6">
+          <div className="flex items-center space-x-4">
             {/* Mobile menu button */}
             {user?.role !== 'cliente' && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={toggleMenu}
-                className="lg:hidden mr-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+                className="lg:hidden text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
@@ -84,7 +84,7 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="mr-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
             >
               {theme === 'light' ? (
                 <Moon className="h-[1.2rem] w-[1.2rem]" />
