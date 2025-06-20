@@ -162,95 +162,113 @@ const getConfirmationTemplate = (email: string, confirmUrl: string) => `
 `;
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("=== DIAGNÓSTICO DE EMAIL INICIADO ===");
-  console.log("Modo diagnóstico:", DIAGNOSTIC_MODE);
+  const timestamp = new Date().toISOString();
+  console.log(`\n🚀 === INÍCIO DO DIAGNÓSTICO DE EMAIL [${timestamp}] ===`);
+  console.log("🔧 Modo diagnóstico:", DIAGNOSTIC_MODE);
+  console.log("📍 Método da requisição:", req.method);
+  console.log("🌐 URL da requisição:", req.url);
 
   if (req.method === "OPTIONS") {
+    console.log("✅ Requisição OPTIONS - retornando CORS headers");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Diagnóstico 1: Verificar secrets
-    console.log("1. Verificando secrets...");
+    // Diagnóstico 1: Verificar variáveis de ambiente
+    console.log("\n📋 1. VERIFICANDO VARIÁVEIS DE AMBIENTE...");
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const webhookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
     
-    console.log("RESEND_API_KEY presente:", !!resendKey);
-    console.log("SEND_EMAIL_HOOK_SECRET presente:", !!webhookSecret);
+    console.log("🔑 RESEND_API_KEY presente:", !!resendKey);
+    console.log("🔑 RESEND_API_KEY comprimento:", resendKey ? resendKey.length : 0);
+    console.log("🔐 SEND_EMAIL_HOOK_SECRET presente:", !!webhookSecret);
+    console.log("🔐 SEND_EMAIL_HOOK_SECRET comprimento:", webhookSecret ? webhookSecret.length : 0);
     
     if (webhookSecret) {
-      console.log("Webhook secret length:", webhookSecret.length);
-      console.log("Webhook secret first 10 chars:", webhookSecret.substring(0, 10));
+      console.log("🔐 Webhook secret preview:", webhookSecret.substring(0, 10) + "...");
     }
 
-    // Diagnóstico 2: Verificar payload
-    console.log("2. Verificando payload...");
+    // Diagnóstico 2: Analisar payload
+    console.log("\n📋 2. ANALISANDO PAYLOAD...");
     const payload = await req.text();
-    console.log("Payload length:", payload.length);
-    console.log("Payload preview:", payload.substring(0, 200));
+    console.log("📦 Payload comprimento:", payload.length);
+    console.log("📦 Payload preview (primeiros 300 chars):", payload.substring(0, 300));
 
     let authData: AuthEmailData;
 
     if (DIAGNOSTIC_MODE) {
-      console.log("3. MODO DIAGNÓSTICO - Pulando validação de webhook");
+      console.log("\n🔧 3. MODO DIAGNÓSTICO ATIVO - Pulando validação de webhook");
       try {
         authData = JSON.parse(payload) as AuthEmailData;
-        console.log("Payload JSON parseado com sucesso");
+        console.log("✅ Payload JSON parseado com sucesso");
+        console.log("📧 Email do usuário:", authData.user?.email);
+        console.log("🔤 Tipo de ação:", authData.email_data?.email_action_type);
       } catch (parseError) {
-        console.error("Erro ao parsear JSON:", parseError);
+        console.error("❌ Erro ao parsear JSON:", parseError);
         return new Response(
           JSON.stringify({ 
             error: "Erro ao parsear payload JSON",
-            details: parseError.toString()
+            details: parseError.toString(),
+            timestamp: timestamp
           }), 
-          { status: 400, headers: corsHeaders }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     } else {
-      console.log("3. Validando webhook...");
+      console.log("\n🔒 3. VALIDANDO WEBHOOK...");
       
       if (!hookSecret) {
-        console.error("SEND_EMAIL_HOOK_SECRET não configurado");
+        console.error("❌ SEND_EMAIL_HOOK_SECRET não configurado");
         return new Response(
-          JSON.stringify({ error: "Configuração de segurança ausente" }), 
-          { status: 500, headers: corsHeaders }
+          JSON.stringify({ 
+            error: "Configuração de segurança ausente",
+            timestamp: timestamp
+          }), 
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
       const headers = Object.fromEntries(req.headers);
-      console.log("Headers recebidos:", Object.keys(headers));
+      console.log("📋 Headers da requisição:", Object.keys(headers));
+      console.log("🔍 Headers relevantes:", {
+        'webhook-id': headers['webhook-id'],
+        'webhook-timestamp': headers['webhook-timestamp'],
+        'webhook-signature': headers['webhook-signature'] ? 'presente' : 'ausente'
+      });
       
       const wh = new Webhook(hookSecret);
       
       try {
         authData = wh.verify(payload, headers) as AuthEmailData;
-        console.log("Webhook validado com sucesso");
+        console.log("✅ Webhook validado com sucesso");
       } catch (verifyError) {
-        console.error("Falha na validação do webhook:", verifyError);
-        console.error("Erro detalhado:", verifyError.toString());
+        console.error("❌ Falha na validação do webhook:", verifyError);
+        console.error("🔍 Detalhes do erro:", verifyError.toString());
         return new Response(
           JSON.stringify({ 
             error: "Assinatura de webhook inválida",
-            details: verifyError.toString()
+            details: verifyError.toString(),
+            timestamp: timestamp
           }), 
-          { status: 401, headers: corsHeaders }
+          { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
 
     // Diagnóstico 4: Verificar dados extraídos
-    console.log("4. Verificando dados extraídos...");
+    console.log("\n📋 4. VERIFICANDO DADOS EXTRAÍDOS...");
     const { user, email_data } = authData;
     const { email } = user;
     const { token_hash, redirect_to, email_action_type, site_url } = email_data;
 
-    console.log("Email do usuário:", email);
-    console.log("Tipo de ação:", email_action_type);
-    console.log("Site URL:", site_url);
-    console.log("Redirect to:", redirect_to);
+    console.log("👤 Email do usuário:", email);
+    console.log("🎯 Tipo de ação:", email_action_type);
+    console.log("🌐 Site URL:", site_url);
+    console.log("↩️ Redirect to:", redirect_to);
+    console.log("🔗 Token hash preview:", token_hash?.substring(0, 10) + "...");
 
     // Diagnóstico 5: Construir URLs
-    console.log("5. Construindo URLs...");
+    console.log("\n📋 5. CONSTRUINDO URLs E TEMPLATES...");
     let actionUrl: string;
     let emailSubject: string;
     let emailHtml: string;
@@ -263,6 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       emailSubject = "DryStore - Redefinir sua senha";
       emailHtml = getPasswordResetTemplate(email, actionUrl);
+      console.log("🔑 Construída URL de recuperação de senha");
       
     } else if (email_action_type === "signup") {
       actionUrl = `${site_url}/auth/confirm?token_hash=${token_hash}&type=${email_action_type}`;
@@ -272,46 +291,77 @@ const handler = async (req: Request): Promise<Response> => {
       
       emailSubject = "DryStore - Confirme sua conta";
       emailHtml = getConfirmationTemplate(email, actionUrl);
+      console.log("✅ Construída URL de confirmação de cadastro");
       
     } else {
-      console.log("Tipo de email não suportado:", email_action_type);
+      console.log("❌ Tipo de email não suportado:", email_action_type);
       return new Response(
-        JSON.stringify({ error: "Tipo de email não suportado" }), 
-        { status: 400, headers: corsHeaders }
+        JSON.stringify({ 
+          error: "Tipo de email não suportado",
+          supportedTypes: ["recovery", "signup"],
+          receivedType: email_action_type,
+          timestamp: timestamp
+        }), 
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("URL de ação construída:", actionUrl);
+    console.log("🔗 URL de ação final:", actionUrl);
 
-    // Diagnóstico 6: Testar Resend
-    console.log("6. Testando envio via Resend...");
+    // Diagnóstico 6: Verificar configuração do Resend
+    console.log("\n📋 6. VERIFICANDO CONFIGURAÇÃO DO RESEND...");
     
     if (!resendKey) {
-      console.error("RESEND_API_KEY não configurado");
+      console.error("❌ RESEND_API_KEY não configurado");
       return new Response(
-        JSON.stringify({ error: "RESEND_API_KEY não configurado" }), 
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({ 
+          error: "RESEND_API_KEY não configurado",
+          timestamp: timestamp
+        }), 
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
+    console.log("✅ RESEND_API_KEY configurada");
+
+    // Diagnóstico 7: Enviar email via Resend
+    console.log("\n📋 7. ENVIANDO EMAIL VIA RESEND...");
+    
     try {
-      const emailResponse = await resend.emails.send({
+      const emailPayload = {
         from: "DryStore <noreply@resend.dev>",
         to: [email],
         subject: emailSubject,
         html: emailHtml,
+      };
+
+      console.log("📤 Payload do email:", {
+        from: emailPayload.from,
+        to: emailPayload.to,
+        subject: emailPayload.subject,
+        htmlLength: emailPayload.html.length
       });
 
-      console.log("Email enviado com sucesso:", emailResponse);
+      const emailResponse = await resend.emails.send(emailPayload);
+
+      console.log("✅ Email enviado com sucesso!");
+      console.log("📧 Resposta do Resend:", emailResponse);
+
+      const successResponse = { 
+        success: true, 
+        messageId: emailResponse.data?.id,
+        type: email_action_type,
+        diagnosticMode: DIAGNOSTIC_MODE,
+        validated: !DIAGNOSTIC_MODE,
+        timestamp: timestamp,
+        email: email,
+        actionUrl: actionUrl
+      };
+
+      console.log("🎉 RESPOSTA DE SUCESSO:", successResponse);
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          messageId: emailResponse.data?.id,
-          type: email_action_type,
-          diagnosticMode: DIAGNOSTIC_MODE,
-          validated: !DIAGNOSTIC_MODE
-        }),
+        JSON.stringify(successResponse),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -319,11 +369,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
 
     } catch (resendError) {
-      console.error("Erro no Resend:", resendError);
+      console.error("❌ ERRO NO RESEND:", resendError);
+      console.error("🔍 Detalhes completos do erro:", JSON.stringify(resendError, null, 2));
+      
       return new Response(
         JSON.stringify({ 
           error: "Erro ao enviar email via Resend",
-          details: resendError.toString()
+          details: resendError.toString(),
+          timestamp: timestamp
         }),
         {
           status: 500,
@@ -333,19 +386,26 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
   } catch (error: any) {
-    console.error("Erro geral na função:", error);
+    console.error("\n💥 ERRO GERAL NA FUNÇÃO:");
+    console.error("🔍 Tipo do erro:", typeof error);
+    console.error("🔍 Mensagem:", error.message);
+    console.error("🔍 Stack:", error.stack);
+    console.error("🔍 Objeto completo:", JSON.stringify(error, null, 2));
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || "Erro interno do servidor",
         details: error.toString(),
-        stack: error.stack
+        stack: error.stack,
+        timestamp: timestamp
       }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
+  } finally {
+    console.log(`\n🏁 === FIM DO DIAGNÓSTICO [${new Date().toISOString()}] ===\n`);
   }
 };
 

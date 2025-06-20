@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
@@ -7,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import EmailDiagnostic from './pages/EmailDiagnostic';
 import Settings from './pages/Settings';
 import CreateProposal from './pages/CreateProposal';
 import ProposalView from './pages/ProposalView';
@@ -48,6 +50,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/email-diagnostic" element={<EmailDiagnostic />} />
               <Route path="/client-login" element={<ClientLogin />} />
               <Route path="/client-portal" element={<ClientPortal />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
