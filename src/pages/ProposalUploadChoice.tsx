@@ -1,9 +1,7 @@
 
 import Layout from '@/components/Layout';
-import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import UploadTypeSelector from '@/components/proposal/UploadTypeSelector';
 import ERPUploader from '@/components/proposal/ERPUploader';
 
@@ -27,18 +25,10 @@ const ProposalUploadChoice = () => {
   };
 
   return (
-    <Layout>
+    <Layout backPath="/create-proposal">
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="flex items-center mb-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/create-proposal')}
-            className="mr-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
+        <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Tipo de Upload</h1>
             <p className="text-gray-600 mt-1">

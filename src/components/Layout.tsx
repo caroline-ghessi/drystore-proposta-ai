@@ -12,14 +12,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, ArrowLeft } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 interface LayoutProps {
   children: React.ReactNode;
+  showBackButton?: boolean;
+  backPath?: string;
 }
 
-const Layout = ({ children }: LayoutProps) => {
+const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +37,14 @@ const Layout = ({ children }: LayoutProps) => {
     navigate('/login');
   };
 
+  const handleBack = () => {
+    if (backPath) {
+      navigate(backPath);
+    } else {
+      navigate(-1);
+    }
+  };
+
   const isActive = (path: string) => {
     return location.pathname === path ? 'text-blue-600' : 'text-gray-700 hover:text-gray-900';
   };
@@ -45,33 +55,58 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-8">
-              <Link to="/" className="flex-shrink-0">
-                <img className="h-8 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600" alt="Logo" />
+              {/* Back Button */}
+              {showBackButton && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleBack}
+                  className="mr-2"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Voltar
+                </Button>
+              )}
+              
+              {/* Logo */}
+              <Link to="/" className="flex-shrink-0 flex items-center">
+                <img 
+                  className="h-8 w-auto" 
+                  src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600" 
+                  alt="Logo da Empresa" 
+                />
+                <span className="ml-2 text-xl font-bold text-gray-900">DryStore</span>
               </Link>
-              <Link
-                to="/proposals"
-                className={`${isActive('/proposals')} px-3 py-2 rounded-md text-sm font-medium`}
-              >
-                Propostas
-              </Link>
-              <Link
-                to="/clients"
-                className={`${isActive('/clients')} px-3 py-2 rounded-md text-sm font-medium`}
-              >
-                Clientes
-              </Link>
-              <Link
-                to="/products"
-                className={`${isActive('/products')} px-3 py-2 rounded-md text-sm font-medium`}
-              >
-                Produtos
-              </Link>
-              <Link
-                to="/follow-up-manager"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Follow-ups WhatsApp
-              </Link>
+              
+              {/* Navigation Links - Only for non-client users */}
+              {user?.role !== 'cliente' && (
+                <>
+                  <Link
+                    to="/proposals"
+                    className={`${isActive('/proposals')} px-3 py-2 rounded-md text-sm font-medium`}
+                  >
+                    Propostas
+                  </Link>
+                  <Link
+                    to="/clients"
+                    className={`${isActive('/clients')} px-3 py-2 rounded-md text-sm font-medium`}
+                  >
+                    Clientes
+                  </Link>
+                  <Link
+                    to="/products"
+                    className={`${isActive('/products')} px-3 py-2 rounded-md text-sm font-medium`}
+                  >
+                    Produtos
+                  </Link>
+                  <Link
+                    to="/follow-up-manager"
+                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Follow-ups WhatsApp
+                  </Link>
+                </>
+              )}
             </div>
             <div className="flex items-center ml-4 md:ml-6">
               <Button

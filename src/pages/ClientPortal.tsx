@@ -76,7 +76,7 @@ const ClientPortal = () => {
   ];
 
   return (
-    <Layout>
+    <Layout showBackButton={false}>
       <div className="animate-fade-in">
         <ClientDashboard
           client={mockClient}

@@ -1,3 +1,4 @@
+
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -185,7 +186,7 @@ const ProposalManagement = () => {
   const stats = getStats();
 
   return (
-    <Layout>
+    <Layout backPath="/">
       <div className="animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
