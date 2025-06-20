@@ -19,6 +19,7 @@ import AICenter from './pages/AICenter';
 import Gamification from './pages/Gamification';
 import Reports from './pages/Reports';
 import ApprovalWorkflow from './pages/ApprovalWorkflow';
+import UserRegistration from './pages/UserRegistration';
 import ClientLogin from './pages/ClientLogin';
 import ClientPortal from './pages/ClientPortal';
 import { Toaster } from '@/components/ui/toaster';
@@ -114,6 +115,16 @@ function App() {
                   <ProtectedRoute>
                     <PermissionGuard requiredRole={['admin']}>
                       <ApprovalWorkflow />
+                    </PermissionGuard>
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/user-registration" 
+                element={
+                  <ProtectedRoute>
+                    <PermissionGuard requiredRole={['admin']}>
+                      <UserRegistration />
                     </PermissionGuard>
                   </ProtectedRoute>
                 } 

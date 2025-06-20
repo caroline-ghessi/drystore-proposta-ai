@@ -87,6 +87,12 @@ export const NavigationLinks = () => {
             🔄 Aprovações
           </Link>
           <Link
+            to="/user-registration"
+            className={`${isActive('/user-registration')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+          >
+            👥 Cadastrar Usuários
+          </Link>
+          <Link
             to="/admin/zapi-config"
             className={`${isActive('/admin/zapi-config')} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
           >
