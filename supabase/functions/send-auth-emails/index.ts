@@ -1,8 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -164,8 +166,35 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const authData: AuthEmailData = await req.json();
-    console.log("Dados recebidos:", authData);
+    // Validação de segurança do webhook
+    if (!hookSecret) {
+      console.error("SEND_EMAIL_HOOK_SECRET não configurado");
+      return new Response(
+        JSON.stringify({ error: "Configuração de segurança ausente" }), 
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Obter payload e headers para validação
+    const payload = await req.text();
+    const headers = Object.fromEntries(req.headers);
+    
+    console.log("Headers recebidos:", Object.keys(headers));
+    
+    // Validar assinatura do webhook usando standardwebhooks
+    const wh = new Webhook(hookSecret);
+    let authData: AuthEmailData;
+    
+    try {
+      authData = wh.verify(payload, headers) as AuthEmailData;
+      console.log("Webhook validado com sucesso");
+    } catch (verifyError) {
+      console.error("Falha na validação do webhook:", verifyError);
+      return new Response(
+        JSON.stringify({ error: "Assinatura de webhook inválida" }), 
+        { status: 401, headers: corsHeaders }
+      );
+    }
 
     const { user, email_data } = authData;
     const { email } = user;
@@ -221,7 +250,8 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: true, 
         messageId: emailResponse.data?.id,
-        type: email_action_type
+        type: email_action_type,
+        validated: true
       }),
       {
         status: 200,
