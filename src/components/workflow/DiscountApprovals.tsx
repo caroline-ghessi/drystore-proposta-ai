@@ -110,134 +110,136 @@ export const DiscountApprovals = () => {
   const pendingCount = discountRequests.filter(req => req.status === 'pending').length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Percent className="w-5 h-5 mr-2 text-blue-600" />
-          Aprovações de Desconto
-          {pendingCount > 0 && (
-            <Badge className="ml-2 bg-red-100 text-red-800">
-              {pendingCount} pendentes
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {discountRequests.length > 0 ? (
-          <div className="space-y-4">
-            {discountRequests.map((request) => (
-              <div key={request.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium">{request.proposalNumber}</h4>
-                    <p className="text-sm text-gray-600">{request.clientName}</p>
-                  </div>
-                  <Badge className={getStatusColor(request.status)}>
-                    {getStatusIcon(request.status)}
-                    <span className="ml-1 capitalize">{request.status === 'pending' ? 'Pendente' : request.status === 'approved' ? 'Aprovado' : 'Rejeitado'}</span>
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <p className="text-sm text-gray-600">Valor Original</p>
-                    <p className="font-semibold">R$ {request.originalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Desconto Solicitado</p>
-                    <p className="font-semibold text-red-600">{request.requestedDiscount}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Valor Final</p>
-                    <p className="font-semibold text-green-600">R$ {request.finalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Economia</p>
-                    <p className="font-semibold">R$ {(request.originalValue - request.finalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  </div>
-                </div>
-
-                <div className="text-sm text-gray-600 mb-3">
-                  <p><strong>Solicitado por:</strong> {request.requestedBy}</p>
-                  <p><strong>Data:</strong> {new Date(request.requestedAt).toLocaleString('pt-BR')}</p>
-                  <p><strong>Justificativa:</strong> {request.reason}</p>
-                </div>
-
-                {request.status === 'pending' && (
-                  <div className="space-y-3">
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver Proposta
-                      </Button>
+    <div className="w-full">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Percent className="w-5 h-5 mr-2 text-blue-600" />
+            Aprovações de Desconto
+            {pendingCount > 0 && (
+              <Badge className="ml-2 bg-red-100 text-red-800">
+                {pendingCount} pendentes
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {discountRequests.length > 0 ? (
+            <div className="space-y-4">
+              {discountRequests.map((request) => (
+                <div key={request.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium">{request.proposalNumber}</h4>
+                      <p className="text-sm text-gray-600">{request.clientName}</p>
                     </div>
+                    <Badge className={getStatusColor(request.status)}>
+                      {getStatusIcon(request.status)}
+                      <span className="ml-1 capitalize">{request.status === 'pending' ? 'Pendente' : request.status === 'approved' ? 'Aprovado' : 'Rejeitado'}</span>
+                    </Badge>
+                  </div>
 
-                    {selectedRequest === request.id ? (
-                      <div className="space-y-3 border-t pt-3">
-                        <Textarea
-                          value={comments}
-                          onChange={(e) => setComments(e.target.value)}
-                          placeholder="Comentários da aprovação/rejeição..."
-                          rows={3}
-                        />
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(request.id)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Aprovar
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleReject(request.id)}
-                            variant="destructive"
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Rejeitar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setSelectedRequest(null);
-                              setComments('');
-                            }}
-                          >
-                            Cancelar
-                          </Button>
-                        </div>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Valor Original</p>
+                      <p className="font-semibold">R$ {request.originalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Desconto Solicitado</p>
+                      <p className="font-semibold text-red-600">{request.requestedDiscount}%</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Valor Final</p>
+                      <p className="font-semibold text-green-600">R$ {request.finalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Economia</p>
+                      <p className="font-semibold">R$ {(request.originalValue - request.finalValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-600 mb-3">
+                    <p><strong>Solicitado por:</strong> {request.requestedBy}</p>
+                    <p><strong>Data:</strong> {new Date(request.requestedAt).toLocaleString('pt-BR')}</p>
+                    <p><strong>Justificativa:</strong> {request.reason}</p>
+                  </div>
+
+                  {request.status === 'pending' && (
+                    <div className="space-y-3">
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="w-4 h-4 mr-1" />
+                          Ver Proposta
+                        </Button>
                       </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => setSelectedRequest(request.id)}
-                        className="w-full"
-                      >
-                        Analisar Solicitação
-                      </Button>
-                    )}
-                  </div>
-                )}
 
-                {request.approverComments && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded">
-                    <p className="text-sm text-gray-700">
-                      <strong>Comentários:</strong> {request.approverComments}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <Percent className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Não há solicitações de desconto pendentes</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                      {selectedRequest === request.id ? (
+                        <div className="space-y-3 border-t pt-3">
+                          <Textarea
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            placeholder="Comentários da aprovação/rejeição..."
+                            rows={3}
+                          />
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleApprove(request.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Aprovar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleReject(request.id)}
+                              variant="destructive"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Rejeitar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedRequest(null);
+                                setComments('');
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedRequest(request.id)}
+                          className="w-full"
+                        >
+                          Analisar Solicitação
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {request.approverComments && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-700">
+                        <strong>Comentários:</strong> {request.approverComments}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Percent className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Não há solicitações de desconto pendentes</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

@@ -10,14 +10,14 @@ import { WorkflowNotifications } from '@/components/workflow/WorkflowNotificatio
 const ApprovalWorkflow = () => {
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-6 w-full max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">🔄 Sistema de Aprovações</h1>
           <p className="text-gray-600">Workflow automatizado de aprovações</p>
         </div>
 
-        <Tabs defaultValue="discounts" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="discounts" className="space-y-4 w-full">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="discounts">Descontos</TabsTrigger>
             <TabsTrigger value="credit">Crédito</TabsTrigger>
             <TabsTrigger value="exceptions">Exceções</TabsTrigger>
@@ -25,23 +25,23 @@ const ApprovalWorkflow = () => {
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="discounts">
+          <TabsContent value="discounts" className="w-full">
             <DiscountApprovals />
           </TabsContent>
 
-          <TabsContent value="credit">
+          <TabsContent value="credit" className="w-full">
             <CreditApprovals />
           </TabsContent>
 
-          <TabsContent value="exceptions">
+          <TabsContent value="exceptions" className="w-full">
             <ExceptionWorkflow />
           </TabsContent>
 
-          <TabsContent value="audit">
+          <TabsContent value="audit" className="w-full">
             <AuditTrail />
           </TabsContent>
 
-          <TabsContent value="notifications">
+          <TabsContent value="notifications" className="w-full">
             <WorkflowNotifications />
           </TabsContent>
         </Tabs>
