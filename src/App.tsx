@@ -23,6 +23,9 @@ import UserRegistration from './pages/UserRegistration';
 import ClientLogin from './pages/ClientLogin';
 import ClientPortal from './pages/ClientPortal';
 import Clients from './pages/Clients';
+import Proposals from './pages/Proposals';
+import ProductManagement from './pages/ProductManagement';
+import FollowUpManager from './pages/FollowUpManager';
 import ZAPIConfiguration from './pages/admin/ZAPIConfiguration';
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -52,6 +55,9 @@ function App() {
               <Route path="/upload-document" element={<ProtectedRoute><UploadDocument /></ProtectedRoute>} />
               <Route path="/edit-proposal" element={<ProtectedRoute><EditProposal /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
+              <Route path="/follow-up-manager" element={<ProtectedRoute><FollowUpManager /></ProtectedRoute>} />
               <Route 
                 path="/smart-scheduler" 
                 element={
