@@ -34,6 +34,7 @@ export interface RecommendedProduct {
   urgencyMessage?: string;
   discount: number;
   category: string;
+  validated?: boolean; // Added this property to track validation status
 }
 
 export interface AIRecommendationRequest {
