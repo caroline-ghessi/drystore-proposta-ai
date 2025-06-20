@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Plus } from 'lucide-react';
+import { Percent, Plus } from 'lucide-react';
 interface RecommendedProduct {
   id: number;
   name: string;
@@ -21,7 +21,7 @@ const RecommendedProducts = ({
         <div className="flex items-center justify-center mb-6">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-orange-500 rounded-full flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Percent className="w-5 h-5 text-white" />
             </div>
             <div className="text-center">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-orange-600">
