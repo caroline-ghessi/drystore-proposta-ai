@@ -1,8 +1,6 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X, MessageCircle, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
-
 interface InvestmentCardProps {
   proposal: {
     originalPrice: number;
@@ -21,10 +19,14 @@ interface InvestmentCardProps {
   onQuestion: () => void;
   onReject?: () => void;
 }
-
-export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onReject }: InvestmentCardProps) => {
-  return (
-    <Card className="sticky top-8">
+export const InvestmentCard = ({
+  proposal,
+  status,
+  onAccept,
+  onQuestion,
+  onReject
+}: InvestmentCardProps) => {
+  return <Card className="sticky top-8">
       <CardHeader className="text-center">
         <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
           <TrendingUp className="w-6 h-6 text-white" />
@@ -40,7 +42,7 @@ export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onRejec
           <p className="text-gray-500 line-through text-lg">
             R$ {proposal.originalPrice.toLocaleString('pt-BR')}
           </p>
-          <p className="text-3xl font-bold text-gray-900 mb-1">
+          <p className="text-3xl font-bold mb-1 text-slate-50">
             R$ {proposal.finalPrice.toLocaleString('pt-BR')}
           </p>
           <p className="text-orange-500 font-medium">
@@ -63,49 +65,29 @@ export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onRejec
         </div>
 
         {/* Ações */}
-        {status === 'pending' ? (
-          <div className="space-y-3">
-            <Button 
-              onClick={onAccept}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-              size="lg"
-            >
+        {status === 'pending' ? <div className="space-y-3">
+            <Button onClick={onAccept} className="w-full bg-green-600 hover:bg-green-700 text-white" size="lg">
               <Check className="w-5 h-5 mr-2" />
               Aceitar Proposta
             </Button>
             
-            <Button 
-              onClick={onQuestion}
-              variant="outline"
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={onQuestion} variant="outline" className="w-full" size="lg">
               <MessageCircle className="w-5 h-5 mr-2" />
               Falar com Consultor
             </Button>
 
-            <Button 
-              onClick={onReject}
-              variant="outline"
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
-              size="lg"
-            >
+            <Button onClick={onReject} variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50" size="lg">
               <X className="w-5 h-5 mr-2" />
               Recusar Proposta
             </Button>
-          </div>
-        ) : status === 'accepted' ? (
-          <div className="text-green-600 py-4">
+          </div> : status === 'accepted' ? <div className="text-green-600 py-4">
             <Check className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">Proposta Aceita!</p>
             <p className="text-sm text-gray-600">Aguarde o contato do vendedor</p>
-          </div>
-        ) : (
-          <div className="text-red-600 py-4">
+          </div> : <div className="text-red-600 py-4">
             <X className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">Proposta Rejeitada</p>
-          </div>
-        )}
+          </div>}
 
         {/* Informações de Garantia */}
         <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
@@ -123,6 +105,5 @@ export const InvestmentCard = ({ proposal, status, onAccept, onQuestion, onRejec
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
