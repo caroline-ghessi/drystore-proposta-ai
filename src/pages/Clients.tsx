@@ -70,10 +70,10 @@ const Clients = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ativo': return 'bg-green-100 text-green-800';
-      case 'inativo': return 'bg-gray-100 text-gray-800';
-      case 'prospecto': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ativo': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'inativo': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+      case 'prospecto': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -89,8 +89,8 @@ const Clients = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-            <p className="text-gray-600">Gerencie seus clientes e prospects</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Clientes</h1>
+            <p className="text-gray-600 dark:text-gray-400">Gerencie seus clientes e prospects</p>
           </div>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
@@ -100,37 +100,37 @@ const Clients = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Users className="w-8 h-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-2xl font-bold">{clients.filter(c => c.status === 'ativo').length}</p>
-                  <p className="text-gray-600 text-sm">Clientes Ativos</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{clients.filter(c => c.status === 'ativo').length}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Clientes Ativos</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-white dark:bg-gray-800">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Users className="w-8 h-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-2xl font-bold">{clients.filter(c => c.status === 'prospecto').length}</p>
-                  <p className="text-gray-600 text-sm">Prospects</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{clients.filter(c => c.status === 'prospecto').length}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Prospects</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-white dark:bg-gray-800">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Users className="w-8 h-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-2xl font-bold">{clients.length}</p>
-                  <p className="text-gray-600 text-sm">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{clients.length}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Total</p>
                 </div>
               </div>
             </CardContent>
@@ -138,7 +138,7 @@ const Clients = () => {
         </div>
 
         {/* Search */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800">
           <CardContent className="p-6">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -146,7 +146,7 @@ const Clients = () => {
                 placeholder="Buscar clientes..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
               />
             </div>
           </CardContent>
@@ -155,22 +155,22 @@ const Clients = () => {
         {/* Clients List */}
         <div className="grid gap-4">
           {filteredClients.map((client) => (
-            <Card key={client.id} className="hover:shadow-lg transition-shadow">
+            <Card key={client.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold">{client.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{client.name}</h3>
                       <Badge className={getStatusColor(client.status)}>
                         {client.status}
                       </Badge>
                     </div>
                     
                     {client.company && (
-                      <p className="text-gray-600 mb-2">{client.company}</p>
+                      <p className="text-gray-600 dark:text-gray-400 mb-2">{client.company}</p>
                     )}
                     
-                    <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600 mb-3">
+                    <div className="flex flex-col sm:flex-row gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                       <div className="flex items-center">
                         <Mail className="w-4 h-4 mr-1" />
                         {client.email}
@@ -196,10 +196,10 @@ const Clients = () => {
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
                       Ver Perfil
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
                       Editar
                     </Button>
                   </div>
@@ -210,13 +210,13 @@ const Clients = () => {
         </div>
 
         {filteredClients.length === 0 && (
-          <Card>
+          <Card className="bg-white dark:bg-gray-800">
             <CardContent className="p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Users className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Nenhum cliente encontrado
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 {searchTerm ? 'Tente ajustar sua busca' : 'Comece adicionando seu primeiro cliente'}
               </p>
             </CardContent>
