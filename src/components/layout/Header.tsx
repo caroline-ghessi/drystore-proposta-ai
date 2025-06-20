@@ -64,7 +64,7 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             </Link>
           </div>
           
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
             {/* Desktop Navigation Links */}
             <NavigationLinks />
             

@@ -1,13 +1,13 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Menu, FileText, Users, Package, BarChart3, MessageSquare, Trophy, Calendar, ArrowUpRight, Bot, ClipboardList, UserPlus, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -15,99 +15,154 @@ export const NavigationLinks = () => {
   const { user } = useAuth();
   const location = useLocation();
 
-  const isActive = (path: string) => {
-    return location.pathname === path ? 'text-drystore-orange' : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100';
-  };
-
   if (user?.role === 'cliente') {
     return null;
   }
 
   const mainLinks = [
-    { path: '/proposals', label: 'Propostas' },
-    { path: '/clients', label: 'Clientes' },
-    { path: '/products', label: 'Produtos' },
-    { path: '/analytics', label: 'Analytics' },
-    { path: '/crm', label: 'CRM' },
-    { path: '/gamification', label: '🏆 Ranking' },
+    { path: '/proposals', label: 'Propostas', icon: FileText },
+    { path: '/clients', label: 'Clientes', icon: Users },
+    { path: '/products', label: 'Produtos', icon: Package },
+  ];
+
+  const analyticsLinks = [
+    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/crm', label: 'CRM', icon: MessageSquare },
+  ];
+
+  const toolsLinks = [
+    { path: '/gamification', label: '🏆 Ranking', icon: Trophy },
   ];
 
   const conditionalLinks = [];
-  
   if (user?.role === 'vendedor_interno' || user?.role === 'representante' || user?.role === 'admin') {
-    conditionalLinks.push({ path: '/smart-scheduler', label: 'Agenda IA' });
+    conditionalLinks.push({ path: '/smart-scheduler', label: 'Agenda IA', icon: Calendar });
   }
-  
-  conditionalLinks.push({ path: '/follow-up-manager', label: 'Follow-ups' });
+  conditionalLinks.push({ path: '/follow-up-manager', label: 'Follow-ups', icon: ArrowUpRight });
 
-  const adminOnlyLinks = [];
+  const adminLinks = [];
   if (user?.role === 'admin') {
-    adminOnlyLinks.push(
-      { path: '/ai-center', label: '🤖 IA Center' },
-      { path: '/reports', label: '📊 Relatórios' },
-      { path: '/approval-workflow', label: '🔄 Aprovações' },
-      { path: '/user-registration', label: '👥 Cadastrar Usuários' },
-      { path: '/admin/zapi-config', label: 'Config Z-API' }
+    adminLinks.push(
+      { path: '/ai-center', label: '🤖 IA Center', icon: Bot },
+      { path: '/reports', label: '📊 Relatórios', icon: ClipboardList },
+      { path: '/approval-workflow', label: '🔄 Aprovações', icon: ClipboardList },
+      { path: '/user-registration', label: '👥 Cadastrar Usuários', icon: UserPlus },
+      { path: '/admin/zapi-config', label: 'Config Z-API', icon: Settings }
     );
   }
 
-  // For admin users, we'll show main links + some conditional links normally,
-  // and put admin-only links in a dropdown
-  const isAdmin = user?.role === 'admin';
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
-    <div className="hidden lg:flex ml-8 items-center">
-      {/* Main navigation links with consistent spacing */}
-      <div className="flex items-center space-x-6">
-        {mainLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
+    <div className="hidden lg:flex">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-4 py-2 text-sm font-medium"
           >
-            {link.label}
-          </Link>
-        ))}
-        
-        {conditionalLinks.map((link) => (
-          <Link
-            key={link.path}
-            to={link.path}
-            className={`${isActive(link.path)} px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Admin dropdown menu with proper spacing */}
-      {isAdmin && adminOnlyLinks.length > 0 && (
-        <div className="ml-6 flex-shrink-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 px-3 py-2 text-sm font-medium admin-dropdown-button"
-              >
-                Admin
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
-              {adminOnlyLinks.map((link) => (
-                <DropdownMenuItem key={link.path} asChild>
-                  <Link
-                    to={link.path}
-                    className={`w-full ${location.pathname === link.path ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-                  >
-                    {link.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+            <Menu className="mr-2 h-4 w-4" />
+            Menu
+            <ChevronDown className="ml-1 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
+          {/* Main Navigation */}
+          {mainLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <DropdownMenuItem key={link.path} asChild>
+                <Link
+                  to={link.path}
+                  className={`w-full flex items-center ${isActive(link.path) ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400' : ''}`}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
+          
+          <DropdownMenuSeparator />
+          
+          {/* Analytics Section */}
+          {analyticsLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <DropdownMenuItem key={link.path} asChild>
+                <Link
+                  to={link.path}
+                  className={`w-full flex items-center ${isActive(link.path) ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400' : ''}`}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
+          
+          <DropdownMenuSeparator />
+          
+          {/* Tools Section */}
+          {toolsLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <DropdownMenuItem key={link.path} asChild>
+                <Link
+                  to={link.path}
+                  className={`w-full flex items-center ${isActive(link.path) ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400' : ''}`}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
+          
+          {/* Conditional Links */}
+          {conditionalLinks.length > 0 && (
+            <>
+              {conditionalLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <DropdownMenuItem key={link.path} asChild>
+                    <Link
+                      to={link.path}
+                      className={`w-full flex items-center ${isActive(link.path) ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400' : ''}`}
+                    >
+                      <Icon className="mr-2 h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </>
+          )}
+          
+          {/* Admin Section */}
+          {adminLinks.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              {adminLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <DropdownMenuItem key={link.path} asChild>
+                    <Link
+                      to={link.path}
+                      className={`w-full flex items-center ${isActive(link.path) ? 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400' : ''}`}
+                    >
+                      <Icon className="mr-2 h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
