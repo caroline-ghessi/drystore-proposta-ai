@@ -61,7 +61,7 @@ serve(async (req) => {
       throw new Error('No file provided');
     }
 
-    console.log('File received:', file.name, 'Size:', file.size);
+    console.log('File received:', file.name, 'Size:', file.size, 'Type:', file.type);
 
     // Validar tipo de arquivo
     if (file.type !== 'application/pdf') {
@@ -109,11 +109,21 @@ serve(async (req) => {
     const { access_token } = await tokenResponse.json();
     console.log('Adobe access token obtained successfully');
 
-    // 2. Upload do arquivo para Adobe usando multipart/form-data
-    console.log('Starting Adobe file upload with multipart/form-data...');
+    // 2. Upload do arquivo para Adobe - CORREÇÃO CRÍTICA
+    console.log('Starting Adobe file upload with corrected file handling...');
+    
+    // Transformar o arquivo corretamente para FormData
+    const buffer = await file.arrayBuffer();
+    console.log('File converted to ArrayBuffer, size:', buffer.byteLength);
+    
+    const blob = new Blob([buffer], { type: 'application/pdf' });
+    console.log('Blob created, type:', blob.type, 'size:', blob.size);
+    
+    const fixedFile = new File([blob], file.name, { type: 'application/pdf' });
+    console.log('File recreated:', fixedFile.name, 'type:', fixedFile.type, 'size:', fixedFile.size);
     
     const uploadFormData = new FormData();
-    uploadFormData.append('file', file, file.name);
+    uploadFormData.append('file', fixedFile);
 
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
@@ -121,7 +131,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${access_token}`,
         'X-API-Key': adobeClientId,
         'X-Adobe-Organization-Id': adobeOrgId,
-        // Não definir Content-Type manualmente para permitir boundary automático
+        // NÃO definir Content-Type - deixar o FormData definir automaticamente com boundary
       },
       body: uploadFormData
     });
@@ -134,10 +144,14 @@ serve(async (req) => {
       console.error('Adobe upload error details:', errorText);
       
       // Log adicional para debug
-      console.error('Request headers sent:', {
-        'Authorization': 'Bearer [REDACTED]',
-        'X-API-Key': adobeClientId.substring(0, 8) + '...',
-        'X-Adobe-Organization-Id': adobeOrgId
+      console.error('Request sent with file details:', {
+        originalName: file.name,
+        originalSize: file.size,
+        originalType: file.type,
+        recreatedName: fixedFile.name,
+        recreatedSize: fixedFile.size,
+        recreatedType: fixedFile.type,
+        bufferSize: buffer.byteLength
       });
       
       throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
@@ -147,21 +161,16 @@ serve(async (req) => {
     const assetID = uploadData.assetID;
     console.log('File uploaded to Adobe successfully, Asset ID:', assetID);
 
-    // 3. Iniciar extração com payload corrigido
+    // 3. Iniciar extração com payload corrigido segundo documentação Adobe
     const extractPayload = {
       assetID: assetID,
       elementsToExtract: ['text', 'tables'],
-      renditionsToExtract: [
-        {
-          type: 'xlsx',
-          tableStructureFormat: 'xlsx'
-        }
-      ],
+      tableOutputFormat: 'xlsx',  // Campo correto conforme documentação
       getCharBounds: false,
       includeStyling: true
     };
 
-    console.log('Sending extract request with payload:', JSON.stringify(extractPayload, null, 2));
+    console.log('Sending extract request with corrected payload:', JSON.stringify(extractPayload, null, 2));
 
     const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
       method: 'POST',
@@ -187,8 +196,8 @@ serve(async (req) => {
     // 4. Polling para aguardar conclusão com backoff exponencial melhorado
     let extractResult;
     let attempts = 0;
-    const maxAttempts = 40; // Aumentar tentativas
-    let waitTime = 3000; // Começar com 3 segundos
+    const maxAttempts = 40;
+    let waitTime = 3000;
 
     while (attempts < maxAttempts) {
       console.log(`Polling attempt ${attempts + 1}/${maxAttempts}, waiting ${waitTime}ms...`);
@@ -225,8 +234,7 @@ serve(async (req) => {
       }
 
       attempts++;
-      // Backoff exponencial: aumentar tempo gradualmente
-      waitTime = Math.min(waitTime * 1.3, 12000); // Max 12 segundos
+      waitTime = Math.min(waitTime * 1.3, 12000);
     }
 
     if (!extractResult) {
