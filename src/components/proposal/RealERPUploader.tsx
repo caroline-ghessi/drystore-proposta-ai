@@ -88,7 +88,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStage('Obtendo credenciais Adobe...');
+    setProcessingStage('Conectando com Adobe API...');
 
     try {
       // Obter token de autenticação do Supabase
@@ -97,17 +97,38 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // Obter credenciais Adobe
-      setProcessingStage('Conectando com Adobe API...');
-      const adobeCredentials = await getAdobeCredentials();
-      const adobeClient = new AdobeUploadClient(adobeCredentials);
+      // Upload do arquivo diretamente via Edge Function (sem precisar das credenciais no frontend)
+      setProcessingStage('Enviando PDF para Adobe via backend...');
+      
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload do arquivo para Adobe (frontend)
-      setProcessingStage('Enviando PDF para Adobe...');
-      const assetID = await adobeClient.uploadFile(file);
+      const uploadResponse = await fetch(
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: formData
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json().catch(() => ({ error: 'Erro de conexão' }));
+        throw new Error(errorData.error || 'Falha no upload');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Falha no upload');
+      }
+
+      const assetID = uploadResult.assetID;
       console.log('Asset ID recebido:', assetID);
 
-      // Chamar Edge Function simplificada para processar o assetID
+      // Chamar Edge Function para processar o assetID
       setProcessingStage('Processando dados extraídos...');
       
       const response = await fetch(

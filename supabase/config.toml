@@ -1,2 +1,11 @@
 
 project_id = "mlzgeceiinjwpffgsxuy"
+
+[functions.get-adobe-credentials]
+verify_jwt = true
+
+[functions.process-adobe-extraction]
+verify_jwt = true
+
+[functions.upload-to-adobe]
+verify_jwt = true
