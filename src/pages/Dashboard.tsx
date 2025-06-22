@@ -1,3 +1,4 @@
+
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,53 +8,51 @@ import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp } 
 import { useNavigate } from 'react-router-dom';
 import { MotivationDisplay } from '@/components/motivation/MotivationDisplay';
 import { AdminMotivationPanel } from '@/components/motivation/AdminMotivationPanel';
+import { useState, useEffect } from 'react';
+
+interface RealProposal {
+  id: string;
+  client: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+  }>;
+  subtotal: number;
+  total: number;
+  timestamp: number;
+  source: string;
+}
 
 const Dashboard = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [realProposals, setRealProposals] = useState<RealProposal[]>([]);
+
+  // Carregar propostas reais do sessionStorage
+  useEffect(() => {
+    const loadRealProposals = () => {
+      const savedData = sessionStorage.getItem('proposalExtractedData');
+      if (savedData) {
+        try {
+          const extractedData = JSON.parse(savedData);
+          if (extractedData.timestamp && extractedData.items) {
+            setRealProposals([extractedData]);
+            console.log('📋 Dashboard: Proposta real carregada:', extractedData);
+          }
+        } catch (error) {
+          console.error('❌ Dashboard: Erro ao carregar proposta real:', error);
+        }
+      }
+    };
+
+    loadRealProposals();
+  }, []);
 
   // Dados mockados para demonstração
-  const stats = [
-    {
-      title: 'Propostas Abertas',
-      value: '12',
-      change: '+2 esta semana',
-      icon: Clock,
-      color: 'text-yellow-600'
-    },
-    {
-      title: 'Propostas Aceitas',
-      value: '8',
-      change: '+3 este mês',
-      icon: CheckCircle,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Taxa de Conversão',
-      value: '67%',
-      change: '+5% vs mês anterior',
-      icon: TrendingUp,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Valor Total',
-      value: 'R$ 485k',
-      change: '+12% este mês',
-      icon: FileText,
-      color: 'text-purple-600'
-    }
-  ];
-  const recentProposals = [
-    {
-      id: '1',
-      client: 'João Silva',
-      project: 'Residência Moderna',
-      value: 'R$ 45.000',
-      status: 'aberta',
-      date: '2024-01-15'
-    },
+  const mockProposals = [
     {
       id: '2',
       client: 'Maria Santos',
@@ -79,6 +78,56 @@ const Dashboard = () => {
       date: '2024-01-12'
     }
   ];
+
+  // Combinar propostas reais com mockadas
+  const allProposals = [
+    // Adicionar propostas reais primeiro (mais recentes)
+    ...realProposals.map(realProposal => ({
+      id: realProposal.id,
+      client: realProposal.client || 'PROPOSTA COMERCIAL',
+      project: 'Proposta Extraída do PDF',
+      value: `R$ ${realProposal.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      status: 'aberta',
+      date: new Date(realProposal.timestamp).toLocaleDateString('pt-BR')
+    })),
+    // Depois adicionar as mockadas
+    ...mockProposals
+  ];
+
+  // Dados estatísticos atualizados
+  const stats = [
+    {
+      title: 'Propostas Abertas',
+      value: String(realProposals.length + 1), // +1 para incluir as mockadas abertas
+      change: realProposals.length > 0 ? '+1 nova proposta' : '+0 esta semana',
+      icon: Clock,
+      color: 'text-yellow-600'
+    },
+    {
+      title: 'Propostas Aceitas',
+      value: '8',
+      change: '+3 este mês',
+      icon: CheckCircle,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Taxa de Conversão',
+      value: '67%',
+      change: '+5% vs mês anterior',
+      icon: TrendingUp,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Valor Total',
+      value: realProposals.length > 0 ? 
+        `R$ ${Math.round((realProposals[0]?.total || 0) + 485000).toLocaleString('pt-BR')}` : 
+        'R$ 485k',
+      change: realProposals.length > 0 ? '+17k nova proposta' : '+12% este mês',
+      icon: FileText,
+      color: 'text-purple-600'
+    }
+  ];
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       aberta: {
@@ -109,7 +158,9 @@ const Dashboard = () => {
         {config.label}
       </Badge>;
   };
-  return <Layout showBackButton={false}>
+
+  return (
+    <Layout showBackButton={false}>
       <div className="animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
@@ -148,8 +199,9 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return <Card key={index} className="animate-slide-in border-0 shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
+            const Icon = stat.icon;
+            return (
+              <Card key={index} className="animate-slide-in border-0 shadow-md hover:shadow-lg transition-shadow bg-white dark:bg-gray-800">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -168,8 +220,9 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>;
-        })}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Recent Proposals */}
@@ -180,6 +233,11 @@ const Dashboard = () => {
                 <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Propostas Recentes</CardTitle>
                 <CardDescription className="text-gray-600 dark:text-gray-400">
                   Suas últimas atividades de vendas
+                  {realProposals.length > 0 && (
+                    <span className="ml-2 text-green-600 font-medium">
+                      • {realProposals.length} nova(s) proposta(s) criada(s)
+                    </span>
+                  )}
                 </CardDescription>
               </div>
               <Button variant="outline" onClick={() => navigate('/proposals')} className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -189,13 +247,25 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentProposals.map(proposal => <div key={proposal.id} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer" onClick={() => navigate(`/proposal/${proposal.id}`)}>
+              {allProposals.map(proposal => (
+                <div 
+                  key={proposal.id} 
+                  className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer" 
+                  onClick={() => navigate(`/proposal/${proposal.id}`)}
+                >
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center bg-orange-600">
                       <FileText className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{proposal.client}</p>
+                      <div className="flex items-center space-x-2">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{proposal.client}</p>
+                        {realProposals.find(rp => rp.id === proposal.id) && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                            Nova
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">{proposal.project}</p>
                     </div>
                   </div>
@@ -206,11 +276,14 @@ const Dashboard = () => {
                     </div>
                     {getStatusBadge(proposal.status)}
                   </div>
-                </div>)}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-    </Layout>;
+    </Layout>
+  );
 };
+
 export default Dashboard;
