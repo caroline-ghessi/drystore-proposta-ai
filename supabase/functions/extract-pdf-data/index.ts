@@ -82,9 +82,11 @@ serve(async (req) => {
       throw new Error('Adobe API credentials not configured');
     }
 
-    console.log('Adobe credentials loaded');
+    console.log('Adobe credentials loaded - Client ID:', adobeClientId.substring(0, 8) + '...');
+    console.log('Adobe Org ID:', adobeOrgId);
 
     // 1. Obter Access Token da Adobe
+    console.log('Getting Adobe access token...');
     const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
       method: 'POST',
       headers: {
@@ -101,44 +103,62 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Adobe token error:', errorText);
-      throw new Error(`Failed to authenticate with Adobe API: ${tokenResponse.status}`);
+      throw new Error(`Failed to authenticate with Adobe API: ${tokenResponse.status} - ${errorText}`);
     }
 
     const { access_token } = await tokenResponse.json();
-    console.log('Adobe access token obtained');
+    console.log('Adobe access token obtained successfully');
 
-    // 2. Upload do arquivo para Adobe (corrigido)
-    const fileBuffer = await file.arrayBuffer();
+    // 2. Upload do arquivo para Adobe usando multipart/form-data
+    console.log('Starting Adobe file upload with multipart/form-data...');
+    
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', file, file.name);
+
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'X-API-Key': adobeClientId,
-        'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${file.name}"`
+        'X-Adobe-Organization-Id': adobeOrgId,
+        // Não definir Content-Type manualmente para permitir boundary automático
       },
-      body: fileBuffer
+      body: uploadFormData
     });
+
+    console.log('Upload response status:', uploadResponse.status);
+    console.log('Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('Adobe upload error:', errorText);
+      console.error('Adobe upload error details:', errorText);
+      
+      // Log adicional para debug
+      console.error('Request headers sent:', {
+        'Authorization': 'Bearer [REDACTED]',
+        'X-API-Key': adobeClientId.substring(0, 8) + '...',
+        'X-Adobe-Organization-Id': adobeOrgId
+      });
+      
       throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
     }
 
     const uploadData = await uploadResponse.json();
     const assetID = uploadData.assetID;
-    console.log('File uploaded to Adobe, Asset ID:', assetID);
+    console.log('File uploaded to Adobe successfully, Asset ID:', assetID);
 
-    // 3. Iniciar extração (corrigido com payload apropriado)
+    // 3. Iniciar extração com payload corrigido
     const extractPayload = {
       assetID: assetID,
       elementsToExtract: ['text', 'tables'],
-      renditionsToExtract: ['tables', 'figures'],
-      tableOutputFormat: 'xlsx',
+      renditionsToExtract: [
+        {
+          type: 'xlsx',
+          tableStructureFormat: 'xlsx'
+        }
+      ],
       getCharBounds: false,
-      includeStyling: true,
-      includeHeaderFooter: true
+      includeStyling: true
     };
 
     console.log('Sending extract request with payload:', JSON.stringify(extractPayload, null, 2));
@@ -148,6 +168,7 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'X-API-Key': adobeClientId,
+        'X-Adobe-Organization-Id': adobeOrgId,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(extractPayload)
@@ -161,34 +182,42 @@ serve(async (req) => {
 
     const extractData = await extractResponse.json();
     const location = extractData.location;
-    console.log('Extraction started, polling location:', location);
+    console.log('Extraction started successfully, polling location:', location);
 
-    // 4. Polling para aguardar conclusão (melhorado com backoff exponencial)
+    // 4. Polling para aguardar conclusão com backoff exponencial melhorado
     let extractResult;
     let attempts = 0;
-    const maxAttempts = 30;
-    let waitTime = 5000; // Começar com 5 segundos
+    const maxAttempts = 40; // Aumentar tentativas
+    let waitTime = 3000; // Começar com 3 segundos
 
     while (attempts < maxAttempts) {
+      console.log(`Polling attempt ${attempts + 1}/${maxAttempts}, waiting ${waitTime}ms...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       
       const pollResponse = await fetch(location, {
         headers: {
           'Authorization': `Bearer ${access_token}`,
           'X-API-Key': adobeClientId,
+          'X-Adobe-Organization-Id': adobeOrgId,
         }
       });
 
       if (!pollResponse.ok) {
-        console.error('Poll response error:', await pollResponse.text());
-        throw new Error(`Polling failed: ${pollResponse.status}`);
+        const errorText = await pollResponse.text();
+        console.error('Poll response error:', errorText);
+        throw new Error(`Polling failed: ${pollResponse.status} - ${errorText}`);
       }
 
       const pollData = await pollResponse.json();
-      console.log('Poll attempt:', attempts + 1, 'Status:', pollData.status);
+      console.log('Poll result:', {
+        attempt: attempts + 1,
+        status: pollData.status,
+        progress: pollData.progress || 'N/A'
+      });
 
       if (pollData.status === 'done') {
         extractResult = pollData;
+        console.log('Adobe extraction completed successfully!');
         break;
       } else if (pollData.status === 'failed') {
         console.error('Adobe extraction failed:', pollData);
@@ -196,19 +225,17 @@ serve(async (req) => {
       }
 
       attempts++;
-      // Backoff exponencial: aumentar tempo de espera gradualmente
-      waitTime = Math.min(waitTime * 1.2, 15000); // Max 15 segundos
+      // Backoff exponencial: aumentar tempo gradualmente
+      waitTime = Math.min(waitTime * 1.3, 12000); // Max 12 segundos
     }
 
     if (!extractResult) {
-      throw new Error('PDF extraction timed out after 30 attempts');
+      throw new Error(`PDF extraction timed out after ${maxAttempts} attempts`);
     }
-
-    console.log('Adobe extraction completed successfully');
 
     // 5. Baixar resultado
     const resultUrl = extractResult.asset.downloadUri;
-    console.log('Downloading result from:', resultUrl);
+    console.log('Downloading extraction result from:', resultUrl);
     
     const resultResponse = await fetch(resultUrl);
     if (!resultResponse.ok) {
@@ -216,10 +243,15 @@ serve(async (req) => {
     }
     
     const resultData = await resultResponse.json();
-    console.log('Result data downloaded, processing...');
+    console.log('Result data downloaded successfully, processing...');
 
-    // 6. Processar dados extraídos (melhorado)
+    // 6. Processar dados extraídos
     const structuredData = parseAdobeData(resultData);
+    console.log('Data processing completed:', {
+      itemsFound: structuredData.items.length,
+      totalValue: structuredData.total,
+      clientFound: !!structuredData.client
+    });
 
     // 7. Salvar na tabela propostas_brutas
     const { data: savedData, error: saveError } = await supabase
@@ -242,7 +274,7 @@ serve(async (req) => {
       throw new Error('Failed to save extracted data');
     }
 
-    console.log('Data saved successfully to database');
+    console.log('Data saved successfully to database with ID:', savedData.id);
 
     return new Response(
       JSON.stringify({
@@ -318,7 +350,7 @@ function parseAdobeData(adobeData: any): ExtractedData {
       }
     }
 
-    // Extrair tabelas (melhorado)
+    // Extrair tabelas
     const tables = adobeData.tables || [];
     
     tables.forEach((table: any, tableIndex: number) => {
@@ -381,7 +413,7 @@ function parseAdobeData(adobeData: any): ExtractedData {
     result.subtotal = result.items.reduce((sum, item) => sum + item.total, 0);
     result.total = result.subtotal;
 
-    // Extrair informações adicionais com padrões melhorados
+    // Extrair informações adicionais
     const paymentPatterns = [
       /(?:pagamento|payment|condições):\s*([^.\n\r]+)/i,
       /(?:prazo|forma de pagamento):\s*([^.\n\r]+)/i
