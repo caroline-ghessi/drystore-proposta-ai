@@ -1,5 +1,7 @@
 
 import Layout from '@/components/Layout';
+import { useAuth } from '@/contexts/AuthContext';
+import { PersonalAnalyticsDashboard } from '@/components/analytics/PersonalAnalyticsDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalesPerformanceChart } from '@/components/analytics/SalesPerformanceChart';
@@ -10,11 +12,26 @@ import { SellerRanking } from '@/components/analytics/SellerRanking';
 import { ROIAnalysis } from '@/components/analytics/ROIAnalysis';
 
 const AnalyticsDashboard = () => {
+  const { user } = useAuth();
+
+  // Se o usuário é vendedor ou representante, mostrar dashboard pessoal
+  if (user?.role === 'vendedor_interno' || user?.role === 'representante') {
+    return (
+      <Layout>
+        <PersonalAnalyticsDashboard />
+      </Layout>
+    );
+  }
+
+  // Para admins, mostrar dashboard completo da empresa
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Dashboard Analítico</h1>
+          <h1 className="text-3xl font-bold">Dashboard Analítico da Empresa</h1>
+          <div className="text-sm text-gray-600">
+            Visão geral de todos os vendedores
+          </div>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">
