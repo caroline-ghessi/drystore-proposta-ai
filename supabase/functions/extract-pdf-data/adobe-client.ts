@@ -1,4 +1,3 @@
-
 export interface AdobeCredentials {
   clientId: string;
   clientSecret: string;
@@ -39,7 +38,59 @@ export class AdobeClient {
   }
 
   async uploadFile(file: File, accessToken: string): Promise<string> {
-    console.log('Starting Adobe file upload with corrected file handling...');
+    console.log('Starting Adobe file upload via Netlify proxy...');
+    
+    try {
+      // Converter file para base64 para enviar via proxy
+      const buffer = await file.arrayBuffer();
+      const base64Data = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      
+      console.log('File converted to base64, size:', buffer.byteLength);
+
+      // URL do proxy Netlify (substitua pela sua URL real após deploy)
+      const proxyUrl = 'https://your-netlify-app.netlify.app/.netlify/functions/adobe-upload-proxy';
+      
+      const proxyResponse = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Adobe-Access-Token': accessToken,
+          'X-Adobe-Client-Id': this.credentials.clientId,
+          'X-Adobe-Org-Id': this.credentials.orgId,
+        },
+        body: JSON.stringify({
+          fileData: base64Data,
+          fileName: file.name
+        })
+      });
+
+      console.log('Proxy response status:', proxyResponse.status);
+
+      if (!proxyResponse.ok) {
+        const errorText = await proxyResponse.text();
+        console.error('Proxy error details:', errorText);
+        
+        // Fallback: tentar upload direto
+        console.log('Attempting fallback direct upload...');
+        return await this.uploadFileDirect(file, accessToken);
+      }
+
+      const proxyData = await proxyResponse.json();
+      const assetID = proxyData.assetID;
+      console.log('File uploaded via proxy successfully, Asset ID:', assetID);
+      return assetID;
+
+    } catch (error) {
+      console.error('Proxy upload failed:', error);
+      
+      // Fallback: tentar upload direto
+      console.log('Attempting fallback direct upload...');
+      return await this.uploadFileDirect(file, accessToken);
+    }
+  }
+
+  private async uploadFileDirect(file: File, accessToken: string): Promise<string> {
+    console.log('Starting fallback direct Adobe file upload...');
     
     // Transform file correctly for FormData
     const buffer = await file.arrayBuffer();
@@ -64,28 +115,17 @@ export class AdobeClient {
       body: uploadFormData
     });
 
-    console.log('Upload response status:', uploadResponse.status);
+    console.log('Direct upload response status:', uploadResponse.status);
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('Adobe upload error details:', errorText);
-      
-      console.error('Request sent with file details:', {
-        originalName: file.name,
-        originalSize: file.size,
-        originalType: file.type,
-        recreatedName: fixedFile.name,
-        recreatedSize: fixedFile.size,
-        recreatedType: fixedFile.type,
-        bufferSize: buffer.byteLength
-      });
-      
+      console.error('Direct upload error details:', errorText);
       throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
     }
 
     const uploadData = await uploadResponse.json();
     const assetID = uploadData.assetID;
-    console.log('File uploaded to Adobe successfully, Asset ID:', assetID);
+    console.log('File uploaded directly to Adobe successfully, Asset ID:', assetID);
     return assetID;
   }
 
