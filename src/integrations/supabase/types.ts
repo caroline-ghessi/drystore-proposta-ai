@@ -280,6 +280,51 @@ export type Database = {
           },
         ]
       }
+      propostas_brutas: {
+        Row: {
+          arquivo_nome: string
+          arquivo_tamanho: number
+          cliente_identificado: string | null
+          created_at: string
+          dados_adobe_json: Json | null
+          dados_estruturados: Json | null
+          erro_processamento: string | null
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+          valor_total_extraido: number | null
+        }
+        Insert: {
+          arquivo_nome: string
+          arquivo_tamanho: number
+          cliente_identificado?: string | null
+          created_at?: string
+          dados_adobe_json?: Json | null
+          dados_estruturados?: Json | null
+          erro_processamento?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor_total_extraido?: number | null
+        }
+        Update: {
+          arquivo_nome?: string
+          arquivo_tamanho?: number
+          cliente_identificado?: string | null
+          created_at?: string
+          dados_adobe_json?: Json | null
+          dados_estruturados?: Json | null
+          erro_processamento?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor_total_extraido?: number | null
+        }
+        Relationships: []
+      }
       sales_targets: {
         Row: {
           created_at: string
