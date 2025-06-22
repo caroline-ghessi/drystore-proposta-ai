@@ -28,26 +28,22 @@ serve(async (req) => {
 
     console.log('File info from headers:', fileName, 'Size:', fileSize, 'Type:', contentType);
 
-    // Read file as ArrayBuffer and reconstruct File object
+    // Read file as ArrayBuffer
     const arrayBuffer = await req.arrayBuffer();
     console.log('ArrayBuffer received, size:', arrayBuffer.byteLength);
-
-    // Create File object from ArrayBuffer
-    const file = new File(
-      [arrayBuffer],
-      fileName,
-      { type: contentType }
-    );
-
-    console.log('File reconstructed:', file.name, 'Size:', file.size, 'Type:', file.type);
 
     // Get Adobe credentials from environment
     const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID');
     const adobeClientSecret = Deno.env.get('ADOBE_CLIENT_SECRET');
     const adobeOrgId = Deno.env.get('ADOBE_ORG_ID');
 
+    console.log('Checking Adobe credentials...');
+    console.log('Client ID exists:', !!adobeClientId);
+    console.log('Client Secret exists:', !!adobeClientSecret);
+    console.log('Org ID exists:', !!adobeOrgId);
+
     if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
-      throw new Error('Adobe API credentials not configured');
+      throw new Error('Adobe API credentials not configured properly');
     }
 
     // Get Adobe access token
@@ -74,19 +70,25 @@ serve(async (req) => {
     const { access_token } = await tokenResponse.json();
     console.log('Adobe access token obtained successfully');
 
-    // Upload file to Adobe using FormData (created in backend)
-    console.log('Uploading file to Adobe...');
+    // Create Blob (not File!) for Deno compatibility
+    console.log('Creating Blob for Adobe upload...');
+    const blob = new Blob([arrayBuffer], { type: contentType });
+    console.log('Blob created, size:', blob.size, 'type:', blob.type);
+
+    // Create FormData with Blob and filename (3 parameters)
     const adobeFormData = new FormData();
-    adobeFormData.append('file', file);
+    adobeFormData.append('file', blob, fileName);
+    console.log('FormData created with Blob and filename');
 
-    console.log('FormData created, uploading to Adobe API...');
-
+    // Upload to Adobe - DO NOT set Content-Type manually!
+    console.log('Uploading to Adobe PDF Services API...');
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'X-API-Key': adobeClientId,
         'X-Adobe-Organization-Id': adobeOrgId,
+        // NO Content-Type here! FormData sets it automatically with boundary
       },
       body: adobeFormData
     });
@@ -112,7 +114,7 @@ serve(async (req) => {
         throw new Error('Adobe API did not return valid assetID');
       }
       
-      console.log('File uploaded successfully, Asset ID:', assetID);
+      console.log('✅ File uploaded successfully to Adobe! Asset ID:', assetID);
 
       return new Response(
         JSON.stringify({
@@ -133,7 +135,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Upload to Adobe Error:', error);
+    console.error('❌ Upload to Adobe Error:', error);
     
     return new Response(
       JSON.stringify({

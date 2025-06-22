@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -96,13 +95,13 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // Upload do arquivo diretamente via Edge Function (enviando como binary/raw)
-      setProcessingStage('Enviando PDF para Adobe via backend...');
+      // Upload direto via Edge Function (fluxo simplificado)
+      setProcessingStage('Enviando PDF para Adobe...');
       
-      console.log('Enviando arquivo como binary para Edge Function...');
+      console.log('📤 Enviando arquivo para Adobe via Edge Function');
       console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      // Enviar arquivo como binary/raw em vez de FormData
+      // Chamada direta simplificada para Edge Function
       const uploadResponse = await fetch(
         `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe`,
         {
@@ -117,11 +116,11 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         }
       );
 
-      console.log('Edge Function response status:', uploadResponse.status);
+      console.log('📨 Edge Function response status:', uploadResponse.status);
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        console.error('Edge Function upload error:', errorText);
+        console.error('❌ Edge Function upload error:', errorText);
         throw new Error(`Falha no upload via Edge Function: ${uploadResponse.status} - ${errorText}`);
       }
 
@@ -132,7 +131,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       }
 
       const assetID = uploadResult.assetID;
-      console.log('Asset ID recebido:', assetID);
+      console.log('✅ Asset ID recebido:', assetID);
 
       // Chamar Edge Function para processar o assetID
       setProcessingStage('Processando dados extraídos...');
@@ -174,7 +173,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       });
 
     } catch (error) {
-      console.error('Error processing PDF:', error);
+      console.error('❌ Error processing PDF:', error);
       setIsProcessing(false);
       
       toast({
