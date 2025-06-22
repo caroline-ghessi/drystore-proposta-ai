@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, Check, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AdobeUploadClient, getAdobeCredentials } from '@/utils/adobeUpload';
 
 interface ExtractedData {
   id?: string;
@@ -87,30 +88,41 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStage('Conectando com Adobe API...');
+    setProcessingStage('Obtendo credenciais Adobe...');
 
     try {
-      // Obter token de autenticação
+      // Obter token de autenticação do Supabase
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Usuário não autenticado');
       }
 
-      // Preparar FormData
-      const formData = new FormData();
-      formData.append('file', file);
+      // Obter credenciais Adobe
+      setProcessingStage('Conectando com Adobe API...');
+      const adobeCredentials = await getAdobeCredentials();
+      const adobeClient = new AdobeUploadClient(adobeCredentials);
 
-      setProcessingStage('Enviando PDF para processamento...');
+      // Upload do arquivo para Adobe (frontend)
+      setProcessingStage('Enviando PDF para Adobe...');
+      const assetID = await adobeClient.uploadFile(file);
+      console.log('Asset ID recebido:', assetID);
 
-      // Chamar Edge Function
+      // Chamar Edge Function simplificada para processar o assetID
+      setProcessingStage('Processando dados extraídos...');
+      
       const response = await fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/process-adobe-extraction`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           },
-          body: formData,
+          body: JSON.stringify({
+            assetID: assetID,
+            fileName: file.name,
+            fileSize: file.size
+          }),
         }
       );
 
@@ -118,8 +130,6 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         const errorData = await response.json().catch(() => ({ error: 'Erro de conexão' }));
         throw new Error(errorData.error || 'Falha no processamento');
       }
-
-      setProcessingStage('Processando dados extraídos...');
 
       const result = await response.json();
 
