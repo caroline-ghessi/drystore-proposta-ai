@@ -7,15 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Lock, ArrowLeft, Shield } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginStep, setLoginStep] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, getRedirectRoute } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const sanitizeInput = (input: string): string => {
@@ -26,37 +27,56 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setLoginStep('Validando dados...');
 
     try {
       // Basic client-side validation
       const sanitizedEmail = sanitizeInput(email);
-      const sanitizedPassword = password; // Don't sanitize password content
+      const sanitizedPassword = password;
 
       if (!sanitizedEmail || !sanitizedPassword) {
         setError('Por favor, preencha todos os campos');
         setLoading(false);
+        setLoginStep('');
         return;
       }
 
       if (sanitizedPassword.length < 6) {
         setError('A senha deve ter pelo menos 6 caracteres');
         setLoading(false);
+        setLoginStep('');
         return;
       }
 
+      setLoginStep('Conectando...');
+
+      // Set timeout for login process
+      const loginTimeout = setTimeout(() => {
+        setError('Login está demorando mais que o esperado. Tente novamente.');
+        setLoading(false);
+        setLoginStep('');
+      }, 15000); // 15 seconds timeout
+
       const result = await login(sanitizedEmail, sanitizedPassword);
       
+      clearTimeout(loginTimeout);
+      
       if (result.success) {
-        // Redirect based on user role will be handled by AuthContext
-        navigate('/dashboard');
+        setLoginStep('Carregando perfil...');
+        // Small delay to show success before redirect
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
       } else {
         setError(result.error || 'Erro desconhecido durante o login');
+        setLoading(false);
+        setLoginStep('');
       }
     } catch (err) {
       console.error('Login error:', err);
       setError('Erro inesperado. Tente novamente.');
-    } finally {
       setLoading(false);
+      setLoginStep('');
     }
   };
 
@@ -102,6 +122,7 @@ const Login = () => {
                     required
                     autoComplete="email"
                     maxLength={254}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -125,11 +146,13 @@ const Login = () => {
                     required
                     autoComplete="current-password"
                     maxLength={128}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
                   >
                     {showPassword ? '🙈' : '👁️'}
                   </button>
@@ -143,12 +166,26 @@ const Login = () => {
                 </Alert>
               )}
 
+              {loading && loginStep && (
+                <Alert>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <AlertDescription>{loginStep}</AlertDescription>
+                </Alert>
+              )}
+
               <Button 
                 type="submit" 
                 className="w-full gradient-bg hover:opacity-90"
                 disabled={loading}
               >
-                {loading ? 'Entrando...' : 'Entrar'}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
               </Button>
             </form>
 

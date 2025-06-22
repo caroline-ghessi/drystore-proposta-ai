@@ -69,67 +69,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
-      const { data: profile, error } = await supabase
+      // Timeout de 5 segundos para carregamento do perfil
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', supabaseUser.id)
         .single();
 
-      if (error) {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile load timeout')), 5000);
+      });
+
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('Error loading profile:', error);
-        return;
+        // Continuar com dados básicos se profile não carregar
       }
 
-      if (profile) {
-        const userData: User = {
-          id: supabaseUser.id,
-          name: profile.nome,
-          email: supabaseUser.email || '',
-          role: profile.role
-        };
-        
-        setUser(userData);
-        
-        // Track activity para usuário já logado
+      const userData: User = {
+        id: supabaseUser.id,
+        name: profile?.nome || supabaseUser.email?.split('@')[0] || 'Usuário',
+        email: supabaseUser.email || '',
+        role: profile?.role || 'vendedor_interno'
+      };
+      
+      setUser(userData);
+      
+      // Track activity em background (não bloqueia o login)
+      setTimeout(() => {
         sessionTracker.trackActivity(userData.id);
-      }
+      }, 0);
+
     } catch (error) {
       console.error('Error loading user profile:', error);
+      
+      // Fallback: criar usuário básico mesmo se profile falhar
+      const fallbackUser: User = {
+        id: supabaseUser.id,
+        name: supabaseUser.email?.split('@')[0] || 'Usuário',
+        email: supabaseUser.email || '',
+        role: 'vendedor_interno'
+      };
+      
+      setUser(fallbackUser);
     }
   };
 
   const checkRateLimit = async (identifier: string): Promise<boolean> => {
     try {
+      // Simplified rate limiting - only check if blocked
       const { data: rateLimit } = await supabase
         .from('auth_rate_limits')
-        .select('*')
+        .select('blocked_until')
         .eq('identifier', identifier)
         .single();
 
-      if (rateLimit) {
+      if (rateLimit?.blocked_until) {
+        const blockedUntil = new Date(rateLimit.blocked_until);
         const now = new Date();
-        const blockedUntil = rateLimit.blocked_until ? new Date(rateLimit.blocked_until) : null;
-        
-        if (blockedUntil && blockedUntil > now) {
-          return false; // Still blocked
-        }
-
-        if (rateLimit.attempt_count >= 5) {
-          // Block for 15 minutes after 5 failed attempts
-          const blockUntil = new Date(now.getTime() + 15 * 60 * 1000);
-          await supabase
-            .from('auth_rate_limits')
-            .update({ 
-              blocked_until: blockUntil.toISOString(),
-              attempt_count: rateLimit.attempt_count + 1,
-              last_attempt: now.toISOString()
-            })
-            .eq('identifier', identifier);
-          return false;
-        }
+        return blockedUntil <= now; // Not blocked if time has passed
       }
       
-      return true; // Not rate limited
+      return true; // Allow if no rate limit record
     } catch (error) {
       console.error('Error checking rate limit:', error);
       return true; // Allow on error
@@ -137,63 +139,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateRateLimit = async (identifier: string, success: boolean) => {
-    try {
-      const now = new Date();
-      
-      if (success) {
-        // Reset rate limit on successful login
-        await supabase
-          .from('auth_rate_limits')
-          .delete()
-          .eq('identifier', identifier);
-      } else {
-        // Increment failed attempts
-        const { data: existing } = await supabase
-          .from('auth_rate_limits')
-          .select('*')
-          .eq('identifier', identifier)
-          .single();
-
-        if (existing) {
+    // Move to background - don't block login flow
+    setTimeout(async () => {
+      try {
+        const now = new Date();
+        
+        if (success) {
+          // Reset rate limit on successful login
           await supabase
             .from('auth_rate_limits')
-            .update({
-              attempt_count: existing.attempt_count + 1,
-              last_attempt: now.toISOString()
-            })
+            .delete()
             .eq('identifier', identifier);
         } else {
-          await supabase
+          // Increment failed attempts
+          const { data: existing } = await supabase
             .from('auth_rate_limits')
-            .insert({
-              identifier,
-              attempt_count: 1,
-              first_attempt: now.toISOString(),
+            .select('*')
+            .eq('identifier', identifier)
+            .single();
+
+          if (existing) {
+            const newCount = existing.attempt_count + 1;
+            const updateData: any = {
+              attempt_count: newCount,
               last_attempt: now.toISOString()
-            });
+            };
+
+            // Block after 5 attempts
+            if (newCount >= 5) {
+              updateData.blocked_until = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+            }
+
+            await supabase
+              .from('auth_rate_limits')
+              .update(updateData)
+              .eq('identifier', identifier);
+          } else {
+            await supabase
+              .from('auth_rate_limits')
+              .insert({
+                identifier,
+                attempt_count: 1,
+                first_attempt: now.toISOString(),
+                last_attempt: now.toISOString()
+              });
+          }
         }
+      } catch (error) {
+        console.error('Error updating rate limit:', error);
       }
-    } catch (error) {
-      console.error('Error updating rate limit:', error);
-    }
+    }, 0);
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Validate email format
-      const { data: isValidEmail } = await supabase
-        .rpc('validate_email_format', { email_input: email });
-
-      if (!isValidEmail) {
-        return { success: false, error: 'Formato de email inválido' };
-      }
-
-      // Check rate limiting
+      // Quick rate limit check
       const isAllowed = await checkRateLimit(email);
       if (!isAllowed) {
         return { success: false, error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' };
       }
 
+      // Main login call
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -201,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('Login error:', error.message);
-        await updateRateLimit(email, false);
+        updateRateLimit(email, false);
         
         if (error.message.includes('Invalid login credentials')) {
           return { success: false, error: 'Email ou senha inválidos' };
@@ -211,11 +217,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        await loadUserProfile(data.user);
-        await updateRateLimit(email, true);
+        // Update rate limit in background
+        updateRateLimit(email, true);
         
-        // Track login session
-        await sessionTracker.trackLogin(data.user.id, data.user.email || '');
+        // Track login in background
+        setTimeout(() => {
+          sessionTracker.trackLogin(data.user.id, data.user.email || '');
+        }, 0);
         
         return { success: true };
       }
@@ -223,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Erro inesperado durante o login' };
     } catch (error) {
       console.error('Login error:', error);
-      await updateRateLimit(email, false);
+      updateRateLimit(email, false);
       return { success: false, error: 'Erro inesperado. Tente novamente.' };
     }
   };
