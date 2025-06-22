@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,6 +52,7 @@ import RecommendationRules from "./pages/admin/RecommendationRules";
 import ExportData from "./pages/admin/ExportData";
 import ZAPIConfiguration from "./pages/admin/ZAPIConfiguration";
 import TechnicalDebug from "./pages/admin/TechnicalDebug";
+import SalesTargets from './pages/SalesTargets';
 
 const queryClient = new QueryClient();
 
@@ -120,6 +120,16 @@ function App() {
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
+
+                {/* Sales Targets */}
+                <Route 
+                  path="/sales-targets" 
+                  element={
+                    <PermissionGuard requiredRole={['admin']}>
+                      <SalesTargets />
+                    </PermissionGuard>
+                  } 
+                />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
