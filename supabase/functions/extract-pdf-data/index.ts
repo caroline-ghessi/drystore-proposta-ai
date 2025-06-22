@@ -99,35 +99,50 @@ serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      console.error('Adobe token error:', await tokenResponse.text());
-      throw new Error('Failed to authenticate with Adobe API');
+      const errorText = await tokenResponse.text();
+      console.error('Adobe token error:', errorText);
+      throw new Error(`Failed to authenticate with Adobe API: ${tokenResponse.status}`);
     }
 
     const { access_token } = await tokenResponse.json();
     console.log('Adobe access token obtained');
 
-    // 2. Upload do arquivo para Adobe
+    // 2. Upload do arquivo para Adobe (corrigido)
     const fileBuffer = await file.arrayBuffer();
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
         'X-API-Key': adobeClientId,
-        'Content-Type': 'application/pdf'
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${file.name}"`
       },
       body: fileBuffer
     });
 
     if (!uploadResponse.ok) {
-      console.error('Adobe upload error:', await uploadResponse.text());
-      throw new Error('Failed to upload file to Adobe');
+      const errorText = await uploadResponse.text();
+      console.error('Adobe upload error:', errorText);
+      throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
     }
 
     const uploadData = await uploadResponse.json();
     const assetID = uploadData.assetID;
     console.log('File uploaded to Adobe, Asset ID:', assetID);
 
-    // 3. Iniciar extração
+    // 3. Iniciar extração (corrigido com payload apropriado)
+    const extractPayload = {
+      assetID: assetID,
+      elementsToExtract: ['text', 'tables'],
+      renditionsToExtract: ['tables', 'figures'],
+      tableOutputFormat: 'xlsx',
+      getCharBounds: false,
+      includeStyling: true,
+      includeHeaderFooter: true
+    };
+
+    console.log('Sending extract request with payload:', JSON.stringify(extractPayload, null, 2));
+
     const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
       method: 'POST',
       headers: {
@@ -135,30 +150,27 @@ serve(async (req) => {
         'X-API-Key': adobeClientId,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        assetID: assetID,
-        elementsToExtract: ['text', 'tables'],
-        elementsToExtractRenditions: ['tables', 'figures'],
-        tableOutputFormat: 'csv'
-      })
+      body: JSON.stringify(extractPayload)
     });
 
     if (!extractResponse.ok) {
-      console.error('Adobe extract error:', await extractResponse.text());
-      throw new Error('Failed to start PDF extraction');
+      const errorText = await extractResponse.text();
+      console.error('Adobe extract error:', errorText);
+      throw new Error(`Failed to start PDF extraction: ${extractResponse.status} - ${errorText}`);
     }
 
     const extractData = await extractResponse.json();
     const location = extractData.location;
     console.log('Extraction started, polling location:', location);
 
-    // 4. Polling para aguardar conclusão
+    // 4. Polling para aguardar conclusão (melhorado com backoff exponencial)
     let extractResult;
     let attempts = 0;
-    const maxAttempts = 30; // 5 minutos máximo
+    const maxAttempts = 30;
+    let waitTime = 5000; // Começar com 5 segundos
 
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Aguardar 10 segundos
+      await new Promise(resolve => setTimeout(resolve, waitTime));
       
       const pollResponse = await fetch(location, {
         headers: {
@@ -167,6 +179,11 @@ serve(async (req) => {
         }
       });
 
+      if (!pollResponse.ok) {
+        console.error('Poll response error:', await pollResponse.text());
+        throw new Error(`Polling failed: ${pollResponse.status}`);
+      }
+
       const pollData = await pollResponse.json();
       console.log('Poll attempt:', attempts + 1, 'Status:', pollData.status);
 
@@ -174,24 +191,34 @@ serve(async (req) => {
         extractResult = pollData;
         break;
       } else if (pollData.status === 'failed') {
-        throw new Error('PDF extraction failed in Adobe API');
+        console.error('Adobe extraction failed:', pollData);
+        throw new Error(`PDF extraction failed in Adobe API: ${JSON.stringify(pollData)}`);
       }
 
       attempts++;
+      // Backoff exponencial: aumentar tempo de espera gradualmente
+      waitTime = Math.min(waitTime * 1.2, 15000); // Max 15 segundos
     }
 
     if (!extractResult) {
-      throw new Error('PDF extraction timed out');
+      throw new Error('PDF extraction timed out after 30 attempts');
     }
-
-    // 5. Baixar resultado
-    const resultUrl = extractResult.asset.downloadUri;
-    const resultResponse = await fetch(resultUrl);
-    const resultData = await resultResponse.json();
 
     console.log('Adobe extraction completed successfully');
 
-    // 6. Processar dados extraídos
+    // 5. Baixar resultado
+    const resultUrl = extractResult.asset.downloadUri;
+    console.log('Downloading result from:', resultUrl);
+    
+    const resultResponse = await fetch(resultUrl);
+    if (!resultResponse.ok) {
+      throw new Error(`Failed to download result: ${resultResponse.status}`);
+    }
+    
+    const resultData = await resultResponse.json();
+    console.log('Result data downloaded, processing...');
+
+    // 6. Processar dados extraídos (melhorado)
     const structuredData = parseAdobeData(resultData);
 
     // 7. Salvar na tabela propostas_brutas
@@ -239,7 +266,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message,
+        details: error.stack
       }),
       { 
         status: 500,
@@ -252,6 +280,7 @@ serve(async (req) => {
   }
 });
 
+// Função melhorada de parsing dos dados da Adobe
 function parseAdobeData(adobeData: any): ExtractedData {
   console.log('Parsing Adobe data...');
   
@@ -272,43 +301,77 @@ function parseAdobeData(adobeData: any): ExtractedData {
       }
     });
 
-    // Tentar identificar cliente
-    const clientMatch = allText.match(/(?:cliente|client|para):\s*([A-Z\s]+)/i);
-    if (clientMatch) {
-      result.client = clientMatch[1].trim();
+    console.log('Extracted text length:', allText.length);
+
+    // Melhorar identificação do cliente
+    const clientPatterns = [
+      /(?:cliente|client|para):\s*([A-Z\s&\-\.]+)/i,
+      /(?:razão social|empresa):\s*([A-Z\s&\-\.]+)/i,
+      /(?:cnpj)[\s:]*\d+[\s\/\-]*\d+[\s\/\-]*\d+[\s\/\-]*\d+[\s\-]*\d+\s*([A-Z\s&\-\.]+)/i
+    ];
+
+    for (const pattern of clientPatterns) {
+      const match = allText.match(pattern);
+      if (match && match[1].trim().length > 3) {
+        result.client = match[1].trim();
+        break;
+      }
     }
 
-    // Extrair tabelas
+    // Extrair tabelas (melhorado)
     const tables = adobeData.tables || [];
     
-    tables.forEach((table: any) => {
+    tables.forEach((table: any, tableIndex: number) => {
+      console.log(`Processing table ${tableIndex + 1}:`, table);
+      
       const rows = table.rows || [];
       
-      // Pular cabeçalho (primeira linha)
-      for (let i = 1; i < rows.length; i++) {
+      // Identificar cabeçalho automaticamente
+      let headerRowIndex = 0;
+      for (let i = 0; i < Math.min(3, rows.length); i++) {
+        const row = rows[i];
+        const cells = row.cells || [];
+        const headerText = cells.map((cell: any) => cell.content || '').join(' ').toLowerCase();
+        
+        if (headerText.includes('descrição') || headerText.includes('item') || 
+            headerText.includes('produto') || headerText.includes('quantidade')) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      // Processar linhas de dados
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
         const row = rows[i];
         const cells = row.cells || [];
         
-        if (cells.length >= 4) {
-          // Assumir formato: Descrição, Quantidade, Valor Unit, Total
-          const description = cells[0]?.content || '';
-          const quantityText = cells[1]?.content || '0';
-          const unitPriceText = cells[2]?.content || '0';
-          const totalText = cells[3]?.content || '0';
+        if (cells.length >= 3) {
+          // Extrair dados das células
+          const description = (cells[0]?.content || '').trim();
+          const quantityText = (cells[1]?.content || '0').trim();
+          const unitPriceText = (cells[2]?.content || '0').trim();
+          const totalText = cells[3] ? (cells[3].content || '0').trim() : '';
           
           // Limpar e converter números
           const quantity = parseFloat(quantityText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
           const unitPrice = parseFloat(unitPriceText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
-          const total = parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+          const total = totalText ? 
+            parseFloat(totalText.replace(/[^\d.,]/g, '').replace(',', '.')) || 0 : 
+            (quantity * unitPrice);
           
-          if (description && quantity > 0) {
+          // Extrair unidade se possível
+          const unitMatch = quantityText.match(/([A-Z]{1,4})\s*$/i);
+          const unit = unitMatch ? unitMatch[1] : 'UN';
+          
+          if (description && description.length > 3 && quantity > 0) {
             result.items.push({
-              description: description.trim(),
+              description: description,
               quantity,
-              unit: 'UN', // Padrão, pode ser melhorado
+              unit,
               unitPrice,
-              total: total || (quantity * unitPrice)
+              total
             });
+            console.log(`Added item: ${description} - Qty: ${quantity} - Price: ${unitPrice} - Total: ${total}`);
           }
         }
       }
@@ -318,18 +381,47 @@ function parseAdobeData(adobeData: any): ExtractedData {
     result.subtotal = result.items.reduce((sum, item) => sum + item.total, 0);
     result.total = result.subtotal;
 
-    // Tentar extrair outras informações do texto
-    const paymentMatch = allText.match(/(?:pagamento|payment):\s*([^.]+)/i);
-    if (paymentMatch) {
-      result.paymentTerms = paymentMatch[1].trim();
+    // Extrair informações adicionais com padrões melhorados
+    const paymentPatterns = [
+      /(?:pagamento|payment|condições):\s*([^.\n\r]+)/i,
+      /(?:prazo|forma de pagamento):\s*([^.\n\r]+)/i
+    ];
+
+    for (const pattern of paymentPatterns) {
+      const match = allText.match(pattern);
+      if (match) {
+        result.paymentTerms = match[1].trim();
+        break;
+      }
     }
 
-    const deliveryMatch = allText.match(/(?:entrega|delivery):\s*([^.]+)/i);
-    if (deliveryMatch) {
-      result.delivery = deliveryMatch[1].trim();
+    const deliveryPatterns = [
+      /(?:entrega|delivery|prazo de entrega):\s*([^.\n\r]+)/i,
+      /(?:data de entrega|entregar em):\s*([^.\n\r]+)/i
+    ];
+
+    for (const pattern of deliveryPatterns) {
+      const match = allText.match(pattern);
+      if (match) {
+        result.delivery = match[1].trim();
+        break;
+      }
     }
 
-    console.log('Parsed', result.items.length, 'items, total:', result.total);
+    const vendorPatterns = [
+      /(?:vendedor|representante|atendente):\s*([A-Z\s]+)/i,
+      /(?:responsável|consultor):\s*([A-Z\s]+)/i
+    ];
+
+    for (const pattern of vendorPatterns) {
+      const match = allText.match(pattern);
+      if (match && match[1].trim().length > 3) {
+        result.vendor = match[1].trim();
+        break;
+      }
+    }
+
+    console.log(`Parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}`);
 
   } catch (error) {
     console.error('Error parsing Adobe data:', error);
