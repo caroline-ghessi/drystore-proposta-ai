@@ -5,10 +5,6 @@ interface AdobeCredentials {
   orgId: string;
 }
 
-interface AdobeUploadResult {
-  assetID: string;
-}
-
 export class AdobeUploadClient {
   private credentials: AdobeCredentials;
 
@@ -32,18 +28,18 @@ export class AdobeUploadClient {
       throw new Error('Usuário não autenticado');
     }
 
-    // Criar FormData para enviar arquivo
-    const formData = new FormData();
-    formData.append('file', file);
+    console.log('Sending file to upload-to-adobe Edge Function as binary...');
 
-    console.log('Sending file to upload-to-adobe Edge Function...');
-
+    // Enviar arquivo como binary/raw para a Edge Function
     const uploadResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/pdf',
+        'X-File-Name': file.name,
+        'X-File-Size': file.size.toString()
       },
-      body: formData
+      body: file // Enviar o arquivo diretamente como Blob
     });
 
     console.log('Edge Function response status:', uploadResponse.status);

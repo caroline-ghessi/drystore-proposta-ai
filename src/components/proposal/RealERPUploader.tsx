@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, Check, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AdobeUploadClient, getAdobeCredentials } from '@/utils/adobeUpload';
 
 interface ExtractedData {
   id?: string;
@@ -97,26 +96,33 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // Upload do arquivo diretamente via Edge Function (sem precisar das credenciais no frontend)
+      // Upload do arquivo diretamente via Edge Function (enviando como binary/raw)
       setProcessingStage('Enviando PDF para Adobe via backend...');
       
-      const formData = new FormData();
-      formData.append('file', file);
+      console.log('Enviando arquivo como binary para Edge Function...');
+      console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
+      // Enviar arquivo como binary/raw em vez de FormData
       const uploadResponse = await fetch(
         `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/pdf',
+            'X-File-Name': file.name,
+            'X-File-Size': file.size.toString()
           },
-          body: formData
+          body: file // Enviar o arquivo PDF diretamente como Blob
         }
       );
 
+      console.log('Edge Function response status:', uploadResponse.status);
+
       if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json().catch(() => ({ error: 'Erro de conexão' }));
-        throw new Error(errorData.error || 'Falha no upload');
+        const errorText = await uploadResponse.text();
+        console.error('Edge Function upload error:', errorText);
+        throw new Error(`Falha no upload via Edge Function: ${uploadResponse.status} - ${errorText}`);
       }
 
       const uploadResult = await uploadResponse.json();

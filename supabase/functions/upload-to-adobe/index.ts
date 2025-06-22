@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-file-name, x-file-size',
 }
 
 serve(async (req) => {
@@ -21,15 +21,25 @@ serve(async (req) => {
       throw new Error('Authorization header required');
     }
 
-    // Get file from FormData
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    
-    if (!file) {
-      throw new Error('No file provided');
-    }
+    // Get file information from headers
+    const fileName = req.headers.get('X-File-Name') || 'arquivo.pdf';
+    const fileSize = req.headers.get('X-File-Size') || '0';
+    const contentType = req.headers.get('Content-Type') || 'application/pdf';
 
-    console.log('File received:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('File info from headers:', fileName, 'Size:', fileSize, 'Type:', contentType);
+
+    // Read file as ArrayBuffer and reconstruct File object
+    const arrayBuffer = await req.arrayBuffer();
+    console.log('ArrayBuffer received, size:', arrayBuffer.byteLength);
+
+    // Create File object from ArrayBuffer
+    const file = new File(
+      [arrayBuffer],
+      fileName,
+      { type: contentType }
+    );
+
+    console.log('File reconstructed:', file.name, 'Size:', file.size, 'Type:', file.type);
 
     // Get Adobe credentials from environment
     const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID');
@@ -64,10 +74,12 @@ serve(async (req) => {
     const { access_token } = await tokenResponse.json();
     console.log('Adobe access token obtained successfully');
 
-    // Upload file to Adobe
+    // Upload file to Adobe using FormData (created in backend)
     console.log('Uploading file to Adobe...');
     const adobeFormData = new FormData();
     adobeFormData.append('file', file);
+
+    console.log('FormData created, uploading to Adobe API...');
 
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
