@@ -9,7 +9,7 @@ interface LayoutProps {
 
 const Layout = ({ children, showBackButton = true, backPath }: LayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-gray-50 transition-colors">
       <Header showBackButton={showBackButton} backPath={backPath} />
       
       <main className="flex-1 py-4 sm:py-6 lg:py-8">
