@@ -1,6 +1,6 @@
 
-// Utility functions for Adobe API integration
-// Note: This file is now simplified as the main logic is handled by Edge Functions
+// Utility functions for Adobe API integration - VERSÃO DEFINITIVA
+// Implementação simplificada focada em confiabilidade
 
 export interface AdobeCredentials {
   clientId: string;
@@ -16,8 +16,11 @@ export class AdobeUploadClient {
   }
 
   async uploadFile(file: File): Promise<string> {
-    console.log('Starting Adobe file upload via Edge Function...');
-    console.log('File details:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('🚀 Starting definitive Adobe file upload...');
+    console.log('📄 File details:', { name: file.name, size: file.size, type: file.type });
+
+    // Validar arquivo antes de processar
+    this.validateFile(file);
 
     // Get Supabase session
     const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
@@ -26,9 +29,9 @@ export class AdobeUploadClient {
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('Sending file to upload-to-adobe Edge Function...');
+    console.log('📤 Sending to upload-to-adobe Edge Function (V2)...');
 
-    // Send file directly to Edge Function
+    // Upload via Edge Function com implementação definitiva
     const uploadResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe', {
       method: 'POST',
       headers: {
@@ -40,35 +43,59 @@ export class AdobeUploadClient {
       body: file
     });
 
-    console.log('Edge Function response status:', uploadResponse.status);
+    console.log('📨 Edge Function response status:', uploadResponse.status);
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('Edge Function upload error:', errorText);
-      throw new Error(`Failed to upload via Edge Function: ${uploadResponse.status} - ${errorText}`);
+      console.error('❌ Edge Function upload error:', errorText);
+      throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
     }
 
     const responseData = await uploadResponse.json();
     
     if (!responseData.success) {
-      console.error('Upload failed:', responseData.error);
+      console.error('❌ Upload failed:', responseData.error);
       throw new Error(responseData.error || 'Upload failed');
     }
 
     const assetID = responseData.assetID;
-    console.log('File uploaded successfully via Edge Function, Asset ID:', assetID);
+    console.log('✅ File uploaded successfully! Asset ID:', assetID);
+    console.log('📊 Strategy used:', responseData.strategy);
+    
     return assetID;
   }
 
-  // Deprecated method - kept for compatibility
+  // Validação de arquivo local
+  private validateFile(file: File): void {
+    if (!file) {
+      throw new Error('Nenhum arquivo fornecido');
+    }
+
+    if (file.type !== 'application/pdf') {
+      throw new Error('Apenas arquivos PDF são suportados');
+    }
+
+    // Limite de 50MB para Edge Functions
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error('Arquivo muito grande. Máximo permitido: 50MB');
+    }
+
+    if (file.size === 0) {
+      throw new Error('Arquivo está vazio');
+    }
+
+    console.log('✅ File validation passed');
+  }
+
+  // Método mantido para compatibilidade
   async getAccessToken(): Promise<string> {
     throw new Error('getAccessToken() is deprecated. Use uploadFile() directly.');
   }
 }
 
-// Function to get Adobe credentials (now simplified without mock fallback)
+// Função simplificada para obter credenciais Adobe
 export async function getAdobeCredentials(): Promise<AdobeCredentials> {
-  console.log('Getting Adobe credentials...');
+  console.log('🔑 Getting Adobe credentials...');
   
   try {
     const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
@@ -84,20 +111,20 @@ export async function getAdobeCredentials(): Promise<AdobeCredentials> {
       }
     });
 
-    console.log('Credentials response status:', response.status);
+    console.log('📨 Credentials response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Failed to get Adobe credentials:', errorText);
+      console.error('❌ Failed to get Adobe credentials:', errorText);
       throw new Error(`Failed to get Adobe credentials: ${response.status} - ${errorText}`);
     }
 
     const credentials = await response.json();
-    console.log('Adobe credentials obtained successfully');
+    console.log('✅ Adobe credentials obtained successfully');
     return credentials;
     
   } catch (error) {
-    console.error('Error getting Adobe credentials:', error);
+    console.error('❌ Error getting Adobe credentials:', error);
     throw new Error('Failed to get Adobe credentials. Please check your configuration.');
   }
 }
