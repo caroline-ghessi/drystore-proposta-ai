@@ -28,15 +28,32 @@ const ProposalUploadChoice = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
 
   const handleUploadComplete = (data: ExtractedData) => {
+    console.log('📥 Dados recebidos do upload:', data);
     setExtractedData(data);
     setShowReviewModal(true);
   };
 
   const handleDataConfirmed = (finalData: ExtractedData) => {
-    // Armazena os dados finais e vai para o builder
-    sessionStorage.setItem('proposalExtractedData', JSON.stringify(finalData));
+    console.log('✅ Dados confirmados para transferência:', finalData);
+    
+    // Limpar dados antigos primeiro
+    sessionStorage.removeItem('proposalExtractedData');
+    
+    // Salvar os dados finais confirmados
+    const dataToSave = {
+      ...finalData,
+      timestamp: Date.now(),
+      source: 'pdf_extraction'
+    };
+    
+    sessionStorage.setItem('proposalExtractedData', JSON.stringify(dataToSave));
+    
+    console.log('💾 Dados salvos no sessionStorage:', dataToSave);
+    
     setShowReviewModal(false);
-    navigate('/proposal-builder');
+    
+    // Navegar para a página de prévia que irá usar os dados corretos
+    navigate('/proposal-preview');
   };
 
   return (

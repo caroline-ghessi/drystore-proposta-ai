@@ -4,58 +4,153 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Edit3, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FullscreenPreview from '@/components/proposal/FullscreenPreview';
 
+interface ProposalItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+}
+
+interface ExtractedData {
+  id?: string;
+  client?: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+  }>;
+  subtotal: number;
+  total: number;
+  paymentTerms?: string;
+  delivery?: string;
+  vendor?: string;
+  timestamp?: number;
+  source?: string;
+}
+
 const ProposalPreview = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [items, setItems] = useState([
-    {
-      id: '1',
-      description: 'Telhas Shingle Premium - Cor Cinza Escuro',
-      quantity: 180,
-      unit: 'm²',
-      unitPrice: 45.00,
-      total: 8100.00
-    },
-    {
-      id: '2',
-      description: 'Estrutura de Madeira Tratada',
-      quantity: 180,
-      unit: 'm²',
-      unitPrice: 25.00,
-      total: 4500.00
-    },
-    {
-      id: '3',
-      description: 'Drywall 12,5mm - Placas Standard',
-      quantity: 120,
-      unit: 'placas',
-      unitPrice: 62.50,
-      total: 7500.00
-    },
-    {
-      id: '4',
-      description: 'Perfis Metálicos para Drywall',
-      quantity: 1,
-      unit: 'vb',
-      unitPrice: 2800.00,
-      total: 2800.00
-    },
-    {
-      id: '5',
-      description: 'Painéis Metálicos para Fachada',
-      quantity: 95,
-      unit: 'm²',
-      unitPrice: 85.00,
-      total: 8075.00
+  const [items, setItems] = useState<ProposalItem[]>([]);
+  const [clientInfo, setClientInfo] = useState<{
+    name: string;
+    project: string;
+    paymentTerms?: string;
+    delivery?: string;
+  }>({
+    name: 'Cliente',
+    project: 'Projeto',
+  });
+
+  // Carregar dados extraídos do PDF na inicialização
+  useEffect(() => {
+    console.log('🔍 Carregando dados na ProposalPreview...');
+    
+    const savedData = sessionStorage.getItem('proposalExtractedData');
+    
+    if (savedData) {
+      try {
+        const extractedData: ExtractedData = JSON.parse(savedData);
+        console.log('📋 Dados encontrados no sessionStorage:', extractedData);
+        
+        // Verificar se os dados são válidos e recentes
+        if (extractedData.items && extractedData.items.length > 0) {
+          // Converter os dados extraídos para o formato da interface
+          const convertedItems: ProposalItem[] = extractedData.items.map((item, index) => ({
+            id: String(index + 1),
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            total: item.total
+          }));
+          
+          console.log('✅ Itens convertidos:', convertedItems);
+          setItems(convertedItems);
+          
+          // Atualizar informações do cliente
+          setClientInfo({
+            name: extractedData.client || 'Cliente Identificado',
+            project: 'Proposta Extraída do PDF',
+            paymentTerms: extractedData.paymentTerms,
+            delivery: extractedData.delivery
+          });
+          
+          console.log('👤 Informações do cliente atualizadas:', {
+            name: extractedData.client,
+            total: extractedData.total
+          });
+          
+        } else {
+          console.log('⚠️ Dados extraídos inválidos, usando fallback');
+          loadFallbackData();
+        }
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados extraídos:', error);
+        loadFallbackData();
+      }
+    } else {
+      console.log('📝 Nenhum dado extraído encontrado, usando dados padrão');
+      loadFallbackData();
     }
-  ]);
+  }, []);
+
+  const loadFallbackData = () => {
+    console.log('🔄 Carregando dados de fallback...');
+    setItems([
+      {
+        id: '1',
+        description: 'Telhas Shingle Premium - Cor Cinza Escuro',
+        quantity: 180,
+        unit: 'm²',
+        unitPrice: 45.00,
+        total: 8100.00
+      },
+      {
+        id: '2',
+        description: 'Estrutura de Madeira Tratada',
+        quantity: 180,
+        unit: 'm²',
+        unitPrice: 25.00,
+        total: 4500.00
+      },
+      {
+        id: '3',
+        description: 'Drywall 12,5mm - Placas Standard',
+        quantity: 120,
+        unit: 'placas',
+        unitPrice: 62.50,
+        total: 7500.00
+      },
+      {
+        id: '4',
+        description: 'Perfis Metálicos para Drywall',
+        quantity: 1,
+        unit: 'vb',
+        unitPrice: 2800.00,
+        total: 2800.00
+      },
+      {
+        id: '5',
+        description: 'Painéis Metálicos para Fachada',
+        quantity: 95,
+        unit: 'm²',
+        unitPrice: 85.00,
+        total: 8075.00
+      }
+    ]);
+  };
 
   const updateItem = (itemId: string, field: string, value: number | string) => {
     setItems(prev => prev.map(item => {
@@ -75,6 +170,26 @@ const ProposalPreview = () => {
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
 
   const handleSave = () => {
+    // Atualizar os dados salvos com as modificações
+    const updatedData = {
+      client: clientInfo.name,
+      items: items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitPrice: item.unitPrice,
+        total: item.total
+      })),
+      subtotal,
+      total: subtotal,
+      paymentTerms: clientInfo.paymentTerms,
+      delivery: clientInfo.delivery,
+      timestamp: Date.now(),
+      source: 'proposal_preview_edited'
+    };
+    
+    sessionStorage.setItem('proposalExtractedData', JSON.stringify(updatedData));
+    
     toast({
       title: "Dados salvos!",
       description: "As alterações foram aplicadas à proposta.",
@@ -82,6 +197,8 @@ const ProposalPreview = () => {
   };
 
   const handleNext = () => {
+    // Salvar antes de navegar
+    handleSave();
     navigate('/proposal/1');
   };
 
@@ -89,8 +206,8 @@ const ProposalPreview = () => {
     <div className="space-y-6">
       <div className="text-center border-b pb-6">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Proposta Comercial</h1>
-        <p className="text-xl text-gray-600">PROP-2024-001 - João Silva</p>
-        <p className="text-gray-500">Residência Moderna</p>
+        <p className="text-xl text-gray-600">PROP-2024-001 - {clientInfo.name}</p>
+        <p className="text-gray-500">{clientInfo.project}</p>
       </div>
 
       <div className="space-y-4">
@@ -125,7 +242,7 @@ const ProposalPreview = () => {
           <div className="flex items-center">
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/select-systems')}
+              onClick={() => navigate('/proposal-upload-choice')}
               className="mr-4"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
