@@ -74,7 +74,6 @@ function App() {
                 <Route path="/client-login" element={<ClientLogin />} />
                 <Route path="/client-portal" element={<ClientPortal />} />
                 <Route path="/user-registration" element={<UserRegistration />} />
-                <Route path="/signup-test" element={<SignUpTest />} />
 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -117,6 +116,7 @@ function App() {
                 {/* Legacy redirects - redirect old pages to unified debug */}
                 <Route path="/email-diagnostic" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
                 <Route path="/admin/zapi-config" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
+                <Route path="/signup-test" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />

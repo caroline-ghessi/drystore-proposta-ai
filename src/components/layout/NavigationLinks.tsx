@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronDown, Menu, FileText, Users, Package, BarChart3, MessageSquare, Trophy, Calendar, ArrowUpRight, Bot, ClipboardList, UserPlus, Settings } from 'lucide-react';
+import { ChevronDown, Menu, FileText, Users, Package, BarChart3, MessageSquare, Trophy, Calendar, ArrowUpRight, Bot, ClipboardList, UserPlus, Bug } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -47,7 +47,7 @@ export const NavigationLinks = () => {
       { path: '/reports', label: '📊 Relatórios', icon: ClipboardList },
       { path: '/approval-workflow', label: '🔄 Aprovações', icon: ClipboardList },
       { path: '/user-registration', label: '👥 Cadastrar Usuários', icon: UserPlus },
-      { path: '/admin/zapi-config', label: 'Config Z-API', icon: Settings }
+      { path: '/admin/technical-debug', label: '🔧 Debug Técnico', icon: Bug }
     );
   }
 

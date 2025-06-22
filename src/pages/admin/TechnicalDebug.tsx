@@ -7,7 +7,8 @@ import {
   Mail,
   MessageSquare,
   Settings,
-  Activity
+  Activity,
+  UserPlus
 } from 'lucide-react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AdobeDebugTab from '@/components/admin/debug/AdobeDebugTab';
@@ -16,6 +17,7 @@ import SystemDebugTab from '@/components/admin/debug/SystemDebugTab';
 import LogsDebugTab from '@/components/admin/debug/LogsDebugTab';
 import EmailDebugTab from '@/components/admin/debug/EmailDebugTab';
 import ZAPIManagementTab from '@/components/admin/debug/ZAPIManagementTab';
+import SignUpDebugTab from '@/components/admin/debug/SignUpDebugTab';
 import DebugHeader from '@/components/admin/debug/DebugHeader';
 import StatusOverview from '@/components/admin/debug/StatusOverview';
 import QuickActions from '@/components/admin/debug/QuickActions';
@@ -64,7 +66,7 @@ const TechnicalDebug = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="adobe" className="flex items-center space-x-2">
                   <FileText className="w-4 h-4" />
                   <span>Adobe PDF</span>
@@ -80,6 +82,10 @@ const TechnicalDebug = () => {
                 <TabsTrigger value="zapi" className="flex items-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
                   <span>Z-API Test</span>
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="flex items-center space-x-2">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Sign Up Test</span>
                 </TabsTrigger>
                 <TabsTrigger value="system" className="flex items-center space-x-2">
                   <Settings className="w-4 h-4" />
@@ -106,6 +112,10 @@ const TechnicalDebug = () => {
 
                 <TabsContent value="zapi" className="space-y-4">
                   <ZAPIDebugTab />
+                </TabsContent>
+
+                <TabsContent value="signup" className="space-y-4">
+                  <SignUpDebugTab />
                 </TabsContent>
 
                 <TabsContent value="system" className="space-y-4">

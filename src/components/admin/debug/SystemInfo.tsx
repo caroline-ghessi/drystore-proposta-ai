@@ -13,7 +13,7 @@ const SystemInfo = ({ lastCheck }: SystemInfoProps) => {
       <AlertDescription>
         <strong>Última verificação:</strong> {new Date(lastCheck).toLocaleString('pt-BR')}
         <br />
-        <strong>Páginas consolidadas:</strong> /email-diagnostic e /admin/zapi-config foram unificadas nesta central.
+        <strong>Páginas consolidadas:</strong> /email-diagnostic, /admin/zapi-config e /signup-test foram unificadas nesta central.
         <br />
         Esta página é restrita a administradores e contém informações sensíveis do sistema.
       </AlertDescription>
