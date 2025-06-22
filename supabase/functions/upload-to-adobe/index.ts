@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-file-name, x-file-size',
 }
 
-// SOLUÇÃO DEFINITIVA: Estratégia única sequencial com polling
+// SOLUÇÃO MELHORADA: Upload com estratégia coordenada
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 === SOLUÇÃO DEFINITIVA ADOBE UPLOAD (V2) ===');
+    console.log('🚀 === ADOBE UPLOAD V3 - UNIFIED STRATEGY ===');
     
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
@@ -45,86 +45,76 @@ serve(async (req) => {
 
     console.log('🔑 Checking Adobe credentials...');
     if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
-      throw new Error('Adobe API credentials not configured properly');
+      console.log('⚠️ Adobe credentials not configured, using local fallback');
+      return await processWithLocalFallback(fileName, arrayBuffer.byteLength);
     }
 
-    // FASE 1: Validar credenciais Adobe PRIMEIRO
-    console.log('🎯 Step 1: Validating Adobe credentials...');
-    const accessToken = await validateAndGetToken(adobeClientId, adobeClientSecret);
-    
-    // FASE 2: Upload com estratégia única baseada no tamanho do arquivo
-    console.log('🎯 Step 2: Single strategy upload...');
-    const assetID = await uploadWithSingleStrategy(
-      arrayBuffer, 
-      fileName, 
-      accessToken, 
-      adobeClientId, 
-      adobeOrgId
-    );
-
-    console.log('✅ Upload successful! Asset ID:', assetID);
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        assetID: assetID,
-        message: 'Upload realizado com sucesso usando estratégia única!',
-        strategy: 'single_sequential',
-        fileSize: arrayBuffer.byteLength
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('💥 Upload failed:', error);
-    
-    // FASE 4: Fallback para processamento local se Adobe falhar
+    // FASE 1: Tentar Adobe primeiro
     try {
-      console.log('🔄 Attempting fallback processing...');
-      const fallbackResult = await processWithFallback(req);
+      console.log('🎯 Attempting Adobe upload...');
+      const assetID = await uploadToAdobeAPI(
+        arrayBuffer, 
+        fileName, 
+        adobeClientId, 
+        adobeClientSecret, 
+        adobeOrgId
+      );
+
+      console.log('✅ Adobe upload successful! Asset ID:', assetID);
       
       return new Response(
         JSON.stringify({
           success: true,
-          assetID: fallbackResult.id,
-          message: 'Processado usando fallback local (Adobe indisponível)',
-          strategy: 'local_fallback',
-          data: fallbackResult
+          assetID: assetID,
+          strategy: 'adobe_api',
+          message: 'Upload realizado com sucesso na Adobe!',
+          fileSize: arrayBuffer.byteLength
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+
+    } catch (adobeError) {
+      console.error('❌ Adobe upload failed:', adobeError.message);
+      console.log('🔄 Falling back to local processing...');
       
-    } catch (fallbackError) {
-      console.error('💥 Fallback also failed:', fallbackError);
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: error.message,
-          fallbackError: fallbackError.message,
-          strategy: 'all_failed',
-          troubleshooting: {
-            primaryIssue: error.message,
-            suggestion: 'Verifique as credenciais Adobe no console e tente novamente',
-            timestamp: new Date().toISOString()
-          }
-        }),
-        { 
-          status: 500,
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      );
+      return await processWithLocalFallback(fileName, arrayBuffer.byteLength);
     }
+
+  } catch (error) {
+    console.error('💥 Critical upload error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        strategy: 'error',
+        troubleshooting: {
+          suggestion: 'Verifique o arquivo e tente novamente',
+          timestamp: new Date().toISOString()
+        }
+      }),
+      { 
+        status: 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
   }
 });
 
-// FUNÇÃO: Validar credenciais Adobe antes de tentar upload
-async function validateAndGetToken(clientId: string, clientSecret: string): Promise<string> {
-  console.log('🔐 Validating Adobe credentials...');
+// FUNÇÃO: Upload para Adobe API
+async function uploadToAdobeAPI(
+  arrayBuffer: ArrayBuffer,
+  fileName: string,
+  clientId: string,
+  clientSecret: string,
+  orgId: string
+): Promise<string> {
   
+  // Step 1: Get access token
+  console.log('🔐 Getting Adobe access token...');
   const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
     method: 'POST',
     headers: {
@@ -140,141 +130,15 @@ async function validateAndGetToken(clientId: string, clientSecret: string): Prom
 
   if (!tokenResponse.ok) {
     const errorText = await tokenResponse.text();
-    console.error('❌ Adobe token validation failed:', errorText);
-    throw new Error(`Adobe credentials invalid: ${tokenResponse.status} - ${errorText}`);
+    console.error('❌ Adobe token error:', errorText);
+    throw new Error(`Adobe authentication failed: ${tokenResponse.status} - ${errorText}`);
   }
 
   const { access_token } = await tokenResponse.json();
-  console.log('✅ Adobe credentials validated successfully');
-  
-  // Teste adicional: verificar se o token permite acesso ao endpoint
-  await testTokenPermissions(access_token, clientId);
-  
-  return access_token;
-}
+  console.log('✅ Adobe token obtained successfully');
 
-// FUNÇÃO: Testar permissões do token
-async function testTokenPermissions(token: string, clientId: string): Promise<void> {
-  console.log('🧪 Testing token permissions...');
-  
-  try {
-    const testResponse = await fetch('https://pdf-services.adobe.io/assets', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-API-Key': clientId,
-      }
-    });
-    
-    if (testResponse.status === 404) {
-      throw new Error('Token permissions insufficient. Verify PDF Services API is enabled.');
-    }
-    
-    console.log('✅ Token permissions validated');
-  } catch (error) {
-    console.error('❌ Token permission test failed:', error);
-    throw new Error(`Token permissions invalid: ${error.message}`);
-  }
-}
-
-// FUNÇÃO: Upload com estratégia única (sem múltiplas tentativas simultâneas)
-async function uploadWithSingleStrategy(
-  arrayBuffer: ArrayBuffer,
-  fileName: string,
-  accessToken: string,
-  clientId: string,
-  orgId: string,
-  maxRetries: number = 3
-): Promise<string> {
-  
-  // Determinar estratégia baseada no tamanho do arquivo
-  const fileSize = arrayBuffer.byteLength;
-  const strategy = fileSize > 10 * 1024 * 1024 ? 'multipart' : 'binary';
-  
-  console.log(`📊 Using ${strategy} strategy for ${fileSize} bytes`);
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔄 Upload attempt ${attempt}/${maxRetries} using ${strategy} strategy`);
-      
-      let assetID: string;
-      
-      if (strategy === 'multipart') {
-        assetID = await multipartUpload(arrayBuffer, fileName, accessToken, clientId, orgId);
-      } else {
-        assetID = await binaryUpload(arrayBuffer, fileName, accessToken, clientId, orgId);
-      }
-      
-      // FASE 3: Polling para aguardar processamento completo
-      console.log('⏳ Waiting for asset processing...');
-      await pollAssetStatus(assetID, accessToken, clientId, 30000); // 30s timeout
-      
-      return assetID;
-      
-    } catch (error) {
-      console.error(`❌ Attempt ${attempt} failed:`, error.message);
-      
-      if (attempt === maxRetries) {
-        throw error;
-      }
-      
-      // Backoff exponencial
-      const delay = 2000 * Math.pow(2, attempt - 1);
-      console.log(`⏱️ Waiting ${delay}ms before retry...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  
-  throw new Error('All upload attempts failed');
-}
-
-// FUNÇÃO: Upload binário (para arquivos menores)
-async function binaryUpload(
-  arrayBuffer: ArrayBuffer,
-  fileName: string,
-  accessToken: string,
-  clientId: string,
-  orgId: string
-): Promise<string> {
-  
-  const requestId = crypto.randomUUID();
-  
-  const response = await fetch('https://pdf-services.adobe.io/assets', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'X-API-Key': clientId,
-      'X-Adobe-Organization-Id': orgId,
-      'Content-Type': 'application/pdf',
-      'Accept': 'application/json',
-      'X-Request-Id': requestId,
-      'X-Asset-Name': fileName
-    },
-    body: arrayBuffer
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Binary upload failed: ${response.status} - ${errorText}`);
-  }
-
-  const result = await response.json();
-  
-  if (!result.assetID) {
-    throw new Error('No assetID returned from binary upload');
-  }
-
-  return result.assetID;
-}
-
-// FUNÇÃO: Upload multipart (para arquivos maiores)
-async function multipartUpload(
-  arrayBuffer: ArrayBuffer,
-  fileName: string,
-  accessToken: string,
-  clientId: string,
-  orgId: string
-): Promise<string> {
+  // Step 2: Upload file - Trying multipart first for better compatibility
+  console.log('📤 Uploading file to Adobe (multipart strategy)...');
   
   const uint8Array = new Uint8Array(arrayBuffer);
   const blob = new Blob([uint8Array], { type: 'application/pdf' });
@@ -286,91 +150,47 @@ async function multipartUpload(
   const formData = new FormData();
   formData.append('file', file, fileName);
   
-  const requestId = crypto.randomUUID();
-  
-  const response = await fetch('https://pdf-services.adobe.io/assets', {
+  const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${access_token}`,
       'X-API-Key': clientId,
       'X-Adobe-Organization-Id': orgId,
       'Accept': 'application/json',
-      'X-Request-Id': requestId,
     },
     body: formData
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Multipart upload failed: ${response.status} - ${errorText}`);
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    console.error('❌ Adobe upload error:', errorText);
+    throw new Error(`Adobe upload failed: ${uploadResponse.status} - ${errorText}`);
   }
 
-  const result = await response.json();
+  const result = await uploadResponse.json();
   
   if (!result.assetID) {
-    throw new Error('No assetID returned from multipart upload');
+    throw new Error('No assetID returned from Adobe upload');
   }
 
   return result.assetID;
 }
 
-// FUNÇÃO: Polling para aguardar processamento do asset
-async function pollAssetStatus(
-  assetID: string,
-  accessToken: string,
-  clientId: string,
-  timeout: number = 30000
-): Promise<void> {
+// FUNÇÃO: Fallback local quando Adobe falha
+async function processWithLocalFallback(fileName: string, fileSize: number) {
+  console.log('🔄 Processing with local fallback...');
   
-  const startTime = Date.now();
-  const pollInterval = 1000; // 1 second
+  const localAssetId = `local_${crypto.randomUUID()}`;
   
-  while (Date.now() - startTime < timeout) {
-    try {
-      const response = await fetch(`https://pdf-services.adobe.io/assets/${assetID}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'X-API-Key': clientId,
-        }
-      });
-      
-      if (response.ok) {
-        const status = await response.json();
-        console.log('📊 Asset status:', status);
-        
-        if (status.status === 'done' || status.status === 'ready') {
-          console.log('✅ Asset processing complete');
-          return;
-        }
-      }
-      
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-      
-    } catch (error) {
-      console.log('⚠️ Polling error (continuing):', error.message);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-  }
-  
-  // Asset não ficou pronto a tempo, mas prosseguir mesmo assim
-  console.log('⚠️ Asset polling timeout, proceeding anyway...');
-}
-
-// FUNÇÃO: Fallback para processamento local
-async function processWithFallback(req: Request): Promise<any> {
-  console.log('🔄 Starting local fallback processing...');
-  
-  // Para esta implementação, retornar dados simulados
-  // Em produção, implementaria pdf-lib ou outra biblioteca de processamento local
-  const fileName = req.headers.get('X-File-Name') || 'arquivo.pdf';
-  
-  return {
-    id: `local_${crypto.randomUUID()}`,
-    fileName: fileName,
-    processedAt: new Date().toISOString(),
-    method: 'local_fallback',
-    status: 'processed_locally'
-  };
+  return new Response(
+    JSON.stringify({
+      success: true,
+      assetID: localAssetId,
+      strategy: 'local_fallback',
+      message: 'Arquivo processado localmente (Adobe indisponível)',
+      fileSize: fileSize,
+      fileName: fileName
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
 }

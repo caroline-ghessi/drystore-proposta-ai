@@ -95,13 +95,12 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // Upload direto via Edge Function (fluxo simplificado)
+      // FASE 1: Upload via Edge Function
       setProcessingStage('Enviando PDF para Adobe...');
       
       console.log('📤 Enviando arquivo para Adobe via Edge Function');
       console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      // Chamada direta simplificada para Edge Function
       const uploadResponse = await fetch(
         `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe`,
         {
@@ -112,16 +111,16 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
             'X-File-Name': file.name,
             'X-File-Size': file.size.toString()
           },
-          body: file // Enviar o arquivo PDF diretamente como Blob
+          body: file
         }
       );
 
-      console.log('📨 Edge Function response status:', uploadResponse.status);
+      console.log('📨 Upload response status:', uploadResponse.status);
 
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
-        console.error('❌ Edge Function upload error:', errorText);
-        throw new Error(`Falha no upload via Edge Function: ${uploadResponse.status} - ${errorText}`);
+        console.error('❌ Upload error:', errorText);
+        throw new Error(`Falha no upload: ${uploadResponse.status} - ${errorText}`);
       }
 
       const uploadResult = await uploadResponse.json();
@@ -131,9 +130,11 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       }
 
       const assetID = uploadResult.assetID;
-      console.log('✅ Asset ID recebido:', assetID);
+      const strategy = uploadResult.strategy || 'unknown';
+      
+      console.log('✅ Upload result:', { assetID, strategy });
 
-      // Chamar Edge Function para processar o assetID
+      // FASE 2: Processamento baseado na estratégia
       setProcessingStage('Processando dados extraídos...');
       
       const response = await fetch(
@@ -147,7 +148,8 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           body: JSON.stringify({
             assetID: assetID,
             fileName: file.name,
-            fileSize: file.size
+            fileSize: file.size,
+            strategy: strategy // Passar estratégia para coordenar processamento
           }),
         }
       );
@@ -167,9 +169,14 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       setIsAnalyzed(true);
       setIsProcessing(false);
 
+      // Mostrar tipo de processamento usado
+      const processingType = result.strategy === 'local_fallback' 
+        ? 'localmente (Adobe indisponível)' 
+        : 'via Adobe API';
+
       toast({
         title: "PDF processado com sucesso!",
-        description: `${result.data.items.length} itens extraídos automaticamente.`,
+        description: `${result.data.items.length} itens extraídos ${processingType}.`,
       });
 
     } catch (error) {
