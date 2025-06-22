@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Menu, X } from 'lucide-react';
-import { NavigationLinks } from './NavigationLinks';
+import NavigationLinks from './NavigationLinks';
 import { MobileNavigationMenu } from './MobileNavigationMenu';
 import { UserMenu } from './UserMenu';
 
@@ -79,10 +79,11 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
         </div>
         
         {/* Mobile Navigation Menu */}
-        <MobileNavigationMenu 
-          isMenuOpen={isMenuOpen} 
-          onMenuClose={() => setIsMenuOpen(false)} 
-        />
+        {isMenuOpen && (
+          <div className="lg:hidden">
+            <MobileNavigationMenu />
+          </div>
+        )}
       </div>
     </nav>
   );
