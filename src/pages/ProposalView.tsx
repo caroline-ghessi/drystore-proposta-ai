@@ -80,7 +80,7 @@ const ProposalView = () => {
   const proposal = isRealData && realProposalData ? {
     ...getMockProposal(id || '1'),
     clientName: realProposalData.client || 'PROPOSTA COMERCIAL',
-    total: realProposalData.total,
+    finalPrice: realProposalData.total,
     // Manter outras propriedades do mock para compatibilidade
   } : getMockProposal(id || '1');
 
@@ -118,7 +118,7 @@ const ProposalView = () => {
     isRealData,
     clientName: proposal.clientName,
     itemsCount: proposalItems.length,
-    total: proposal.total
+    total: proposal.finalPrice
   });
 
   return (
