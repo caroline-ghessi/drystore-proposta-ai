@@ -52,6 +52,7 @@ import AIPromptTester from "./pages/admin/AIPromptTester";
 import RecommendationRules from "./pages/admin/RecommendationRules";
 import ExportData from "./pages/admin/ExportData";
 import ZAPIConfiguration from "./pages/admin/ZAPIConfiguration";
+import TechnicalDebug from "./pages/admin/TechnicalDebug";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ function App() {
                 <Route path="/admin/recommendation-rules" element={<ProtectedRoute><RecommendationRules /></ProtectedRoute>} />
                 <Route path="/admin/export-data" element={<ProtectedRoute><ExportData /></ProtectedRoute>} />
                 <Route path="/admin/zapi-config" element={<ProtectedRoute><ZAPIConfiguration /></ProtectedRoute>} />
+                <Route path="/admin/technical-debug" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
