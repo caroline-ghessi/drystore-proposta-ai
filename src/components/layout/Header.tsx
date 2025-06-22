@@ -33,7 +33,7 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             {/* Back Button */}
             {showBackButton && (
@@ -48,7 +48,7 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
               </Button>
             )}
             
-            {/* Logo - always use light theme logo */}
+            {/* Logo */}
             <Link to="/" className="flex-shrink-0 flex items-center">
               <img 
                 className="h-8 w-auto sm:h-10" 
@@ -58,21 +58,21 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             </Link>
           </div>
           
-          <div className="flex items-center space-x-4">
-            {/* Desktop Navigation Links */}
+          {/* Desktop Navigation */}
+          <div className="flex-1 flex justify-center">
             <NavigationLinks />
-            
+          </div>
+          
+          <div className="flex items-center space-x-4">
             {/* Mobile menu button */}
-            {user?.role !== 'cliente' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleMenu}
-                className="lg:hidden text-gray-700 hover:text-gray-900"
-              >
-                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMenu}
+              className="lg:hidden text-gray-700 hover:text-gray-900"
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             
             <UserMenu />
           </div>
