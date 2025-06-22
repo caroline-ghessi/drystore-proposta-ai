@@ -44,15 +44,12 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ApprovalWorkflow from "./pages/ApprovalWorkflow";
 import ApprovalManagement from "./pages/ApprovalManagement";
 import ProposalManagement from "./pages/ProposalManagement";
-import EmailDiagnostic from "./pages/EmailDiagnostic";
-import SignUpTest from "./pages/SignUpTest";
 import UploadPDF from "./pages/UploadPDF";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AIPromptTester from "./pages/admin/AIPromptTester";
 import RecommendationRules from "./pages/admin/RecommendationRules";
 import ExportData from "./pages/admin/ExportData";
-import ZAPIConfiguration from "./pages/admin/ZAPIConfiguration";
 import TechnicalDebug from "./pages/admin/TechnicalDebug";
 import SalesTargets from './pages/SalesTargets';
 
