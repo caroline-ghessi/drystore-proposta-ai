@@ -32,7 +32,7 @@ export class DatabaseOperations {
         valor_total_extraido: structuredData.total,
         dados_adobe_json: adobeData,
         dados_estruturados: structuredData,
-        status: 'enhanced_processed'
+        status: 'processed'
       })
       .select()
       .single();
