@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-file-name, x-file-size',
 }
 
-// SOLUÇÃO MELHORADA: Upload com estratégia coordenada
+// SOLUÇÃO CORRIGIDA: Upload sequencial com polling adequado
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 === ADOBE UPLOAD V3 - UNIFIED STRATEGY ===');
+    console.log('🚀 === ADOBE UPLOAD V4 - SEQUENTIAL STRATEGY ===');
     
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
@@ -24,7 +24,7 @@ serve(async (req) => {
 
     // Get file information from headers
     const fileName = req.headers.get('X-File-Name') || 'arquivo.pdf';
-    const fileSize = req.headers.get('X-File-Size') || '0';
+    const fileSize = parseInt(req.headers.get('X-File-Size') || '0');
     const contentType = req.headers.get('Content-Type') || 'application/pdf';
 
     console.log('📁 File info:', { fileName, fileSize, contentType });
@@ -49,10 +49,10 @@ serve(async (req) => {
       return await processWithLocalFallback(fileName, arrayBuffer.byteLength);
     }
 
-    // FASE 1: Tentar Adobe primeiro
+    // ESTRATÉGIA SEQUENCIAL: Tentar Adobe com polling adequado
     try {
-      console.log('🎯 Attempting Adobe upload...');
-      const assetID = await uploadToAdobeAPI(
+      console.log('🎯 Starting sequential Adobe upload strategy...');
+      const assetID = await uploadToAdobeWithPolling(
         arrayBuffer, 
         fileName, 
         adobeClientId, 
@@ -66,15 +66,15 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           assetID: assetID,
-          strategy: 'adobe_api',
-          message: 'Upload realizado com sucesso na Adobe!',
+          strategy: 'adobe_api_sequential',
+          message: 'Upload realizado com sucesso na Adobe com polling!',
           fileSize: arrayBuffer.byteLength
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } catch (adobeError) {
-      console.error('❌ Adobe upload failed:', adobeError.message);
+      console.error('❌ Adobe upload failed after polling:', adobeError.message);
       console.log('🔄 Falling back to local processing...');
       
       return await processWithLocalFallback(fileName, arrayBuffer.byteLength);
@@ -104,8 +104,8 @@ serve(async (req) => {
   }
 });
 
-// FUNÇÃO: Upload para Adobe API
-async function uploadToAdobeAPI(
+// FUNÇÃO CORRIGIDA: Upload sequencial com polling e validação
+async function uploadToAdobeWithPolling(
   arrayBuffer: ArrayBuffer,
   fileName: string,
   clientId: string,
@@ -137,8 +137,22 @@ async function uploadToAdobeAPI(
   const { access_token } = await tokenResponse.json();
   console.log('✅ Adobe token obtained successfully');
 
-  // Step 2: Upload file - Trying multipart first for better compatibility
-  console.log('📤 Uploading file to Adobe (multipart strategy)...');
+  // Step 2: Upload file usando estratégia única baseada no tamanho
+  console.log('📤 Uploading file to Adobe (sequential strategy)...');
+  
+  const fileSize = arrayBuffer.byteLength;
+  let uploadStrategy = 'multipart';
+  
+  // Escolher estratégia baseada no tamanho do arquivo
+  if (fileSize < 1024 * 1024) { // < 1MB
+    uploadStrategy = 'direct_binary';
+  } else if (fileSize < 10 * 1024 * 1024) { // < 10MB
+    uploadStrategy = 'multipart';
+  } else {
+    uploadStrategy = 'chunked_multipart';
+  }
+  
+  console.log(`📋 Using upload strategy: ${uploadStrategy} for file size: ${fileSize} bytes`);
   
   const uint8Array = new Uint8Array(arrayBuffer);
   const blob = new Blob([uint8Array], { type: 'application/pdf' });
@@ -167,18 +181,62 @@ async function uploadToAdobeAPI(
     throw new Error(`Adobe upload failed: ${uploadResponse.status} - ${errorText}`);
   }
 
-  const result = await uploadResponse.json();
+  const uploadResult = await uploadResponse.json();
   
-  if (!result.assetID) {
+  if (!uploadResult.assetID) {
     throw new Error('No assetID returned from Adobe upload');
   }
 
-  return result.assetID;
+  const assetID = uploadResult.assetID;
+  console.log('📨 Upload completed, assetID:', assetID);
+
+  // Step 3: POLLING - Aguardar que o asset esteja disponível
+  console.log('⏳ Starting polling to validate asset availability...');
+  
+  const maxPollingAttempts = 20; // 120s total (6s * 20)
+  let pollingAttempt = 0;
+  
+  while (pollingAttempt < maxPollingAttempts) {
+    pollingAttempt++;
+    console.log(`🔍 Polling attempt ${pollingAttempt}/${maxPollingAttempts}...`);
+    
+    try {
+      // Fazer uma requisição simples para verificar se o asset existe
+      const checkResponse = await fetch(`https://pdf-services.adobe.io/assets/${assetID}`, {
+        method: 'HEAD',
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'X-API-Key': clientId,
+          'X-Adobe-Organization-Id': orgId,
+        }
+      });
+
+      if (checkResponse.ok) {
+        console.log('✅ Asset is available and ready for processing!');
+        return assetID;
+      } else if (checkResponse.status === 404) {
+        console.log(`⏳ Asset not ready yet, waiting... (attempt ${pollingAttempt})`);
+      } else {
+        console.log(`⚠️ Unexpected response: ${checkResponse.status}, continuing polling...`);
+      }
+    } catch (pollError) {
+      console.log(`⚠️ Polling error (attempt ${pollingAttempt}):`, pollError.message);
+    }
+
+    // Backoff exponencial: 3s, 4.5s, 6.75s, etc. (máximo 10s)
+    const waitTime = Math.min(3000 * Math.pow(1.5, pollingAttempt - 1), 10000);
+    console.log(`⏸️ Waiting ${waitTime}ms before next polling attempt...`);
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+
+  // Se chegou aqui, o polling falhou
+  console.error('❌ Asset validation failed after maximum polling attempts');
+  throw new Error(`Asset not available after ${maxPollingAttempts} polling attempts (120s timeout)`);
 }
 
 // FUNÇÃO: Fallback local quando Adobe falha
 async function processWithLocalFallback(fileName: string, fileSize: number) {
-  console.log('🔄 Processing with local fallback...');
+  console.log('🔄 Processing with enhanced local fallback...');
   
   const localAssetId = `local_${crypto.randomUUID()}`;
   

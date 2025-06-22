@@ -1,6 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { ExtractedData } from './data-parser.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0'
 
 export class DatabaseOperations {
   private supabase: any;
@@ -10,43 +9,40 @@ export class DatabaseOperations {
   }
 
   async verifyUser(token: string): Promise<any> {
-    const { data: { user }, error: userError } = await this.supabase.auth.getUser(token);
+    const { data: { user }, error } = await this.supabase.auth.getUser(token);
     
-    if (userError || !user) {
-      throw new Error('Invalid authentication token');
+    if (error || !user) {
+      throw new Error('User authentication failed');
     }
 
-    console.log('User authenticated:', user.id);
+    console.log('✅ User authenticated:', user.id);
     return user;
   }
 
-  async saveExtractedData(
-    user: any,
-    file: File,
-    adobeRawData: any,
-    structuredData: ExtractedData
-  ): Promise<any> {
-    const { data: savedData, error: saveError } = await this.supabase
+  async saveExtractedData(user: any, file: File, adobeData: any, structuredData: any): Promise<any> {
+    console.log('💾 Saving enhanced extracted data to database...');
+    
+    const { data, error } = await this.supabase
       .from('propostas_brutas')
       .insert({
         user_id: user.id,
         arquivo_nome: file.name,
         arquivo_tamanho: file.size,
-        dados_adobe_json: adobeRawData,
-        dados_estruturados: structuredData,
         cliente_identificado: structuredData.client,
         valor_total_extraido: structuredData.total,
-        status: 'pending_review'
+        dados_adobe_json: adobeData,
+        dados_estruturados: structuredData,
+        status: 'enhanced_processed'
       })
       .select()
       .single();
 
-    if (saveError) {
-      console.error('Error saving to database:', saveError);
-      throw new Error('Failed to save extracted data');
+    if (error) {
+      console.error('❌ Database save error:', error);
+      throw new Error(`Failed to save data: ${error.message}`);
     }
 
-    console.log('Data saved successfully to database with ID:', savedData.id);
-    return savedData;
+    console.log('✅ Data saved successfully to database with ID:', data.id);
+    return data;
   }
 }
