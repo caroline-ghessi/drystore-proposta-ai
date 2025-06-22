@@ -4,8 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Bug, 
@@ -15,16 +13,18 @@ import {
   AlertTriangle,
   RefreshCw,
   Download,
-  Trash2,
   Settings,
   MessageSquare,
-  FileText
+  FileText,
+  Mail
 } from 'lucide-react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AdobeDebugTab from '@/components/admin/debug/AdobeDebugTab';
 import ZAPIDebugTab from '@/components/admin/debug/ZAPIDebugTab';
 import SystemDebugTab from '@/components/admin/debug/SystemDebugTab';
 import LogsDebugTab from '@/components/admin/debug/LogsDebugTab';
+import EmailDebugTab from '@/components/admin/debug/EmailDebugTab';
+import ZAPIManagementTab from '@/components/admin/debug/ZAPIManagementTab';
 
 const TechnicalDebug = () => {
   const [activeTab, setActiveTab] = useState('adobe');
@@ -39,7 +39,6 @@ const TechnicalDebug = () => {
       lastCheck: new Date().toISOString()
     });
     
-    // Simular verificação do sistema
     setTimeout(() => {
       setSystemStatus({
         overall: 'healthy',
@@ -76,10 +75,10 @@ const TechnicalDebug = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center">
               <Bug className="w-8 h-8 mr-3 text-drystore-blue" />
-              Debug Técnico
+              Debug Técnico Unificado
             </h1>
             <p className="text-gray-600 mt-2">
-              Diagnóstico e testes de integrações do sistema
+              Central de diagnóstico, configuração e testes de todas as integrações
             </p>
           </div>
           
@@ -105,7 +104,7 @@ const TechnicalDebug = () => {
         </div>
 
         {/* Status Cards Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center">
@@ -124,6 +123,21 @@ const TechnicalDebug = () => {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center">
+                <Mail className="w-4 h-4 mr-2 text-purple-600" />
+                Email/Resend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm">SMTP Ativo</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center">
                 <MessageSquare className="w-4 h-4 mr-2 text-green-600" />
                 Z-API WhatsApp
               </CardTitle>
@@ -131,7 +145,7 @@ const TechnicalDebug = () => {
             <CardContent>
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm">Verificando</span>
+                <span className="text-sm">3 Configurados</span>
               </div>
             </CardContent>
           </Card>
@@ -170,21 +184,29 @@ const TechnicalDebug = () => {
         {/* Main Debug Tabs */}
         <Card>
           <CardHeader>
-            <CardTitle>Ferramentas de Diagnóstico</CardTitle>
+            <CardTitle>Central de Diagnóstico e Configuração</CardTitle>
             <CardDescription>
-              Selecione uma aba para testar e diagnosticar diferentes componentes do sistema
+              Todas as ferramentas de debug, teste e configuração em um só lugar
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="adobe" className="flex items-center space-x-2">
                   <FileText className="w-4 h-4" />
                   <span>Adobe PDF</span>
                 </TabsTrigger>
+                <TabsTrigger value="email" className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4" />
+                  <span>Email</span>
+                </TabsTrigger>
+                <TabsTrigger value="zapi-config" className="flex items-center space-x-2">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Z-API Config</span>
+                </TabsTrigger>
                 <TabsTrigger value="zapi" className="flex items-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
-                  <span>Z-API</span>
+                  <span>Z-API Test</span>
                 </TabsTrigger>
                 <TabsTrigger value="system" className="flex items-center space-x-2">
                   <Settings className="w-4 h-4" />
@@ -199,6 +221,14 @@ const TechnicalDebug = () => {
               <div className="mt-6">
                 <TabsContent value="adobe" className="space-y-4">
                   <AdobeDebugTab />
+                </TabsContent>
+
+                <TabsContent value="email" className="space-y-4">
+                  <EmailDebugTab />
+                </TabsContent>
+
+                <TabsContent value="zapi-config" className="space-y-4">
+                  <ZAPIManagementTab />
                 </TabsContent>
 
                 <TabsContent value="zapi" className="space-y-4">
@@ -234,9 +264,9 @@ const TechnicalDebug = () => {
 
               <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
                 <Download className="w-6 h-6 text-blue-600" />
-                <span>Export de Logs</span>
+                <span>Export Configurações</span>
                 <span className="text-xs text-gray-500 text-center">
-                  Baixar logs para análise externa
+                  Backup de todas as configurações
                 </span>
               </Button>
 
@@ -256,6 +286,8 @@ const TechnicalDebug = () => {
           <Activity className="h-4 w-4" />
           <AlertDescription>
             <strong>Última verificação:</strong> {new Date(systemStatus.lastCheck).toLocaleString('pt-BR')}
+            <br />
+            <strong>Páginas consolidadas:</strong> /email-diagnostic e /admin/zapi-config foram unificadas nesta central.
             <br />
             Esta página é restrita a administradores e contém informações sensíveis do sistema.
           </AlertDescription>

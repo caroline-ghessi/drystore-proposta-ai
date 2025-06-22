@@ -74,7 +74,6 @@ function App() {
                 <Route path="/client-login" element={<ClientLogin />} />
                 <Route path="/client-portal" element={<ClientPortal />} />
                 <Route path="/user-registration" element={<UserRegistration />} />
-                <Route path="/email-diagnostic" element={<EmailDiagnostic />} />
                 <Route path="/signup-test" element={<SignUpTest />} />
 
                 {/* Protected Routes */}
@@ -109,12 +108,15 @@ function App() {
                 <Route path="/proposal-management" element={<ProtectedRoute><ProposalManagement /></ProtectedRoute>} />
                 <Route path="/upload-pdf" element={<ProtectedRoute><UploadPDF /></ProtectedRoute>} />
 
-                {/* Admin Routes */}
+                {/* Admin Routes - Consolidated Debug */}
                 <Route path="/admin/ai-prompt-tester" element={<ProtectedRoute><AIPromptTester /></ProtectedRoute>} />
                 <Route path="/admin/recommendation-rules" element={<ProtectedRoute><RecommendationRules /></ProtectedRoute>} />
                 <Route path="/admin/export-data" element={<ProtectedRoute><ExportData /></ProtectedRoute>} />
-                <Route path="/admin/zapi-config" element={<ProtectedRoute><ZAPIConfiguration /></ProtectedRoute>} />
                 <Route path="/admin/technical-debug" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
+                
+                {/* Legacy redirects - redirect old pages to unified debug */}
+                <Route path="/email-diagnostic" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
+                <Route path="/admin/zapi-config" element={<ProtectedRoute><TechnicalDebug /></ProtectedRoute>} />
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
