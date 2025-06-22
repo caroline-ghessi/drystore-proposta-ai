@@ -1,4 +1,3 @@
-
 export interface ExtractedData {
   client?: string;
   items: Array<{
@@ -47,7 +46,7 @@ export class DataParser {
       
       tables.forEach((table: any, tableIndex: number) => {
         console.log(`🔍 Processing table ${tableIndex + 1}:`, table);
-        this.processBrazilianTable(table, result);
+        this.processBrazilianTableComprehensive(table, result);
       });
 
       // Calculate totals
@@ -61,11 +60,141 @@ export class DataParser {
 
       console.log(`✅ Enhanced parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}`);
 
+      // NOVO: Validação contra total esperado
+      this.validateTotalDiscrepancy(result);
+
     } catch (error) {
       console.error('❌ Error in enhanced parsing:', error);
     }
 
     return result;
+  }
+
+  // MELHORADA: Processamento comprehensivo de tabelas brasileiras
+  private static processBrazilianTableComprehensive(table: any, result: ExtractedData): void {
+    const rows = table.rows || [];
+    
+    if (rows.length < 2) {
+      console.log('⚠️ Table too small, skipping...');
+      return;
+    }
+
+    console.log(`📋 Table has ${rows.length} total rows to analyze`);
+
+    // INTELIGENTE: Detectar cabeçalho da tabela
+    let headerRowIndex = this.findBrazilianTableHeader(rows);
+    console.log(`📋 Header detected at row: ${headerRowIndex}`);
+
+    // INTELIGENTE: Mapear colunas baseado no cabeçalho
+    const columnMapping = this.mapBrazilianTableColumns(rows[headerRowIndex]);
+    console.log('🗂️ Column mapping:', columnMapping);
+
+    // NOVO: Processar TODAS as linhas, não parar prematuramente
+    for (let i = headerRowIndex + 1; i < rows.length; i++) {
+      const row = rows[i];
+      const cells = row.cells || [];
+      
+      console.log(`🔍 Analyzing row ${i}:`, cells.map(c => c.content || '').join(' | '));
+      
+      // FLEXÍVEL: Aceitar linhas com pelo menos 2 células válidas
+      if (cells.length < 2) {
+        console.log(`⏭️ Row ${i} skipped - insufficient cells (${cells.length})`);
+        continue;
+      }
+
+      const item = this.extractBrazilianItemFromRowRobust(cells, columnMapping, i);
+      
+      if (item && this.isValidBrazilianItem(item)) {
+        result.items.push(item);
+        console.log(`✅ Added item ${result.items.length}: ${item.description} - Qty: ${item.quantity} - Price: R$ ${item.unitPrice} - Total: R$ ${item.total}`);
+      } else {
+        console.log(`❌ Row ${i} rejected - invalid item:`, item);
+      }
+    }
+
+    console.log(`📊 Final table processing result: ${result.items.length} items extracted`);
+  }
+
+  // NOVA: Extração robusta de item da linha
+  private static extractBrazilianItemFromRowRobust(cells: any[], mapping: any, rowIndex: number): any {
+    const description = mapping.description >= 0 ? 
+      (cells[mapping.description]?.content || '').trim() : 
+      (cells[0]?.content || '').trim(); // Fallback para primeira coluna
+    
+    const quantityText = mapping.quantity >= 0 ? 
+      (cells[mapping.quantity]?.content || '0').trim() : 
+      (cells[1]?.content || '0').trim(); // Fallback para segunda coluna
+    
+    const unitPriceText = mapping.unitPrice >= 0 ? 
+      (cells[mapping.unitPrice]?.content || '0').trim() : 
+      (cells[2]?.content || '0').trim(); // Fallback para terceira coluna
+    
+    const totalText = mapping.total >= 0 ? 
+      (cells[mapping.total]?.content || '0').trim() : 
+      (cells[3]?.content || '0').trim(); // Fallback para quarta coluna
+
+    console.log(`🧮 Row ${rowIndex} extraction: desc="${description}", qty="${quantityText}", price="${unitPriceText}", total="${totalText}"`);
+
+    // MELHORADA: Limpeza de valores monetários brasileiros
+    const quantity = this.parseBrazilianNumber(quantityText);
+    const unitPrice = this.parseBrazilianCurrency(unitPriceText);
+    let total = totalText ? this.parseBrazilianCurrency(totalText) : 0;
+    
+    // INTELIGENTE: Se não temos total, calcular
+    if (total === 0 && quantity > 0 && unitPrice > 0) {
+      total = quantity * unitPrice;
+      console.log(`🧮 Calculated total for row ${rowIndex}: ${quantity} × ${unitPrice} = ${total}`);
+    }
+
+    // NOVA: Extrair unidade se possível
+    const unit = this.extractBrazilianUnit(quantityText) || 'UN';
+
+    const item = {
+      description: description,
+      quantity,
+      unit,
+      unitPrice,
+      total
+    };
+
+    console.log(`📦 Processed item from row ${rowIndex}:`, item);
+    return item;
+  }
+
+  // NOVA: Validação mais flexível de itens brasileiros
+  private static isValidBrazilianItem(item: any): boolean {
+    const hasDescription = item.description && item.description.length > 2;
+    const hasQuantity = item.quantity > 0;
+    const hasValue = item.unitPrice > 0 || item.total > 0;
+    
+    // FLEXÍVEL: Item é válido se tem descrição E (quantidade OU valor)
+    const isValid = hasDescription && (hasQuantity || hasValue);
+    
+    console.log(`✅ Item validation: desc=${hasDescription}, qty=${hasQuantity}, value=${hasValue} → valid=${isValid}`);
+    
+    // Rejeitar apenas se for claramente um cabeçalho ou linha vazia
+    const isHeader = /^(descrição|código|item|produto|quantidade|qtd|valor|preço|total|subtotal)$/i.test(item.description);
+    
+    return isValid && !isHeader;
+  }
+
+  // NOVA: Validação de discrepância total
+  private static validateTotalDiscrepancy(result: ExtractedData): void {
+    const expectedTotals = [17188.80, 14047.20]; // Valores conhecidos do PDF
+    const calculatedTotal = result.total;
+    
+    console.log(`💰 Total validation: calculated=${calculatedTotal.toFixed(2)}`);
+    
+    for (const expected of expectedTotals) {
+      const discrepancy = Math.abs(calculatedTotal - expected);
+      const percentDiff = (discrepancy / expected) * 100;
+      
+      console.log(`📊 Against expected ${expected}: diff=${discrepancy.toFixed(2)} (${percentDiff.toFixed(1)}%)`);
+      
+      if (discrepancy > 1000) {
+        console.log(`⚠️ LARGE DISCREPANCY DETECTED: Missing items worth R$ ${discrepancy.toFixed(2)}`);
+      }
+    }
   }
 
   // NOVA: Identificação específica de clientes brasileiros
@@ -123,39 +252,6 @@ export class DataParser {
            name.length >= 6 && 
            name.length <= 40 &&
            /^[A-ZÁÊÔÇÃÕ\s&\-\.]+$/.test(name);
-  }
-
-  // MELHORADA: Processamento de tabelas brasileiras
-  private static processBrazilianTable(table: any, result: ExtractedData): void {
-    const rows = table.rows || [];
-    
-    if (rows.length < 2) {
-      console.log('⚠️ Table too small, skipping...');
-      return;
-    }
-
-    // INTELIGENTE: Detectar cabeçalho da tabela
-    let headerRowIndex = this.findBrazilianTableHeader(rows);
-    console.log(`📋 Header detected at row: ${headerRowIndex}`);
-
-    // INTELIGENTE: Mapear colunas baseado no cabeçalho
-    const columnMapping = this.mapBrazilianTableColumns(rows[headerRowIndex]);
-    console.log('🗂️ Column mapping:', columnMapping);
-
-    // Processar linhas de dados
-    for (let i = headerRowIndex + 1; i < rows.length; i++) {
-      const row = rows[i];
-      const cells = row.cells || [];
-      
-      if (cells.length < 3) continue;
-
-      const item = this.extractBrazilianItemFromRow(cells, columnMapping);
-      
-      if (item && item.description && item.description.length > 3 && item.quantity > 0) {
-        result.items.push(item);
-        console.log(`✅ Added item: ${item.description} - Qty: ${item.quantity} - Price: R$ ${item.unitPrice}`);
-      }
-    }
   }
 
   // NOVA: Detectar cabeçalho de tabela brasileira
@@ -223,37 +319,6 @@ export class DataParser {
     if (mapping.total === -1 && cells.length >= 4) mapping.total = 3;
 
     return mapping;
-  }
-
-  // MELHORADA: Extrair item de linha brasileira
-  private static extractBrazilianItemFromRow(cells: any[], mapping: any): any {
-    const description = mapping.description >= 0 ? 
-      (cells[mapping.description]?.content || '').trim() : '';
-    
-    const quantityText = mapping.quantity >= 0 ? 
-      (cells[mapping.quantity]?.content || '0').trim() : '0';
-    
-    const unitPriceText = mapping.unitPrice >= 0 ? 
-      (cells[mapping.unitPrice]?.content || '0').trim() : '0';
-    
-    const totalText = mapping.total >= 0 ? 
-      (cells[mapping.total]?.content || '0').trim() : '';
-
-    // MELHORADA: Limpeza de valores monetários brasileiros
-    const quantity = this.parseBrazilianNumber(quantityText);
-    const unitPrice = this.parseBrazilianCurrency(unitPriceText);
-    const total = totalText ? this.parseBrazilianCurrency(totalText) : (quantity * unitPrice);
-
-    // NOVA: Extrair unidade se possível
-    const unit = this.extractBrazilianUnit(quantityText) || 'UN';
-
-    return {
-      description: description,
-      quantity,
-      unit,
-      unitPrice,
-      total
-    };
   }
 
   // NOVA: Parse de números brasileiros (vírgula como decimal)
