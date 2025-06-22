@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,20 +51,28 @@ const ProposalPreview = () => {
     name: 'Cliente',
     project: 'Projeto',
   });
+  const [proposalId, setProposalId] = useState<string>('1');
 
   // Carregar dados extraídos do PDF na inicialização
   useEffect(() => {
-    console.log('🔍 Carregando dados na ProposalPreview...');
+    console.log('🔍 ProposalPreview: Carregando dados...');
     
     const savedData = sessionStorage.getItem('proposalExtractedData');
     
     if (savedData) {
       try {
         const extractedData: ExtractedData = JSON.parse(savedData);
-        console.log('📋 Dados encontrados no sessionStorage:', extractedData);
+        console.log('📋 ProposalPreview: Dados encontrados:', extractedData);
         
-        // Verificar se os dados são válidos e recentes
         if (extractedData.items && extractedData.items.length > 0) {
+          // Gerar um ID único para esta proposta se não existir
+          const currentProposalId = extractedData.id || `pdf-${Date.now()}`;
+          setProposalId(currentProposalId);
+          
+          // Atualizar dados extraídos com o ID
+          const updatedData = { ...extractedData, id: currentProposalId };
+          sessionStorage.setItem('proposalExtractedData', JSON.stringify(updatedData));
+          
           // Converter os dados extraídos para o formato da interface
           const convertedItems: ProposalItem[] = extractedData.items.map((item, index) => ({
             id: String(index + 1),
@@ -76,7 +83,7 @@ const ProposalPreview = () => {
             total: item.total
           }));
           
-          console.log('✅ Itens convertidos:', convertedItems);
+          console.log('✅ ProposalPreview: Itens convertidos:', convertedItems);
           setItems(convertedItems);
           
           // Atualizar informações do cliente
@@ -87,27 +94,24 @@ const ProposalPreview = () => {
             delivery: extractedData.delivery
           });
           
-          console.log('👤 Informações do cliente atualizadas:', {
-            name: extractedData.client,
-            total: extractedData.total
-          });
+          console.log('👤 ProposalPreview: Cliente e dados atualizados');
           
         } else {
-          console.log('⚠️ Dados extraídos inválidos, usando fallback');
+          console.log('⚠️ ProposalPreview: Dados inválidos, usando fallback');
           loadFallbackData();
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar dados extraídos:', error);
+        console.error('❌ ProposalPreview: Erro ao carregar dados:', error);
         loadFallbackData();
       }
     } else {
-      console.log('📝 Nenhum dado extraído encontrado, usando dados padrão');
+      console.log('📝 ProposalPreview: Usando dados padrão');
       loadFallbackData();
     }
   }, []);
 
   const loadFallbackData = () => {
-    console.log('🔄 Carregando dados de fallback...');
+    console.log('🔄 ProposalPreview: Carregando dados de fallback...');
     setItems([
       {
         id: '1',
@@ -172,6 +176,7 @@ const ProposalPreview = () => {
   const handleSave = () => {
     // Atualizar os dados salvos com as modificações
     const updatedData = {
+      id: proposalId,
       client: clientInfo.name,
       items: items.map(item => ({
         description: item.description,
@@ -190,6 +195,8 @@ const ProposalPreview = () => {
     
     sessionStorage.setItem('proposalExtractedData', JSON.stringify(updatedData));
     
+    console.log('💾 ProposalPreview: Dados salvos com ID:', proposalId);
+    
     toast({
       title: "Dados salvos!",
       description: "As alterações foram aplicadas à proposta.",
@@ -199,7 +206,11 @@ const ProposalPreview = () => {
   const handleNext = () => {
     // Salvar antes de navegar
     handleSave();
-    navigate('/proposal/1');
+    
+    console.log('🎯 ProposalPreview: Navegando para proposta final com ID:', proposalId);
+    
+    // Navegar para a proposta final usando o ID correto
+    navigate(`/proposal/${proposalId}`);
   };
 
   const proposalContent = (
