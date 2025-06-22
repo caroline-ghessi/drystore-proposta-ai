@@ -54,6 +54,12 @@ export class AdobeUploadClient {
     formData.append('file', file);
 
     console.log('FormData created, uploading to Adobe...');
+    console.log('Upload URL:', 'https://pdf-services.adobe.io/assets');
+    console.log('Headers that will be sent:', {
+      'Authorization': 'Bearer [HIDDEN]',
+      'X-API-Key': this.credentials.clientId,
+      'X-Adobe-Organization-Id': this.credentials.orgId
+    });
 
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
@@ -67,31 +73,79 @@ export class AdobeUploadClient {
     });
 
     console.log('Adobe upload response status:', uploadResponse.status);
+    console.log('Adobe upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
+
+    // DEBUGGING: Ler resposta como texto primeiro para ver o que está vindo
+    const rawResponse = await uploadResponse.text();
+    console.log('💥 Resposta bruta da Adobe (primeiros 500 caracteres):', rawResponse.slice(0, 500));
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('Adobe upload error:', errorText);
-      throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
+      console.error('Adobe upload error - Status:', uploadResponse.status);
+      console.error('Adobe upload error - Response:', rawResponse);
+      throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${rawResponse.slice(0, 200)}`);
     }
 
-    const uploadData = await uploadResponse.json();
-    const assetID = uploadData.assetID;
-    console.log('File uploaded to Adobe successfully, Asset ID:', assetID);
-    return assetID;
+    // Tentar converter para JSON
+    try {
+      const uploadData = JSON.parse(rawResponse);
+      const assetID = uploadData.assetID;
+      
+      if (!assetID) {
+        console.error('No assetID found in response:', uploadData);
+        throw new Error('Adobe API não retornou assetID válido');
+      }
+      
+      console.log('File uploaded to Adobe successfully, Asset ID:', assetID);
+      return assetID;
+    } catch (jsonError) {
+      console.error('❌ Erro ao converter resposta para JSON:', jsonError);
+      console.error('Resposta que causou erro:', rawResponse);
+      throw new Error(`Resposta inesperada da Adobe API: ${rawResponse.slice(0, 200)}`);
+    }
   }
 }
 
 // Função auxiliar para obter credenciais da Adobe via Edge Function
 export async function getAdobeCredentials(): Promise<AdobeCredentials> {
-  const response = await fetch('/api/get-adobe-credentials', {
-    headers: {
-      'Authorization': `Bearer ${(await import('@/integrations/supabase/client')).supabase.auth.getSession().then(({data}) => data.session?.access_token)}`,
+  console.log('Tentando obter credenciais Adobe...');
+  
+  try {
+    const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
     }
-  });
 
-  if (!response.ok) {
-    throw new Error('Failed to get Adobe credentials');
+    const response = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/get-adobe-credentials', {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('Credentials response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to get Adobe credentials:', errorText);
+      throw new Error(`Failed to get Adobe credentials: ${response.status} - ${errorText}`);
+    }
+
+    const credentials = await response.json();
+    console.log('Adobe credentials obtained successfully');
+    return credentials;
+    
+  } catch (error) {
+    console.error('Error getting Adobe credentials:', error);
+    
+    // FALLBACK TEMPORÁRIO: usar credenciais hardcoded para teste
+    console.warn('🚨 USANDO CREDENCIAIS FALLBACK PARA TESTE - REMOVER EM PRODUÇÃO');
+    
+    // TODO: Substituir por credenciais reais para teste
+    return {
+      clientId: process.env.ADOBE_CLIENT_ID || 'YOUR_ADOBE_CLIENT_ID',
+      clientSecret: process.env.ADOBE_CLIENT_SECRET || 'YOUR_ADOBE_CLIENT_SECRET', 
+      orgId: process.env.ADOBE_ORG_ID || 'YOUR_ADOBE_ORG_ID'
+    };
   }
-
-  return response.json();
 }
