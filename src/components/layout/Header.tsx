@@ -1,11 +1,7 @@
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Menu, X } from 'lucide-react';
-import NavigationLinks from './NavigationLinks';
-import { MobileNavigationMenu } from './MobileNavigationMenu';
+import { ArrowLeft } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
@@ -14,13 +10,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
 
   const handleBack = () => {
     if (backPath) {
@@ -49,41 +39,20 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             )}
             
             {/* Logo */}
-            <Link to="/" className="flex-shrink-0 flex items-center">
+            <div className="flex-shrink-0 flex items-center">
               <img 
                 className="h-8 w-auto sm:h-10" 
                 src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png"
                 alt="DryStore" 
               />
-            </Link>
+            </div>
           </div>
           
-          {/* Desktop Navigation */}
-          <div className="flex-1 flex justify-center">
-            <NavigationLinks />
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleMenu}
-              className="lg:hidden text-gray-700 hover:text-gray-900"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-            
+          {/* User Menu - All navigation is now here */}
+          <div className="flex items-center">
             <UserMenu />
           </div>
         </div>
-        
-        {/* Mobile Navigation Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden">
-            <MobileNavigationMenu />
-          </div>
-        )}
       </div>
     </nav>
   );

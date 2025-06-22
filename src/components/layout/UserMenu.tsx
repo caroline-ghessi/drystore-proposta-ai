@@ -1,5 +1,5 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,15 +11,44 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
+import { Home, FileText, Users, Target, Settings, User, LogOut } from 'lucide-react';
 
 export const UserMenu = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
+
+  const menuItems = [
+    {
+      label: 'Dashboard',
+      icon: Home,
+      path: '/dashboard',
+      show: true
+    },
+    {
+      label: 'Propostas',
+      icon: FileText,
+      path: '/proposals',
+      show: true
+    },
+    {
+      label: 'Clientes',
+      icon: Users,
+      path: '/clients',
+      show: user?.role === 'admin' || user?.role === 'vendedor_interno'
+    },
+    {
+      label: 'Metas de Vendas',
+      icon: Target,
+      path: '/sales-targets',
+      show: user?.role === 'admin'
+    }
+  ];
 
   return (
     <DropdownMenu>
@@ -31,27 +60,57 @@ export const UserMenu = () => {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Minha Conta</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Navegação</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+        
+        {/* Navigation Items */}
+        {menuItems.map((item) => (
+          item.show && (
+            <DropdownMenuItem 
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center space-x-2 cursor-pointer ${
+                location.pathname === item.path 
+                  ? 'bg-drystore-blue text-white' 
+                  : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <item.icon className="w-4 h-4" />
+              <span>{item.label}</span>
+            </DropdownMenuItem>
+          )
+        ))}
+        
+        <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
+        
+        {/* Account Section */}
+        <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Minha Conta</DropdownMenuLabel>
         <DropdownMenuItem 
           onClick={() => navigate('/profile')}
-          className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
-          Perfil
+          <User className="w-4 h-4" />
+          <span>Perfil</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => navigate('/settings')}
-          className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          Configurações
-        </DropdownMenuItem>
+        
+        {user?.role === 'admin' && (
+          <DropdownMenuItem 
+            onClick={() => navigate('/settings')}
+            className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+          >
+            <Settings className="w-4 h-4" />
+            <span>Configurações</span>
+          </DropdownMenuItem>
+        )}
+        
         <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
         <DropdownMenuItem 
           onClick={handleLogout}
-          className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
         >
-          Sair
+          <LogOut className="w-4 h-4" />
+          <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
