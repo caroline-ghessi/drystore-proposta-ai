@@ -60,7 +60,11 @@ export const UserMenu = () => {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50"
+        sideOffset={5}
+      >
         <DropdownMenuLabel className="text-gray-900 dark:text-gray-100">Navegação</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
         

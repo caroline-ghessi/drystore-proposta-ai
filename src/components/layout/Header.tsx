@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Menu } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
@@ -48,8 +48,25 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             </div>
           </div>
           
-          {/* User Menu - All navigation is now here */}
-          <div className="flex items-center">
+          {/* Right Side - Menu Icon + User Menu */}
+          <div className="flex items-center space-x-2">
+            {/* Menu Icon */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900 lg:hidden"
+            >
+              <Menu className="w-5 h-5" />
+              <span className="sr-only">Menu</span>
+            </Button>
+            
+            {/* Desktop Menu Text */}
+            <div className="hidden lg:flex items-center text-sm text-gray-600 mr-2">
+              <Menu className="w-4 h-4 mr-1" />
+              <span>Menu</span>
+            </div>
+            
+            {/* User Menu */}
             <UserMenu />
           </div>
         </div>
