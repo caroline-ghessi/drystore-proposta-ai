@@ -1,8 +1,6 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X, MessageCircle, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
-
 interface InvestmentCardProps {
   proposal: {
     originalPrice: number;
@@ -21,7 +19,6 @@ interface InvestmentCardProps {
   onQuestion: () => void;
   onReject?: () => void;
 }
-
 export const InvestmentCard = ({
   proposal,
   status,
@@ -45,7 +42,7 @@ export const InvestmentCard = ({
           <p className="text-gray-500 line-through text-lg">
             R$ {proposal.originalPrice.toLocaleString('pt-BR')}
           </p>
-          <p className="text-3xl font-bold mb-1 text-slate-50">
+          <p className="text-3xl font-bold mb-1 text-orange-500">
             R$ {proposal.finalPrice.toLocaleString('pt-BR')}
           </p>
           <p className="text-orange-500 font-medium">
