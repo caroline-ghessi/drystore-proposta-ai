@@ -8,7 +8,7 @@ interface InvestmentCardProps {
     originalPrice: number;
     discount: number;
     finalPrice: number;
-    installments: {
+    installments?: {
       times: number;
       value: number;
     };
@@ -38,6 +38,12 @@ export const InvestmentCard = ({
     finalPrice / (1 - discount / 100) : 
     Number(proposal.originalPrice) || finalPrice;
 
+  // Valores padrão para installments se não estiver definido
+  const installments = proposal.installments || {
+    times: 1,
+    value: finalPrice
+  };
+
   return (
     <Card className="sticky top-8">
       <CardHeader className="text-center">
@@ -63,7 +69,7 @@ export const InvestmentCard = ({
             R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-orange-500 font-medium">
-            ou {proposal.installments.times}x R$ {proposal.installments.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            ou {installments.times}x R$ {installments.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
 
