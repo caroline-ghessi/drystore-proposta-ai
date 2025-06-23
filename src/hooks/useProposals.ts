@@ -26,6 +26,8 @@ interface CreateProposalData {
   observations?: string;
   validityDays: number;
   subtotal: number;
+  discount?: number;
+  selectedPaymentConditions?: string[];
 }
 
 export const useProposals = () => {
@@ -90,7 +92,15 @@ export const useCreateProposal = () => {
 
   return useMutation({
     mutationFn: async (proposalData: CreateProposalData) => {
-      const { clientData, items, observations, validityDays, subtotal } = proposalData;
+      const { 
+        clientData, 
+        items, 
+        observations, 
+        validityDays, 
+        subtotal, 
+        discount = 0,
+        selectedPaymentConditions = []
+      } = proposalData;
 
       // Validações obrigatórias
       if (!clientData.name || !clientData.email) {
@@ -153,7 +163,7 @@ export const useCreateProposal = () => {
         .insert({
           client_id: client.id,
           valor_total: subtotal,
-          desconto_percentual: 0,
+          desconto_percentual: discount,
           validade: validUntil.toISOString(),
           status: 'draft',
           observacoes: observations,
@@ -179,6 +189,20 @@ export const useCreateProposal = () => {
         .insert(proposalItems);
 
       if (itemsError) throw itemsError;
+
+      // 4. Associar condições de pagamento selecionadas
+      if (selectedPaymentConditions.length > 0) {
+        const paymentConditionsData = selectedPaymentConditions.map(conditionId => ({
+          proposal_id: proposal.id,
+          payment_condition_id: conditionId,
+        }));
+
+        const { error: paymentConditionsError } = await supabase
+          .from('proposal_payment_conditions')
+          .insert(paymentConditionsData);
+
+        if (paymentConditionsError) throw paymentConditionsError;
+      }
 
       return {
         proposal,

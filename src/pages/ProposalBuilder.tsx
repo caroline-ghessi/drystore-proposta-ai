@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save, Trash2, User, Mail, Phone, Building, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateProposal } from '@/hooks/useProposals';
+import PaymentConditionsSelector from '@/components/proposal/PaymentConditionsSelector';
+import DiscountSection from '@/components/proposal/DiscountSection';
 
 interface ProposalItem {
   id: string;
@@ -52,6 +54,8 @@ const ProposalBuilder = () => {
   const [items, setItems] = useState<ProposalItem[]>([]);
   const [observations, setObservations] = useState('');
   const [validityDays, setValidityDays] = useState(15);
+  const [discount, setDiscount] = useState(0);
+  const [selectedPaymentConditions, setSelectedPaymentConditions] = useState<string[]>([]);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   // Condições de pagamento padrão
@@ -126,6 +130,10 @@ const ProposalBuilder = () => {
       newErrors.items = 'Pelo menos um item é obrigatório';
     }
 
+    if (selectedPaymentConditions.length === 0) {
+      newErrors.paymentConditions = 'Selecione ao menos uma condição de pagamento';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -163,18 +171,8 @@ const ProposalBuilder = () => {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-
-  const calculatePaymentValue = (condition: PaymentCondition) => {
-    let finalValue = subtotal;
-    
-    if (condition.discount > 0) {
-      finalValue = subtotal * (1 - condition.discount / 100);
-    } else if (condition.interest > 0) {
-      finalValue = subtotal * (1 + condition.interest / 100);
-    }
-    
-    return finalValue;
-  };
+  const discountAmount = (subtotal * discount) / 100;
+  const finalTotal = subtotal - discountAmount;
 
   const handleSave = async () => {
     if (!validateForm()) {
@@ -192,7 +190,9 @@ const ProposalBuilder = () => {
         items,
         observations,
         validityDays,
-        subtotal
+        subtotal: finalTotal,
+        discount,
+        selectedPaymentConditions
       });
 
       toast({
@@ -200,7 +200,7 @@ const ProposalBuilder = () => {
         description: "A proposta foi salva com sucesso.",
       });
 
-      // Redirecionar para visualização da proposta
+      // Ir direto para visualização da proposta (sem página de prévia)
       navigate(`/proposal/${result.proposal.id}`);
     } catch (error: any) {
       toast({
@@ -209,34 +209,6 @@ const ProposalBuilder = () => {
         variant: "destructive"
       });
     }
-  };
-
-  const handlePreview = () => {
-    if (!validateForm()) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios antes de visualizar.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Preparar dados para preview
-    const proposalData = {
-      clientData,
-      items,
-      observations,
-      validityDays,
-      subtotal,
-      paymentConditions: paymentConditions.map(condition => ({
-        ...condition,
-        totalValue: calculatePaymentValue(condition),
-        installmentValue: calculatePaymentValue(condition) / condition.installments
-      }))
-    };
-
-    sessionStorage.setItem('proposalData', JSON.stringify(proposalData));
-    navigate('/proposal-preview');
   };
 
   const groupedItems = items.reduce((acc, item) => {
@@ -264,32 +236,28 @@ const ProposalBuilder = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Construir Proposta</h1>
               <p className="text-gray-600 mt-1">
-                Ajuste os dados e configure as condições comerciais
+                Configure dados do cliente, condições comerciais e finalize a proposta
               </p>
             </div>
           </div>
           
           <div className="flex space-x-3">
             <Button 
-              variant="outline" 
               onClick={handleSave}
               disabled={createProposal.isPending}
+              className="gradient-bg hover:opacity-90"
             >
               {createProposal.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvando...
+                  Criando Proposta...
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Salvar Proposta
+                  Finalizar Proposta
                 </>
               )}
-            </Button>
-            <Button onClick={handlePreview} className="gradient-bg hover:opacity-90">
-              <Eye className="w-4 h-4 mr-2" />
-              Visualizar Proposta
             </Button>
           </div>
         </div>
@@ -297,11 +265,11 @@ const ProposalBuilder = () => {
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span>Passo 3 de 4</span>
-            <span>75% concluído</span>
+            <span>Passo 3 de 3</span>
+            <span>100% concluído</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-drystore-blue h-2 rounded-full transition-all duration-300" style={{ width: '75%' }}></div>
+            <div className="bg-drystore-blue h-2 rounded-full transition-all duration-300" style={{ width: '100%' }}></div>
           </div>
         </div>
 
@@ -498,6 +466,13 @@ const ProposalBuilder = () => {
               + Adicionar Novo Item
             </Button>
 
+            {/* Seção de Desconto */}
+            <DiscountSection
+              discount={discount}
+              onDiscountChange={setDiscount}
+              subtotal={subtotal}
+            />
+
             {/* Observações */}
             <Card className="border-0 shadow-md">
               <CardHeader>
@@ -514,7 +489,7 @@ const ProposalBuilder = () => {
             </Card>
           </div>
 
-          {/* Sidebar - Resumo e Condições de Pagamento */}
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
               {/* Resumo Financeiro */}
@@ -526,11 +501,25 @@ const ProposalBuilder = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between text-lg font-bold border-t pt-4">
-                    <span>Subtotal:</span>
-                    <span className="text-drystore-blue">
-                      R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span>R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-red-600">
+                        <span>Desconto ({discount}%):</span>
+                        <span>- R$ {discountAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <span>Total:</span>
+                      <span className="text-drystore-blue">
+                        R$ {finalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -547,67 +536,37 @@ const ProposalBuilder = () => {
                 </CardContent>
               </Card>
 
-              {/* Condições de Pagamento */}
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle>Condições de Pagamento</CardTitle>
-                  <CardDescription>
-                    Calculadora automática de parcelas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {paymentConditions.map((condition, index) => {
-                      const totalValue = calculatePaymentValue(condition);
-                      const installmentValue = totalValue / condition.installments;
-                      
-                      return (
-                        <div key={index} className="p-3 border rounded-lg bg-gray-50">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium text-sm">{condition.label}</span>
-                            {condition.discount > 0 && (
-                              <Badge variant="secondary" className="text-green-600 bg-green-100">
-                                -{condition.discount}%
-                              </Badge>
-                            )}
-                            {condition.interest > 0 && (
-                              <Badge variant="secondary" className="text-orange-600 bg-orange-100">
-                                +{condition.interest}%
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div className="flex justify-between">
-                              <span>Total:</span>
-                              <span className="font-medium">
-                                R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                            
-                            {condition.installments > 1 && (
-                              <div className="flex justify-between">
-                                <span>{condition.installments}x de:</span>
-                                <span className="font-medium">
-                                  R$ {installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Seletor de Condições de Pagamento */}
+              <PaymentConditionsSelector
+                selectedConditions={selectedPaymentConditions}
+                onConditionsChange={setSelectedPaymentConditions}
+                subtotal={finalTotal}
+              />
+
+              {errors.paymentConditions && (
+                <div className="flex items-center gap-2 p-3 border border-red-200 bg-red-50 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                  <span className="text-red-700 text-sm">{errors.paymentConditions}</span>
+                </div>
+              )}
 
               <Button 
-                onClick={handlePreview}
+                onClick={handleSave}
                 className="w-full gradient-bg hover:opacity-90"
                 size="lg"
+                disabled={createProposal.isPending}
               >
-                Finalizar Proposta
-                <ArrowRight className="w-4 h-4 ml-2" />
+                {createProposal.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  <>
+                    Finalizar Proposta
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
             </div>
           </div>

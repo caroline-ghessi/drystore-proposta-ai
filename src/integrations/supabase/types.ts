@@ -9,6 +9,76 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      approval_requests: {
+        Row: {
+          approval_type: string
+          approved_at: string | null
+          approved_by: string | null
+          comments: string | null
+          created_at: string | null
+          current_limit: number | null
+          id: string
+          proposal_id: string | null
+          reason: string | null
+          requested_by: string | null
+          requested_value: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approval_type: string
+          approved_at?: string | null
+          approved_by?: string | null
+          comments?: string | null
+          created_at?: string | null
+          current_limit?: number | null
+          id?: string
+          proposal_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          requested_value?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approval_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          comments?: string | null
+          created_at?: string | null
+          current_limit?: number | null
+          id?: string
+          proposal_id?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          requested_value?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "approval_requests_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -116,6 +186,77 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      discount_rules: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_discount_percentage: number
+          requires_approval_above: number
+          updated_at: string | null
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_discount_percentage?: number
+          requires_approval_above?: number
+          updated_at?: string | null
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_discount_percentage?: number
+          requires_approval_above?: number
+          updated_at?: string | null
+          user_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      payment_conditions: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          created_by: string | null
+          discount_percentage: number | null
+          id: string
+          installments: number
+          interest_percentage: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          id?: string
+          installments?: number
+          interest_percentage?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          id?: string
+          installments?: number
+          interest_percentage?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_conditions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -230,11 +371,48 @@ export type Database = {
           },
         ]
       }
+      proposal_payment_conditions: {
+        Row: {
+          created_at: string | null
+          id: string
+          payment_condition_id: string | null
+          proposal_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payment_condition_id?: string | null
+          proposal_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payment_condition_id?: string | null
+          proposal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_payment_conditions_payment_condition_id_fkey"
+            columns: ["payment_condition_id"]
+            isOneToOne: false
+            referencedRelation: "payment_conditions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_payment_conditions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           client_id: string
           created_at: string
           desconto_percentual: number | null
+          discount_percentage: number | null
           id: string
           link_acesso: string | null
           observacoes: string | null
@@ -248,6 +426,7 @@ export type Database = {
           client_id: string
           created_at?: string
           desconto_percentual?: number | null
+          discount_percentage?: number | null
           id?: string
           link_acesso?: string | null
           observacoes?: string | null
@@ -261,6 +440,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           desconto_percentual?: number | null
+          discount_percentage?: number | null
           id?: string
           link_acesso?: string | null
           observacoes?: string | null

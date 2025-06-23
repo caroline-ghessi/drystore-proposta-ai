@@ -4,53 +4,69 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, XCircle, Clock, AlertTriangle, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertTriangle, Eye, Percent } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useApprovalRequests, useUpdateApprovalRequest } from '@/hooks/useApprovalRequests';
 
-interface PendingApproval {
-  id: string;
-  proposalId: string;
-  proposalNumber: string;
-  clientName: string;
-  projectName: string;
-  value: number;
-  requestedBy: string;
-  requestedAt: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  approverComments?: string;
-}
-
-interface ApprovalWorkflowProps {
-  pendingApprovals: PendingApproval[];
-  onApprove: (approvalId: string, comments: string) => void;
-  onReject: (approvalId: string, comments: string) => void;
-}
-
-const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWorkflowProps) => {
+const ApprovalWorkflow = () => {
   const [selectedApproval, setSelectedApproval] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const { toast } = useToast();
+  
+  const { data: approvalRequests = [], isLoading } = useApprovalRequests();
+  const updateApprovalRequest = useUpdateApprovalRequest();
 
-  const handleApprove = (approvalId: string) => {
-    onApprove(approvalId, comments);
-    setComments('');
-    setSelectedApproval(null);
-    toast({
-      title: "Proposta Aprovada",
-      description: "A proposta foi aprovada e pode ser enviada ao cliente.",
-    });
+  const handleApprove = async (approvalId: string) => {
+    try {
+      await updateApprovalRequest.mutateAsync({
+        id: approvalId,
+        updates: {
+          status: 'approved',
+          comments,
+          approved_at: new Date().toISOString(),
+        }
+      });
+
+      setComments('');
+      setSelectedApproval(null);
+      toast({
+        title: "Solicitação Aprovada",
+        description: "A solicitação foi aprovada com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível aprovar a solicitação.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleReject = (approvalId: string) => {
-    onReject(approvalId, comments);
-    setComments('');
-    setSelectedApproval(null);
-    toast({
-      title: "Proposta Rejeitada",
-      description: "A proposta foi rejeitada e retornará para o vendedor.",
-      variant: "destructive"
-    });
+  const handleReject = async (approvalId: string) => {
+    try {
+      await updateApprovalRequest.mutateAsync({
+        id: approvalId,
+        updates: {
+          status: 'rejected',
+          comments,
+          approved_at: new Date().toISOString(),
+        }
+      });
+
+      setComments('');
+      setSelectedApproval(null);
+      toast({
+        title: "Solicitação Rejeitada",
+        description: "A solicitação foi rejeitada.",
+        variant: "destructive"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível rejeitar a solicitação.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -86,47 +102,98 @@ const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWor
     }
   };
 
+  const getApprovalTypeIcon = (type: string) => {
+    switch (type) {
+      case 'discount':
+        return <Percent className="w-4 h-4 text-blue-600" />;
+      default:
+        return <AlertTriangle className="w-4 h-4 text-orange-600" />;
+    }
+  };
+
+  const getApprovalTypeLabel = (type: string) => {
+    switch (type) {
+      case 'discount':
+        return 'Desconto Especial';
+      case 'value':
+        return 'Valor Alto';
+      default:
+        return 'Aprovação Customizada';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle>Carregando aprovações...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pendingRequests = approvalRequests.filter(req => req.status === 'pending');
+
   return (
     <Card className="border-0 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center">
           <AlertTriangle className="w-5 h-5 mr-2 text-orange-600" />
           Aprovações Pendentes
-          {pendingApprovals.filter(a => a.status === 'pending').length > 0 && (
+          {pendingRequests.length > 0 && (
             <Badge className="ml-2 bg-red-100 text-red-800">
-              {pendingApprovals.filter(a => a.status === 'pending').length} pendentes
+              {pendingRequests.length} pendentes
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {pendingApprovals.length > 0 ? (
+        {approvalRequests.length > 0 ? (
           <div className="space-y-4">
-            {pendingApprovals.map((approval) => (
-              <div key={approval.id} className="border rounded-lg p-4">
+            {approvalRequests.map((request) => (
+              <div key={request.id} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium">{approval.proposalNumber}</h4>
-                    <p className="text-sm text-gray-600">{approval.clientName} - {approval.projectName}</p>
+                  <div className="flex items-center space-x-2">
+                    {getApprovalTypeIcon(request.approval_type)}
+                    <div>
+                      <h4 className="font-medium">
+                        {getApprovalTypeLabel(request.approval_type)}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Cliente: {request.proposals?.clients?.nome || 'N/A'}
+                      </p>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <Badge className={getStatusColor(approval.status)}>
-                      {getStatusIcon(approval.status)}
-                      <span className="ml-1">{getStatusLabel(approval.status)}</span>
+                    <Badge className={getStatusColor(request.status)}>
+                      {getStatusIcon(request.status)}
+                      <span className="ml-1">{getStatusLabel(request.status)}</span>
                     </Badge>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      R$ {approval.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
+                    {request.approval_type === 'discount' && (
+                      <p className="text-sm font-bold text-gray-900 mt-1">
+                        {request.requested_value}% (limite: {request.current_limit}%)
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="text-sm text-gray-600 mb-3">
-                  <p><strong>Solicitado por:</strong> {approval.requestedBy}</p>
-                  <p><strong>Data:</strong> {new Date(approval.requestedAt).toLocaleString('pt-BR')}</p>
-                  <p><strong>Motivo:</strong> {approval.reason}</p>
+                  <p><strong>Solicitado por:</strong> {request.requested_by_profile?.nome || 'N/A'}</p>
+                  <p><strong>Data:</strong> {new Date(request.created_at).toLocaleString('pt-BR')}</p>
+                  {request.reason && (
+                    <p><strong>Justificativa:</strong> {request.reason}</p>
+                  )}
+                  <p><strong>Proposta:</strong> R$ {request.proposals?.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || 'N/A'}</p>
                 </div>
 
-                {approval.status === 'pending' && (
+                {request.status === 'pending' && (
                   <div className="space-y-3">
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
@@ -135,7 +202,7 @@ const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWor
                       </Button>
                     </div>
 
-                    {selectedApproval === approval.id ? (
+                    {selectedApproval === request.id ? (
                       <div className="space-y-3 border-t pt-3">
                         <Textarea
                           value={comments}
@@ -146,16 +213,18 @@ const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWor
                         <div className="flex space-x-2">
                           <Button
                             size="sm"
-                            onClick={() => handleApprove(approval.id)}
+                            onClick={() => handleApprove(request.id)}
                             className="bg-green-600 hover:bg-green-700"
+                            disabled={updateApprovalRequest.isPending}
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Aprovar
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => handleReject(approval.id)}
+                            onClick={() => handleReject(request.id)}
                             variant="destructive"
+                            disabled={updateApprovalRequest.isPending}
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Rejeitar
@@ -175,20 +244,25 @@ const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWor
                     ) : (
                       <Button
                         size="sm"
-                        onClick={() => setSelectedApproval(approval.id)}
+                        onClick={() => setSelectedApproval(request.id)}
                         className="w-full"
                       >
-                        Analisar Proposta
+                        Analisar Solicitação
                       </Button>
                     )}
                   </div>
                 )}
 
-                {approval.approverComments && (
+                {request.comments && (
                   <div className="mt-3 p-3 bg-gray-50 rounded">
                     <p className="text-sm text-gray-700">
-                      <strong>Comentários:</strong> {approval.approverComments}
+                      <strong>Comentários:</strong> {request.comments}
                     </p>
+                    {request.approved_by_profile && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Por: {request.approved_by_profile.nome} em {new Date(request.approved_at || '').toLocaleString('pt-BR')}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -197,7 +271,7 @@ const ApprovalWorkflow = ({ pendingApprovals, onApprove, onReject }: ApprovalWor
         ) : (
           <div className="text-center py-8">
             <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
-            <p className="text-gray-500">Não há aprovações pendentes</p>
+            <p className="text-gray-500">Não há solicitações de aprovação</p>
           </div>
         )}
       </CardContent>

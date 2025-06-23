@@ -24,7 +24,6 @@ import TechnicalAnalysis from "./pages/TechnicalAnalysis";
 import TechnicalTable from "./pages/TechnicalTable";
 import Proposals from "./pages/Proposals";
 import ProposalView from "./pages/ProposalView";
-import ProposalPreview from "./pages/ProposalPreview";
 import Clients from "./pages/Clients";
 import ProductManagement from "./pages/ProductManagement";
 import Reports from "./pages/Reports";
@@ -91,7 +90,6 @@ function App() {
                 <Route path="/technical-table" element={<ProtectedRoute><TechnicalTable /></ProtectedRoute>} />
                 <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
                 <Route path="/proposal/:id" element={<ProtectedRoute><ProposalView /></ProtectedRoute>} />
-                <Route path="/proposal-preview" element={<ProtectedRoute><ProposalPreview /></ProtectedRoute>} />
                 <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
                 <Route path="/products" element={<ProtectedRoute><ProductManagement /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
