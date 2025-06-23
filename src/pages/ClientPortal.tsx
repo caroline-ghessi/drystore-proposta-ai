@@ -80,18 +80,45 @@ const ClientPortal = () => {
   const { client, proposals } = clientData;
 
   // Processar propostas para o formato esperado pelos componentes
-  const processedProposals = proposals.map(proposal => ({
-    id: proposal.id,
-    number: `PROP-${proposal.id.substring(0, 8)}`,
-    project: `Proposta ${proposal.id.substring(0, 8)}`,
-    value: Number(proposal.valor_total),
-    date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
-    validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
-    status: new Date(proposal.validade) < new Date() ? 'expirada' : proposal.status
-  }));
+  const processedProposals = proposals.map(proposal => {
+    const isExpired = new Date(proposal.validade) < new Date();
+    let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
+    
+    if (isExpired) {
+      mappedStatus = 'expirada';
+    } else {
+      switch (proposal.status) {
+        case 'accepted':
+          mappedStatus = 'aceita';
+          break;
+        case 'rejected':
+          mappedStatus = 'rejeitada';
+          break;
+        case 'expired':
+          mappedStatus = 'expirada';
+          break;
+        case 'sent':
+        case 'viewed':
+          mappedStatus = 'pendente';
+          break;
+        default:
+          mappedStatus = 'pendente';
+      }
+    }
+
+    return {
+      id: proposal.id,
+      number: `PROP-${proposal.id.substring(0, 8)}`,
+      project: `Proposta ${proposal.id.substring(0, 8)}`,
+      value: Number(proposal.valor_total),
+      date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
+      validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
+      status: mappedStatus
+    };
+  });
 
   // Separar propostas aceitas
-  const acceptedProposals = processedProposals.filter(p => p.status === 'accepted');
+  const acceptedProposals = processedProposals.filter(p => p.status === 'aceita');
 
   // Mock data para funcionalidades ainda não implementadas
   const mockCashbackHistory = [];

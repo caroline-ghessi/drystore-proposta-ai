@@ -118,16 +118,43 @@ const ClientPortalBySlug = () => {
 
   const { client, proposals } = clientData;
 
-  // Processar propostas
-  const processedProposals = proposals.map(proposal => ({
-    id: proposal.id,
-    number: `PROP-${proposal.id.substring(0, 8)}`,
-    project: `Proposta ${proposal.id.substring(0, 8)}`,
-    value: Number(proposal.valor_total),
-    date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
-    validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
-    status: new Date(proposal.validade) < new Date() ? 'expirada' : proposal.status
-  }));
+  // Processar propostas com tipo correto
+  const processedProposals = proposals.map(proposal => {
+    const isExpired = new Date(proposal.validade) < new Date();
+    let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
+    
+    if (isExpired) {
+      mappedStatus = 'expirada';
+    } else {
+      switch (proposal.status) {
+        case 'accepted':
+          mappedStatus = 'aceita';
+          break;
+        case 'rejected':
+          mappedStatus = 'rejeitada';
+          break;
+        case 'expired':
+          mappedStatus = 'expirada';
+          break;
+        case 'sent':
+        case 'viewed':
+          mappedStatus = 'pendente';
+          break;
+        default:
+          mappedStatus = 'pendente';
+      }
+    }
+
+    return {
+      id: proposal.id,
+      number: `PROP-${proposal.id.substring(0, 8)}`,
+      project: `Proposta ${proposal.id.substring(0, 8)}`,
+      value: Number(proposal.valor_total),
+      date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
+      validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
+      status: mappedStatus
+    };
+  });
 
   // Separar propostas ativas e expiradas
   const activeProposals = processedProposals.filter(proposal => 
