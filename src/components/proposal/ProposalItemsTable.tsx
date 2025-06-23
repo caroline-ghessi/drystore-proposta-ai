@@ -6,7 +6,7 @@ interface ProposalItem {
   quantity: number;
   unit: string;
   unitPrice: number;
-  total: number;
+  totalPrice: number; // Mudado de 'total' para 'totalPrice'
 }
 
 interface ProposalItemsTableProps {
@@ -40,9 +40,9 @@ const ProposalItemsTable = ({ items, totalPrice }: ProposalItemsTableProps) => {
                     <td className="py-3 font-medium">{item.description}</td>
                     <td className="py-3 text-center">{item.quantity}</td>
                     <td className="py-3 text-center">{item.unit}</td>
-                    <td className="py-3 text-right">R$ {item.unitPrice.toFixed(2)}</td>
+                    <td className="py-3 text-right">R$ {item.unitPrice?.toFixed(2) || '0.00'}</td>
                     <td className="py-3 text-right font-semibold">
-                      R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {item.totalPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                     </td>
                   </tr>
                 ))}
@@ -63,14 +63,14 @@ const ProposalItemsTable = ({ items, totalPrice }: ProposalItemsTableProps) => {
                 </div>
                 <div>
                   <span className="text-gray-600">Preço Unitário:</span>
-                  <p className="font-medium">R$ {item.unitPrice.toFixed(2)}</p>
+                  <p className="font-medium">R$ {item.unitPrice?.toFixed(2) || '0.00'}</p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total:</span>
                   <span className="text-lg font-bold text-blue-600">
-                    R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {item.totalPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                   </span>
                 </div>
               </div>
@@ -82,7 +82,7 @@ const ProposalItemsTable = ({ items, totalPrice }: ProposalItemsTableProps) => {
           <div className="flex justify-between items-center">
             <span className="text-xl font-bold">Total:</span>
             <span className="text-2xl font-bold text-blue-600">
-              R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totalPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
             </span>
           </div>
         </div>
