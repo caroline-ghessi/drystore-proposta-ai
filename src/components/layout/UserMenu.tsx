@@ -1,4 +1,5 @@
 
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
-import { Home, FileText, Users, Target, Settings, User, LogOut } from 'lucide-react';
+import { Home, FileText, Users, Target, Settings, User, LogOut, Menu } from 'lucide-react';
 
 export const UserMenu = () => {
   const { user, logout } = useAuth();
@@ -53,12 +54,35 @@ export const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-        </Button>
+        <div className="flex items-center space-x-2 cursor-pointer">
+          {/* Menu Icon with Text - Desktop */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden lg:flex items-center text-sm text-gray-600 hover:text-gray-900"
+          >
+            <Menu className="w-4 h-4 mr-1" />
+            <span>Menu</span>
+          </Button>
+          
+          {/* Menu Icon Only - Mobile */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden text-gray-600 hover:text-gray-900"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="sr-only">Menu</span>
+          </Button>
+          
+          {/* Avatar */}
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+          </Button>
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
@@ -120,3 +144,4 @@ export const UserMenu = () => {
     </DropdownMenu>
   );
 };
+

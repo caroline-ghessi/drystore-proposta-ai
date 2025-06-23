@@ -1,4 +1,5 @@
 
+
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Menu } from 'lucide-react';
@@ -50,23 +51,7 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
           
           {/* Right Side - Menu Icon + User Menu */}
           <div className="flex items-center space-x-2">
-            {/* Menu Icon */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-900 lg:hidden"
-            >
-              <Menu className="w-5 h-5" />
-              <span className="sr-only">Menu</span>
-            </Button>
-            
-            {/* Desktop Menu Text */}
-            <div className="hidden lg:flex items-center text-sm text-gray-600 mr-2">
-              <Menu className="w-4 h-4 mr-1" />
-              <span>Menu</span>
-            </div>
-            
-            {/* User Menu */}
+            {/* User Menu - includes both menu icon and avatar */}
             <UserMenu />
           </div>
         </div>
@@ -74,3 +59,4 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
     </nav>
   );
 };
+
