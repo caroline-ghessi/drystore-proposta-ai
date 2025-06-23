@@ -20,10 +20,14 @@ export const useClientContext = () => {
   // 2. Temos autenticação de cliente ativa
   const isClient = isClientRoute || isClientAuthenticated;
 
+  // isVendor é o oposto de isClient - se não é cliente, é vendedor/usuário interno
+  const isVendor = !isClient;
+
   return {
     isClient,
     isClientRoute,
     isClientAuthenticated,
+    isVendor,
     clientAuth
   };
 };
