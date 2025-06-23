@@ -113,12 +113,18 @@ const ClientPortal = () => {
       value: Number(proposal.valor_total),
       date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
       validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
-      status: mappedStatus
+      status: mappedStatus,
+      features: proposal.proposal_features?.[0] || { delivery_control: false, contract_generation: false }
     };
   });
 
   // Separar propostas aceitas
   const acceptedProposals = processedProposals.filter(p => p.status === 'aceita');
+
+  // Verificar se há propostas aceitas com controle de entregas ativado
+  const hasDeliveryTracking = acceptedProposals.some(proposal => 
+    proposal.features.delivery_control === true
+  );
 
   // Mock data para funcionalidades ainda não implementadas
   const mockCashbackHistory = [];
@@ -156,6 +162,7 @@ const ClientPortal = () => {
           proposalsAccepted={acceptedProposals}
           cashbackHistory={mockCashbackHistory}
           deliveryProgress={mockDeliveryProgress}
+          showDeliveryTracking={hasDeliveryTracking}
         />
 
         {/* Histórico Completo de Propostas */}

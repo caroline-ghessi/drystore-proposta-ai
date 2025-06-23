@@ -330,6 +330,41 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_features: {
+        Row: {
+          contract_generation: boolean
+          created_at: string
+          delivery_control: boolean
+          id: string
+          proposal_id: string
+          updated_at: string
+        }
+        Insert: {
+          contract_generation?: boolean
+          created_at?: string
+          delivery_control?: boolean
+          id?: string
+          proposal_id: string
+          updated_at?: string
+        }
+        Update: {
+          contract_generation?: boolean
+          created_at?: string
+          delivery_control?: boolean
+          id?: string
+          proposal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_features_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: true
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposal_items: {
         Row: {
           created_at: string

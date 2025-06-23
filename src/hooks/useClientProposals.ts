@@ -18,7 +18,7 @@ export const useClientProposals = (email: string) => {
       if (clientError) throw clientError;
       if (!client) throw new Error('Cliente não encontrado');
 
-      // Buscar propostas do cliente
+      // Buscar propostas do cliente com funcionalidades
       const { data: proposals, error: proposalsError } = await supabase
         .from('proposals')
         .select(`
@@ -37,6 +37,10 @@ export const useClientProposals = (email: string) => {
             preco_unit,
             preco_total,
             descricao_item
+          ),
+          proposal_features (
+            contract_generation,
+            delivery_control
           )
         `)
         .eq('client_id', client.id)
@@ -84,6 +88,10 @@ export const useClientProposal = (linkAccess: string) => {
             preco_unit,
             preco_total,
             descricao_item
+          ),
+          proposal_features (
+            contract_generation,
+            delivery_control
           )
         `)
         .eq('link_acesso', linkAccess)

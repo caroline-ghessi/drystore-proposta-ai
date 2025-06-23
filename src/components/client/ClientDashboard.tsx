@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,13 +20,15 @@ interface ClientDashboardProps {
   proposalsAccepted: any[];
   cashbackHistory: CashbackTransaction[];
   deliveryProgress: DeliveryProgress[];
+  showDeliveryTracking?: boolean;
 }
 
 const ClientDashboard = ({ 
   client, 
   proposalsAccepted, 
   cashbackHistory, 
-  deliveryProgress 
+  deliveryProgress,
+  showDeliveryTracking = false
 }: ClientDashboardProps) => {
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -127,52 +130,54 @@ const ClientDashboard = ({
         </CardContent>
       </Card>
 
-      {/* Acompanhamento de Entregas */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Package className="w-5 h-5 mr-2 text-green-600" />
-            Acompanhamento de Entregas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {deliveryProgress.length > 0 ? (
-            <div className="space-y-4">
-              {deliveryProgress.map((delivery) => (
-                <div key={delivery.proposalId} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Proposta {delivery.proposalId}</h4>
-                    <Badge variant="outline">
-                      {delivery.percentageDelivered.toFixed(1)}% entregue
-                    </Badge>
-                  </div>
-                  
-                  <Progress value={delivery.percentageDelivered} className="mb-2" />
-                  
-                  <div className="text-sm text-gray-600">
-                    <p>
-                      Entregue: {delivery.totalDelivered} de {delivery.totalContracted} {delivery.unit}
-                    </p>
-                    {delivery.lastDeliveryDate && (
+      {/* Acompanhamento de Entregas - Condicional */}
+      {showDeliveryTracking && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Package className="w-5 h-5 mr-2 text-green-600" />
+              Acompanhamento de Entregas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {deliveryProgress.length > 0 ? (
+              <div className="space-y-4">
+                {deliveryProgress.map((delivery) => (
+                  <div key={delivery.proposalId} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium">Proposta {delivery.proposalId}</h4>
+                      <Badge variant="outline">
+                        {delivery.percentageDelivered.toFixed(1)}% entregue
+                      </Badge>
+                    </div>
+                    
+                    <Progress value={delivery.percentageDelivered} className="mb-2" />
+                    
+                    <div className="text-sm text-gray-600">
                       <p>
-                        Última entrega: {new Date(delivery.lastDeliveryDate).toLocaleDateString('pt-BR')}
+                        Entregue: {delivery.totalDelivered} de {delivery.totalContracted} {delivery.unit}
                       </p>
-                    )}
+                      {delivery.lastDeliveryDate && (
+                        <p>
+                          Última entrega: {new Date(delivery.lastDeliveryDate).toLocaleDateString('pt-BR')}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button size="sm" className="mt-2" variant="outline">
+                      Ver Detalhes da Entrega
+                    </Button>
                   </div>
-                  
-                  <Button size="sm" className="mt-2" variant="outline">
-                    Ver Detalhes da Entrega
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-gray-500 py-8">
-              Nenhuma entrega em andamento
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                Nenhuma entrega em andamento
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Histórico de Cashback */}
       <Card className="border-0 shadow-lg">
