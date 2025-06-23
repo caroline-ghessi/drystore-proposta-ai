@@ -30,7 +30,7 @@ export const useSecureClientProposals = (token: string) => {
         throw new Error('Failed to validate token');
       }
 
-      const validationResponse = tokenValidation as TokenValidationResponse;
+      const validationResponse = tokenValidation as unknown as TokenValidationResponse;
 
       if (!validationResponse.valid) {
         throw new Error('Invalid or expired token');

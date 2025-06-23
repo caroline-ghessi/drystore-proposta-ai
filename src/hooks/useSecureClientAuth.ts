@@ -76,7 +76,7 @@ export const useSecureClientAuth = () => {
         return { success: false, error: 'Erro ao validar token' };
       }
 
-      const validationResponse = data as TokenValidationResponse;
+      const validationResponse = data as unknown as TokenValidationResponse;
 
       if (!validationResponse.valid) {
         return { success: false, error: validationResponse.error || 'Token inválido ou expirado' };
