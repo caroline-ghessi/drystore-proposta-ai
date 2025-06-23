@@ -106,7 +106,8 @@ export const useProposalData = (id: string) => {
       category: 'Material Extraído',
     })) : getMockProposalItems();
 
-  const dataSource = proposalData ? 'supabase' : isRealData ? 'pdf' : 'mock';
+  // Explicitly type the dataSource to match the expected literal types
+  const dataSource: 'supabase' | 'pdf' | 'mock' = proposalData ? 'supabase' : isRealData ? 'pdf' : 'mock';
   
   console.log('🎯 ProposalView: Renderizando com dados:', {
     dataSource,
