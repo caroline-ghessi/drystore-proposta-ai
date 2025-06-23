@@ -1,6 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 type Proposal = Tables<'proposals'>;
@@ -89,9 +90,15 @@ export const useProposal = (id: string) => {
 
 export const useCreateProposal = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (proposalData: CreateProposalData) => {
+      // Verificar se o usuário está autenticado
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado. Faça login para criar propostas.');
+      }
+
       const { 
         clientData, 
         items, 
@@ -101,6 +108,13 @@ export const useCreateProposal = () => {
         discount = 0,
         selectedPaymentConditions = []
       } = proposalData;
+
+      console.log('🔍 Iniciando criação de proposta:', {
+        userId: user.id,
+        clientData,
+        itemsCount: items.length,
+        subtotal
+      });
 
       // Validações obrigatórias
       if (!clientData.name || !clientData.email) {
@@ -120,6 +134,7 @@ export const useCreateProposal = () => {
         .single();
 
       if (existingClient) {
+        console.log('📋 Cliente existente encontrado:', existingClient.id);
         // Atualizar dados do cliente existente
         const { data: updatedClient, error: updateError } = await supabase
           .from('clients')
@@ -135,6 +150,7 @@ export const useCreateProposal = () => {
         if (updateError) throw updateError;
         client = updatedClient;
       } else {
+        console.log('👤 Criando novo cliente');
         // Criar novo cliente
         const { data: newClient, error: createError } = await supabase
           .from('clients')
@@ -158,10 +174,18 @@ export const useCreateProposal = () => {
       // Gerar link de acesso único
       const linkAccess = `${client.id}-${Date.now()}`;
 
+      console.log('📝 Criando proposta com dados:', {
+        client_id: client.id,
+        user_id: user.id,
+        valor_total: subtotal,
+        desconto_percentual: discount
+      });
+
       const { data: proposal, error: proposalError } = await supabase
         .from('proposals')
         .insert({
           client_id: client.id,
+          user_id: user.id, // Garantir que o user_id seja sempre definido
           valor_total: subtotal,
           desconto_percentual: discount,
           validade: validUntil.toISOString(),
@@ -172,7 +196,12 @@ export const useCreateProposal = () => {
         .select()
         .single();
 
-      if (proposalError) throw proposalError;
+      if (proposalError) {
+        console.error('❌ Erro ao criar proposta:', proposalError);
+        throw proposalError;
+      }
+
+      console.log('✅ Proposta criada com sucesso:', proposal.id);
 
       // 3. Criar itens da proposta
       const proposalItems = items.map(item => ({
@@ -184,14 +213,21 @@ export const useCreateProposal = () => {
         descricao_item: `${item.category} - ${item.unit}`,
       }));
 
+      console.log('📦 Criando itens da proposta:', proposalItems.length);
+
       const { error: itemsError } = await supabase
         .from('proposal_items')
         .insert(proposalItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('❌ Erro ao criar itens:', itemsError);
+        throw itemsError;
+      }
 
       // 4. Associar condições de pagamento selecionadas
       if (selectedPaymentConditions.length > 0) {
+        console.log('💳 Associando condições de pagamento:', selectedPaymentConditions.length);
+        
         const paymentConditionsData = selectedPaymentConditions.map(conditionId => ({
           proposal_id: proposal.id,
           payment_condition_id: conditionId,
@@ -201,8 +237,13 @@ export const useCreateProposal = () => {
           .from('proposal_payment_conditions')
           .insert(paymentConditionsData);
 
-        if (paymentConditionsError) throw paymentConditionsError;
+        if (paymentConditionsError) {
+          console.error('❌ Erro ao associar condições de pagamento:', paymentConditionsError);
+          throw paymentConditionsError;
+        }
       }
+
+      console.log('🎉 Proposta completa criada com sucesso!');
 
       return {
         proposal,
