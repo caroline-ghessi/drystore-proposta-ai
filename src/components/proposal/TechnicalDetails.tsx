@@ -53,7 +53,7 @@ export const TechnicalDetails = ({
 
         {/* Produtos por Solução */}
         <div>
-          <h4 className="font-semibold mb-4 flex items-center text-slate-100">
+          <h4 className="font-semibold mb-4 flex items-center text-zinc-800">
             <TrendingUp className="w-4 h-4 mr-2" />
             Produtos e Soluções
           </h4>
