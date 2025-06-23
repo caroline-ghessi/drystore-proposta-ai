@@ -442,6 +442,84 @@ export type Database = {
           },
         ]
       }
+      proposal_recommended_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          proposal_id: string
+          recommended_product_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          proposal_id: string
+          recommended_product_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          proposal_id?: string
+          recommended_product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_recommended_products_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_recommended_products_recommended_product_id_fkey"
+            columns: ["recommended_product_id"]
+            isOneToOne: false
+            referencedRelation: "recommended_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposal_solutions: {
+        Row: {
+          created_at: string | null
+          id: string
+          observacoes: string | null
+          proposal_id: string
+          solution_id: string
+          valor_solucao: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          observacoes?: string | null
+          proposal_id: string
+          solution_id: string
+          valor_solucao?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          observacoes?: string | null
+          proposal_id?: string
+          solution_id?: string
+          valor_solucao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_solutions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_solutions_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           client_id: string
@@ -449,6 +527,8 @@ export type Database = {
           desconto_percentual: number | null
           discount_percentage: number | null
           id: string
+          include_technical_details: boolean | null
+          include_video: boolean | null
           link_acesso: string | null
           observacoes: string | null
           status: Database["public"]["Enums"]["proposal_status"]
@@ -456,6 +536,7 @@ export type Database = {
           user_id: string | null
           validade: string
           valor_total: number
+          video_url: string | null
         }
         Insert: {
           client_id: string
@@ -463,6 +544,8 @@ export type Database = {
           desconto_percentual?: number | null
           discount_percentage?: number | null
           id?: string
+          include_technical_details?: boolean | null
+          include_video?: boolean | null
           link_acesso?: string | null
           observacoes?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
@@ -470,6 +553,7 @@ export type Database = {
           user_id?: string | null
           validade?: string
           valor_total?: number
+          video_url?: string | null
         }
         Update: {
           client_id?: string
@@ -477,6 +561,8 @@ export type Database = {
           desconto_percentual?: number | null
           discount_percentage?: number | null
           id?: string
+          include_technical_details?: boolean | null
+          include_video?: boolean | null
           link_acesso?: string | null
           observacoes?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
@@ -484,6 +570,7 @@ export type Database = {
           user_id?: string | null
           validade?: string
           valor_total?: number
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -540,6 +627,42 @@ export type Database = {
         }
         Relationships: []
       }
+      recommended_products: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          preco: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          preco?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          preco?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sales_targets: {
         Row: {
           created_at: string
@@ -567,6 +690,71 @@ export type Database = {
           updated_at?: string
           user_id?: string
           year?: number
+        }
+        Relationships: []
+      }
+      solution_images: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_description: string | null
+          image_title: string | null
+          image_url: string
+          solution_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_description?: string | null
+          image_title?: string | null
+          image_url: string
+          solution_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_description?: string | null
+          image_title?: string | null
+          image_url?: string
+          solution_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_images_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solutions: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -89,8 +89,8 @@ export const useProposal = (id: string) => {
 
       if (error) throw error;
 
-      // Buscar soluções associadas separadamente usando any temporariamente
-      const { data: proposalSolutions } = await (supabase as any)
+      // Buscar soluções associadas separadamente
+      const { data: proposalSolutions } = await supabase
         .from('proposal_solutions')
         .select(`
           id,
@@ -106,7 +106,7 @@ export const useProposal = (id: string) => {
         .eq('proposal_id', id);
 
       // Buscar produtos recomendados associados separadamente
-      const { data: proposalRecommendedProducts } = await (supabase as any)
+      const { data: proposalRecommendedProducts } = await supabase
         .from('proposal_recommended_products')
         .select(`
           id,
@@ -235,8 +235,7 @@ export const useCreateProposal = () => {
         include_technical_details: includeTechnicalDetails
       });
 
-      // Usar any temporariamente para os novos campos
-      const { data: proposal, error: proposalError } = await (supabase as any)
+      const { data: proposal, error: proposalError } = await supabase
         .from('proposals')
         .insert({
           client_id: client.id,
@@ -311,7 +310,7 @@ export const useCreateProposal = () => {
           valor_solucao: solution.value,
         }));
 
-        const { error: solutionsError } = await (supabase as any)
+        const { error: solutionsError } = await supabase
           .from('proposal_solutions')
           .insert(solutionsData);
 
@@ -330,7 +329,7 @@ export const useCreateProposal = () => {
           recommended_product_id: productId,
         }));
 
-        const { error: recommendedProductsError } = await (supabase as any)
+        const { error: recommendedProductsError } = await supabase
           .from('proposal_recommended_products')
           .insert(recommendedProductsData);
 
