@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save, Trash2, User, Mail, Phone, Building } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save, Trash2, User, Mail, Phone, Building, AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateProposal } from '@/hooks/useProposals';
 
 interface ProposalItem {
   id: string;
@@ -39,6 +39,7 @@ interface PaymentCondition {
 const ProposalBuilder = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createProposal = useCreateProposal();
   
   const [clientData, setClientData] = useState<ClientData>({
     name: '',
@@ -51,6 +52,7 @@ const ProposalBuilder = () => {
   const [items, setItems] = useState<ProposalItem[]>([]);
   const [observations, setObservations] = useState('');
   const [validityDays, setValidityDays] = useState(15);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   // Condições de pagamento padrão
   const paymentConditions: PaymentCondition[] = [
@@ -99,6 +101,31 @@ const ProposalBuilder = () => {
 
   const updateClientData = (field: keyof ClientData, value: string) => {
     setClientData(prev => ({ ...prev, [field]: value }));
+    // Limpar erro do campo quando usuário começar a digitar
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+
+    if (!clientData.name.trim()) {
+      newErrors.name = 'Nome do cliente é obrigatório';
+    }
+
+    if (!clientData.email.trim()) {
+      newErrors.email = 'Email do cliente é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientData.email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
+    if (items.length === 0) {
+      newErrors.items = 'Pelo menos um item é obrigatório';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const updateItem = (itemId: string, field: string, value: number | string) => {
@@ -147,8 +174,52 @@ const ProposalBuilder = () => {
     return finalValue;
   };
 
-  const handleSave = () => {
-    // Preparar dados da proposta
+  const handleSave = async () => {
+    if (!validateForm()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const result = await createProposal.mutateAsync({
+        clientData,
+        items,
+        observations,
+        validityDays,
+        subtotal
+      });
+
+      toast({
+        title: "Proposta criada!",
+        description: "A proposta foi salva com sucesso.",
+      });
+
+      // Redirecionar para visualização da proposta
+      navigate(`/proposal/${result.proposal.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Erro interno do servidor",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePreview = () => {
+    if (!validateForm()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios antes de visualizar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Preparar dados para preview
     const proposalData = {
       clientData,
       items,
@@ -162,18 +233,7 @@ const ProposalBuilder = () => {
       }))
     };
 
-    // Salvar no sessionStorage para próxima etapa
     sessionStorage.setItem('proposalData', JSON.stringify(proposalData));
-    
-    toast({
-      title: "Proposta preparada!",
-      description: "Dados salvos com sucesso. Prossiga para visualização.",
-    });
-  };
-
-  const handlePreview = () => {
-    handleSave();
-    // Navegar para visualização (quando implementada)
     navigate('/proposal-preview');
   };
 
@@ -208,9 +268,22 @@ const ProposalBuilder = () => {
           </div>
           
           <div className="flex space-x-3">
-            <Button variant="outline" onClick={handleSave}>
-              <Save className="w-4 h-4 mr-2" />
-              Salvar
+            <Button 
+              variant="outline" 
+              onClick={handleSave}
+              disabled={createProposal.isPending}
+            >
+              {createProposal.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Proposta
+                </>
+              )}
             </Button>
             <Button onClick={handlePreview} className="gradient-bg hover:opacity-90">
               <Eye className="w-4 h-4 mr-2" />
@@ -247,21 +320,31 @@ const ProposalBuilder = () => {
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="clientName">Nome *</Label>
+                    <Label htmlFor="clientName">
+                      Nome *
+                      {errors.name && (
+                        <span className="text-red-500 text-sm ml-1">({errors.name})</span>
+                      )}
+                    </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="clientName"
                         value={clientData.name}
                         onChange={(e) => updateClientData('name', e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
                         placeholder="Nome do cliente"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="clientEmail">Email *</Label>
+                    <Label htmlFor="clientEmail">
+                      Email *
+                      {errors.email && (
+                        <span className="text-red-500 text-sm ml-1">({errors.email})</span>
+                      )}
+                    </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
@@ -269,7 +352,7 @@ const ProposalBuilder = () => {
                         type="email"
                         value={clientData.email}
                         onChange={(e) => updateClientData('email', e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
                         placeholder="email@exemplo.com"
                       />
                     </div>
@@ -315,6 +398,14 @@ const ProposalBuilder = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Mensagem de erro para itens */}
+            {errors.items && (
+              <div className="flex items-center gap-2 p-3 border border-red-200 bg-red-50 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 text-sm">{errors.items}</span>
+              </div>
+            )}
 
             {/* Items List */}
             {Object.entries(groupedItems).map(([category, categoryItems]) => (

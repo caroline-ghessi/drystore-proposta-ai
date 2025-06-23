@@ -80,3 +80,54 @@ export const useDeleteClient = () => {
     },
   });
 };
+
+// Função utilitária para buscar ou criar cliente
+export const useFindOrCreateClient = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (clientData: { name: string; email: string; phone?: string; company?: string }) => {
+      // Buscar cliente existente
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('email', clientData.email)
+        .single();
+
+      if (existingClient) {
+        // Atualizar dados do cliente existente
+        const { data: updatedClient, error: updateError } = await supabase
+          .from('clients')
+          .update({
+            nome: clientData.name,
+            telefone: clientData.phone || null,
+            empresa: clientData.company || null,
+          })
+          .eq('id', existingClient.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        return updatedClient;
+      } else {
+        // Criar novo cliente
+        const { data: newClient, error: createError } = await supabase
+          .from('clients')
+          .insert({
+            nome: clientData.name,
+            email: clientData.email,
+            telefone: clientData.phone || null,
+            empresa: clientData.company || null,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        return newClient;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+};

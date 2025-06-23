@@ -7,6 +7,27 @@ type Proposal = Tables<'proposals'>;
 type ProposalInsert = TablesInsert<'proposals'>;
 type ProposalUpdate = TablesUpdate<'proposals'>;
 
+interface CreateProposalData {
+  clientData: {
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    address?: string;
+  };
+  items: Array<{
+    category: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+  }>;
+  observations?: string;
+  validityDays: number;
+  subtotal: number;
+}
+
 export const useProposals = () => {
   return useQuery({
     queryKey: ['proposals'],
@@ -68,18 +89,106 @@ export const useCreateProposal = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (proposal: ProposalInsert) => {
-      const { data, error } = await supabase
+    mutationFn: async (proposalData: CreateProposalData) => {
+      const { clientData, items, observations, validityDays, subtotal } = proposalData;
+
+      // Validações obrigatórias
+      if (!clientData.name || !clientData.email) {
+        throw new Error('Nome e email do cliente são obrigatórios');
+      }
+
+      if (items.length === 0) {
+        throw new Error('Pelo menos um item é obrigatório');
+      }
+
+      // 1. Buscar ou criar cliente
+      let client;
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('email', clientData.email)
+        .single();
+
+      if (existingClient) {
+        // Atualizar dados do cliente existente
+        const { data: updatedClient, error: updateError } = await supabase
+          .from('clients')
+          .update({
+            nome: clientData.name,
+            telefone: clientData.phone || null,
+            empresa: clientData.company || null,
+          })
+          .eq('id', existingClient.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        client = updatedClient;
+      } else {
+        // Criar novo cliente
+        const { data: newClient, error: createError } = await supabase
+          .from('clients')
+          .insert({
+            nome: clientData.name,
+            email: clientData.email,
+            telefone: clientData.phone || null,
+            empresa: clientData.company || null,
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        client = newClient;
+      }
+
+      // 2. Criar proposta
+      const validUntil = new Date();
+      validUntil.setDate(validUntil.getDate() + validityDays);
+
+      // Gerar link de acesso único
+      const linkAccess = `${client.id}-${Date.now()}`;
+
+      const { data: proposal, error: proposalError } = await supabase
         .from('proposals')
-        .insert(proposal)
+        .insert({
+          client_id: client.id,
+          valor_total: subtotal,
+          desconto_percentual: 0,
+          validade: validUntil.toISOString(),
+          status: 'draft',
+          observacoes: observations,
+          link_acesso: linkAccess,
+        })
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (proposalError) throw proposalError;
+
+      // 3. Criar itens da proposta
+      const proposalItems = items.map(item => ({
+        proposal_id: proposal.id,
+        produto_nome: item.description,
+        quantidade: item.quantity,
+        preco_unit: item.unitPrice,
+        preco_total: item.total,
+        descricao_item: `${item.category} - ${item.unit}`,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('proposal_items')
+        .insert(proposalItems);
+
+      if (itemsError) throw itemsError;
+
+      return {
+        proposal,
+        client,
+        items: proposalItems
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
   });
 };
