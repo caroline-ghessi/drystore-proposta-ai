@@ -48,7 +48,8 @@ export const useProposals = () => {
             id,
             nome,
             email,
-            empresa
+            empresa,
+            telefone
           )
         `)
         .order('created_at', { ascending: false });
