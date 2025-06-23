@@ -15,6 +15,19 @@ interface SecureClientAuth {
   isValid: boolean;
 }
 
+interface TokenValidationResponse {
+  valid: boolean;
+  client?: {
+    id: string;
+    nome: string;
+    email: string;
+    empresa?: string;
+    telefone?: string;
+  };
+  error?: string;
+  token_expires_at?: string;
+}
+
 export const useSecureClientAuth = () => {
   const [clientAuth, setClientAuth] = useState<SecureClientAuth | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +52,7 @@ export const useSecureClientAuth = () => {
         return { success: false, error: 'Cliente não encontrado ou erro interno' };
       }
 
-      return { success: true, token: data };
+      return { success: true, token: data as string };
     } catch (error) {
       console.error('Unexpected error:', error);
       return { success: false, error: 'Erro interno do sistema' };
@@ -63,11 +76,13 @@ export const useSecureClientAuth = () => {
         return { success: false, error: 'Erro ao validar token' };
       }
 
-      if (!data.valid) {
-        return { success: false, error: data.error || 'Token inválido ou expirado' };
+      const validationResponse = data as TokenValidationResponse;
+
+      if (!validationResponse.valid) {
+        return { success: false, error: validationResponse.error || 'Token inválido ou expirado' };
       }
 
-      return { success: true, client: data.client };
+      return { success: true, client: validationResponse.client };
     } catch (error) {
       console.error('Unexpected error validating token:', error);
       return { success: false, error: 'Erro interno do sistema' };

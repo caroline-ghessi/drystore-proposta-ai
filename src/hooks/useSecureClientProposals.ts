@@ -2,6 +2,19 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface TokenValidationResponse {
+  valid: boolean;
+  client?: {
+    id: string;
+    nome: string;
+    email: string;
+    empresa?: string;
+    telefone?: string;
+  };
+  error?: string;
+  token_expires_at?: string;
+}
+
 export const useSecureClientProposals = (token: string) => {
   return useQuery({
     queryKey: ['secure-client-proposals', token],
@@ -13,11 +26,17 @@ export const useSecureClientProposals = (token: string) => {
         token: token
       });
 
-      if (tokenError || !tokenValidation?.valid) {
+      if (tokenError) {
+        throw new Error('Failed to validate token');
+      }
+
+      const validationResponse = tokenValidation as TokenValidationResponse;
+
+      if (!validationResponse.valid) {
         throw new Error('Invalid or expired token');
       }
 
-      const client = tokenValidation.client;
+      const client = validationResponse.client;
 
       // Fetch proposals for this client with enhanced security
       const { data: proposals, error: proposalsError } = await supabase
@@ -44,7 +63,7 @@ export const useSecureClientProposals = (token: string) => {
             delivery_control
           )
         `)
-        .eq('client_id', client.id)
+        .eq('client_id', client!.id)
         .neq('status', 'draft')
         .order('created_at', { ascending: false });
 
