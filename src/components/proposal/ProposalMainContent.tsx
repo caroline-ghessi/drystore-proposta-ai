@@ -31,22 +31,30 @@ const ProposalMainContent = ({
   onQuestionSubmit,
   status
 }: ProposalMainContentProps) => {
-  const recommendedProducts = getMockRecommendedProducts();
+  // Usar produtos recomendados da proposta ou fallback para mock
+  const recommendedProducts = proposal.recommendedProducts?.length > 0 
+    ? proposal.recommendedProducts 
+    : getMockRecommendedProducts();
 
   return (
     <div className="lg:col-span-2 space-y-6">
       <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
 
-      {/* Maximize Seu Investimento - positioned between items and benefits */}
-      <RecommendedProducts products={recommendedProducts} />
+      {/* Produtos Recomendados - apenas se houver produtos selecionados */}
+      {recommendedProducts.length > 0 && (
+        <RecommendedProducts products={recommendedProducts} />
+      )}
 
       <ProposalBenefits benefits={proposal.benefits} />
       
-      <TechnicalDetails 
-        technicalDetails={proposal.technicalDetails}
-        technicalImages={proposal.technicalImages}
-        solutions={proposal.solutions}
-      />
+      {/* Detalhes Técnicos - apenas se estiver habilitado na proposta */}
+      {proposal.includeTechnicalDetails && proposal.solutions?.length > 0 && (
+        <TechnicalDetails 
+          technicalDetails={proposal.solutions.map(s => s.description).filter(Boolean)}
+          technicalImages={proposal.technicalImages}
+          solutions={proposal.solutions}
+        />
+      )}
 
       <TechnicalChatCard />
 

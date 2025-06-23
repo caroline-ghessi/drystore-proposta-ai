@@ -1,121 +1,101 @@
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useProposal } from '@/hooks/useProposals';
-import { getMockProposal, getMockProposalItems } from '@/data/mockProposalData';
+import { useSolutionImages } from '@/hooks/useSolutions';
 
-interface ExtractedData {
-  id?: string;
-  client?: string;
-  items: Array<{
-    description: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    total: number;
-  }>;
-  subtotal: number;
-  total: number;
-  paymentTerms?: string;
-  delivery?: string;
-  vendor?: string;
-  timestamp?: number;
-  source?: string;
-}
+export const useProposalData = (proposalId: string) => {
+  const { data: proposalData, isLoading, error } = useProposal(proposalId);
 
-export const useProposalData = (id: string) => {
-  const [realProposalData, setRealProposalData] = useState<ExtractedData | null>(null);
-  const [isRealData, setIsRealData] = useState(false);
-  
-  // Buscar dados reais da proposta no Supabase
-  const { data: proposalData, isLoading, error } = useProposal(id);
-  
-  // Carregar dados reais extraídos do PDF
-  useEffect(() => {
-    console.log('🔍 ProposalView: Carregando dados para proposta ID:', id);
-    
-    const savedData = sessionStorage.getItem('proposalExtractedData');
-    
-    if (savedData) {
-      try {
-        const extractedData: ExtractedData = JSON.parse(savedData);
-        console.log('📋 ProposalView: Dados extraídos encontrados:', extractedData);
-        
-        if (extractedData.items && extractedData.items.length > 0) {
-          setRealProposalData(extractedData);
-          setIsRealData(true);
-          console.log('✅ ProposalView: Usando dados reais extraídos do PDF');
-        } else {
-          console.log('⚠️ ProposalView: Dados extraídos inválidos, usando mock');
-          setIsRealData(false);
-        }
-      } catch (error) {
-        console.error('❌ ProposalView: Erro ao carregar dados extraídos:', error);
-        setIsRealData(false);
-      }
-    } else {
-      console.log('📝 ProposalView: Nenhum dado extraído encontrado, usando dados do Supabase');
-      setIsRealData(false);
+  // Extrair IDs das soluções para buscar imagens
+  const solutionIds = useMemo(() => {
+    if (!proposalData?.proposal_solutions) return [];
+    return proposalData.proposal_solutions.map(ps => ps.solutions?.id).filter(Boolean) as string[];
+  }, [proposalData]);
+
+  // Buscar imagens das soluções
+  const { data: solutionImages = [] } = useSolutionImages(solutionIds);
+
+  const { proposal, proposalItems, dataSource } = useMemo(() => {
+    if (!proposalData) {
+      return {
+        proposal: getDefaultProposal(),
+        proposalItems: [],
+        dataSource: 'mock' as const
+      };
     }
-  }, [id]);
 
-  // Gerar dados da proposta baseados nos dados reais do Supabase ou extraídos
-  const proposal = proposalData ? {
-    id: proposalData.id,
-    clientName: proposalData.clients?.nome || 'Cliente',
-    originalPrice: proposalData.desconto_percentual > 0 ? 
-      proposalData.valor_total / (1 - proposalData.desconto_percentual / 100) : 
-      proposalData.valor_total,
-    discount: proposalData.desconto_percentual || 0,
-    finalPrice: proposalData.valor_total,
-    installments: {
-      times: 12,
-      value: proposalData.valor_total / 12
-    },
-    roi: '15-25%',
-    economy: '30%',
-    validUntil: new Date(proposalData.validade).toLocaleDateString('pt-BR'),
-    status: proposalData.status,
-    // Manter outras propriedades do mock para compatibilidade
-    ...getMockProposal(id)
-  } : isRealData && realProposalData ? {
-    ...getMockProposal(id),
-    clientName: realProposalData.client || 'PROPOSTA COMERCIAL',
-    finalPrice: realProposalData.total,
-  } : getMockProposal(id);
+    // Mapear dados reais da proposta
+    const proposal = {
+      id: proposalData.id,
+      clientName: proposalData.clients?.nome || 'Cliente',
+      clientEmail: proposalData.clients?.email || '',
+      clientCompany: proposalData.clients?.empresa || '',
+      projectName: 'Projeto de Construção',
+      totalPrice: proposalData.valor_total || 0,
+      finalPrice: proposalData.valor_total - (proposalData.valor_total * (proposalData.desconto_percentual || 0) / 100),
+      discount: proposalData.desconto_percentual || 0,
+      validUntil: proposalData.validade ? new Date(proposalData.validade).toLocaleDateString('pt-BR') : '',
+      status: proposalData.status || 'draft',
+      createdBy: 'Vendedor Drystore',
+      observations: proposalData.observacoes || '',
+      
+      // Novos campos para funcionalidades
+      includeVideo: proposalData.include_video || false,
+      videoUrl: proposalData.video_url || '',
+      includeTechnicalDetails: proposalData.include_technical_details || false,
+      
+      // Mapear soluções com valores
+      solutions: proposalData.proposal_solutions?.map(ps => ({
+        id: ps.solutions?.id || '',
+        name: ps.solutions?.nome || '',
+        description: ps.solutions?.descricao || '',
+        category: ps.solutions?.categoria || '',
+        value: ps.valor_solucao || 0,
+        images: solutionImages.filter(img => img.solution_id === ps.solutions?.id)
+      })) || [],
+      
+      // Mapear produtos recomendados
+      recommendedProducts: proposalData.proposal_recommended_products?.map(prp => ({
+        id: prp.recommended_products?.id || '',
+        name: prp.recommended_products?.nome || '',
+        description: prp.recommended_products?.descricao || '',
+        price: prp.recommended_products?.preco || 0,
+        category: prp.recommended_products?.categoria || ''
+      })) || [],
 
-  // Gerar itens da proposta baseados nos dados reais do Supabase ou extraídos
-  const proposalItems = proposalData?.proposal_items ? 
-    proposalData.proposal_items.map((item, index) => ({
+      // Manter campos existentes para compatibilidade
+      benefits: [
+        'Garantia de 5 anos para estruturas metálicas',
+        'Instalação profissional inclusa',
+        'Suporte técnico especializado',
+        'Materiais certificados e de alta qualidade'
+      ],
+      technicalDetails: proposalData.proposal_solutions?.length > 0 
+        ? proposalData.proposal_solutions.map(ps => ps.solutions?.descricao || '').filter(Boolean)
+        : [],
+      technicalImages: solutionImages.map(img => ({
+        url: img.image_url,
+        title: img.image_title || '',
+        description: img.image_description || ''
+      }))
+    };
+
+    const proposalItems = proposalData.proposal_items?.map(item => ({
       id: item.id,
-      productName: item.produto_nome,
+      category: item.descricao_item?.split(' - ')[0] || 'Item',
+      description: item.produto_nome,
       quantity: Number(item.quantidade),
-      unit: 'UN',
+      unit: item.descricao_item?.split(' - ')[1] || 'un',
       unitPrice: Number(item.preco_unit),
-      total: Number(item.preco_total),
-      description: item.descricao_item || item.produto_nome,
-      category: 'Material',
-    })) : isRealData && realProposalData ? 
-    realProposalData.items.map((item, index) => ({
-      id: String(index + 1),
-      productName: item.description,
-      quantity: item.quantity,
-      unit: item.unit,
-      unitPrice: item.unitPrice,
-      total: item.total,
-      description: item.description,
-      category: 'Material Extraído',
-    })) : getMockProposalItems();
+      totalPrice: Number(item.preco_total)
+    })) || [];
 
-  // Explicitly type the dataSource to match the expected literal types
-  const dataSource: 'supabase' | 'pdf' | 'mock' = proposalData ? 'supabase' : isRealData ? 'pdf' : 'mock';
-  
-  console.log('🎯 ProposalView: Renderizando com dados:', {
-    dataSource,
-    clientName: proposal.clientName,
-    itemsCount: proposalItems.length,
-    total: proposal.finalPrice,
-    discount: proposal.discount
-  });
+    return {
+      proposal,
+      proposalItems,
+      dataSource: 'database' as const
+    };
+  }, [proposalData, solutionImages]);
 
   return {
     proposal,
@@ -125,3 +105,38 @@ export const useProposalData = (id: string) => {
     error
   };
 };
+
+// Função auxiliar para proposta padrão (mock)
+function getDefaultProposal() {
+  return {
+    id: 'mock-1',
+    clientName: 'João Silva',
+    clientEmail: 'joao@exemplo.com',
+    clientCompany: 'Construtora Silva Ltda',
+    projectName: 'Residência Moderna',
+    totalPrice: 45825.00,
+    finalPrice: 45825.00,
+    discount: 0,
+    validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR'),
+    status: 'pending' as const,
+    createdBy: 'Carlos Vendedor',
+    observations: 'Prazo de entrega: 30 dias após confirmação do pedido.',
+    
+    // Novos campos
+    includeVideo: false,
+    videoUrl: '',
+    includeTechnicalDetails: false,
+    solutions: [],
+    recommendedProducts: [],
+    
+    // Campos existentes
+    benefits: [
+      'Garantia de 5 anos para estruturas metálicas',
+      'Instalação profissional inclusa',
+      'Suporte técnico especializado',
+      'Materiais certificados e de alta qualidade'
+    ],
+    technicalDetails: [],
+    technicalImages: []
+  };
+}

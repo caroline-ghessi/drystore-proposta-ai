@@ -12,6 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useCreateProposal } from '@/hooks/useProposals';
 import PaymentConditionsSelector from '@/components/proposal/PaymentConditionsSelector';
 import DiscountSection from '@/components/proposal/DiscountSection';
+import VideoConfigSection from '@/components/proposal/VideoConfigSection';
+import SolutionSelector from '@/components/proposal/SolutionSelector';
+import RecommendedProductSelector from '@/components/proposal/RecommendedProductSelector';
 
 interface ProposalItem {
   id: string;
@@ -57,6 +60,13 @@ const ProposalBuilder = () => {
   const [discount, setDiscount] = useState(0);
   const [selectedPaymentConditions, setSelectedPaymentConditions] = useState<string[]>([]);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+  // Novas funcionalidades
+  const [includeVideo, setIncludeVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [includeTechnicalDetails, setIncludeTechnicalDetails] = useState(false);
+  const [selectedSolutions, setSelectedSolutions] = useState<Array<{ solutionId: string; value: number }>>([]);
+  const [selectedRecommendedProducts, setSelectedRecommendedProducts] = useState<string[]>([]);
 
   // Condições de pagamento padrão
   const paymentConditions: PaymentCondition[] = [
@@ -134,6 +144,15 @@ const ProposalBuilder = () => {
       newErrors.paymentConditions = 'Selecione ao menos uma condição de pagamento';
     }
 
+    // Validações para novas funcionalidades
+    if (includeVideo && !videoUrl.trim()) {
+      newErrors.videoUrl = 'URL do vídeo é obrigatória quando vídeo está habilitado';
+    }
+
+    if (includeTechnicalDetails && selectedSolutions.length === 0) {
+      newErrors.solutions = 'Selecione ao menos uma solução quando detalhes técnicos estiver habilitado';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -192,7 +211,12 @@ const ProposalBuilder = () => {
         validityDays,
         subtotal: finalTotal,
         discount,
-        selectedPaymentConditions
+        selectedPaymentConditions,
+        includeVideo,
+        videoUrl,
+        includeTechnicalDetails,
+        selectedSolutions,
+        selectedRecommendedProducts
       });
 
       toast({
@@ -368,6 +392,42 @@ const ProposalBuilder = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* NOVA SEÇÃO: Vídeo Personalizado */}
+            <VideoConfigSection
+              includeVideo={includeVideo}
+              onIncludeVideoChange={setIncludeVideo}
+              videoUrl={videoUrl}
+              onVideoUrlChange={setVideoUrl}
+            />
+
+            {errors.videoUrl && (
+              <div className="flex items-center gap-2 p-3 border border-red-200 bg-red-50 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 text-sm">{errors.videoUrl}</span>
+              </div>
+            )}
+
+            {/* NOVA SEÇÃO: Produtos Recomendados */}
+            <RecommendedProductSelector
+              selectedProducts={selectedRecommendedProducts}
+              onSelectedProductsChange={setSelectedRecommendedProducts}
+            />
+
+            {/* NOVA SEÇÃO: Soluções Técnicas */}
+            <SolutionSelector
+              includeTechnicalDetails={includeTechnicalDetails}
+              onIncludeTechnicalDetailsChange={setIncludeTechnicalDetails}
+              selectedSolutions={selectedSolutions}
+              onSelectedSolutionsChange={setSelectedSolutions}
+            />
+
+            {errors.solutions && (
+              <div className="flex items-center gap-2 p-3 border border-red-200 bg-red-50 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-red-700 text-sm">{errors.solutions}</span>
+              </div>
+            )}
 
             {/* Mensagem de erro para itens */}
             {errors.items && (

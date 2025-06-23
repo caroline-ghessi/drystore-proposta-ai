@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,11 @@ interface CreateProposalData {
   subtotal: number;
   discount?: number;
   selectedPaymentConditions?: string[];
+  includeVideo?: boolean;
+  videoUrl?: string;
+  includeTechnicalDetails?: boolean;
+  selectedSolutions?: Array<{ solutionId: string; value: number }>;
+  selectedRecommendedProducts?: string[];
 }
 
 export const useProposals = () => {
@@ -76,6 +80,27 @@ export const useProposal = (id: string) => {
             preco_unit,
             preco_total,
             descricao_item
+          ),
+          proposal_solutions (
+            id,
+            valor_solucao,
+            observacoes,
+            solutions (
+              id,
+              nome,
+              descricao,
+              categoria
+            )
+          ),
+          proposal_recommended_products (
+            id,
+            recommended_products (
+              id,
+              nome,
+              descricao,
+              preco,
+              categoria
+            )
           )
         `)
         .eq('id', id)
@@ -106,14 +131,23 @@ export const useCreateProposal = () => {
         validityDays, 
         subtotal, 
         discount = 0,
-        selectedPaymentConditions = []
+        selectedPaymentConditions = [],
+        includeVideo = false,
+        videoUrl = '',
+        includeTechnicalDetails = false,
+        selectedSolutions = [],
+        selectedRecommendedProducts = []
       } = proposalData;
 
       console.log('🔍 Iniciando criação de proposta:', {
         userId: user.id,
         clientData,
         itemsCount: items.length,
-        subtotal
+        subtotal,
+        includeVideo,
+        includeTechnicalDetails,
+        solutionsCount: selectedSolutions.length,
+        recommendedProductsCount: selectedRecommendedProducts.length
       });
 
       // Validações obrigatórias
@@ -178,20 +212,25 @@ export const useCreateProposal = () => {
         client_id: client.id,
         user_id: user.id,
         valor_total: subtotal,
-        desconto_percentual: discount
+        desconto_percentual: discount,
+        include_video: includeVideo,
+        include_technical_details: includeTechnicalDetails
       });
 
       const { data: proposal, error: proposalError } = await supabase
         .from('proposals')
         .insert({
           client_id: client.id,
-          user_id: user.id, // Garantir que o user_id seja sempre definido
+          user_id: user.id,
           valor_total: subtotal,
           desconto_percentual: discount,
           validade: validUntil.toISOString(),
           status: 'draft',
           observacoes: observations,
           link_acesso: linkAccess,
+          include_video: includeVideo,
+          video_url: includeVideo ? videoUrl : null,
+          include_technical_details: includeTechnicalDetails,
         })
         .select()
         .single();
@@ -240,6 +279,45 @@ export const useCreateProposal = () => {
         if (paymentConditionsError) {
           console.error('❌ Erro ao associar condições de pagamento:', paymentConditionsError);
           throw paymentConditionsError;
+        }
+      }
+
+      // 5. Associar soluções selecionadas
+      if (selectedSolutions.length > 0) {
+        console.log('🔧 Associando soluções:', selectedSolutions.length);
+        
+        const solutionsData = selectedSolutions.map(solution => ({
+          proposal_id: proposal.id,
+          solution_id: solution.solutionId,
+          valor_solucao: solution.value,
+        }));
+
+        const { error: solutionsError } = await supabase
+          .from('proposal_solutions')
+          .insert(solutionsData);
+
+        if (solutionsError) {
+          console.error('❌ Erro ao associar soluções:', solutionsError);
+          throw solutionsError;
+        }
+      }
+
+      // 6. Associar produtos recomendados selecionados
+      if (selectedRecommendedProducts.length > 0) {
+        console.log('🛍️ Associando produtos recomendados:', selectedRecommendedProducts.length);
+        
+        const recommendedProductsData = selectedRecommendedProducts.map(productId => ({
+          proposal_id: proposal.id,
+          recommended_product_id: productId,
+        }));
+
+        const { error: recommendedProductsError } = await supabase
+          .from('proposal_recommended_products')
+          .insert(recommendedProductsData);
+
+        if (recommendedProductsError) {
+          console.error('❌ Erro ao associar produtos recomendados:', recommendedProductsError);
+          throw recommendedProductsError;
         }
       }
 

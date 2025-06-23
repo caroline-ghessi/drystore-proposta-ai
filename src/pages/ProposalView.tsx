@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ProposalHeader } from '@/components/proposal/ProposalHeader';
@@ -78,15 +79,17 @@ const ProposalView = () => {
           <UrgencyCard validUntil={proposal.validUntil} />
         </div>
 
-        {/* Video Proposal */}
-        <div className="mb-6">
-          <VideoProposal
-            videoUrl="https://example.com/video.mp4"
-            vendorName="Carlos Vendedor"
-            vendorTitle="Especialista em Soluções Residenciais"
-            duration="2:35"
-          />
-        </div>
+        {/* Video Proposal - apenas se estiver habilitado na proposta */}
+        {proposal.includeVideo && proposal.videoUrl && (
+          <div className="mb-6">
+            <VideoProposal
+              videoUrl={proposal.videoUrl}
+              vendorName="Carlos Vendedor"
+              vendorTitle="Especialista em Soluções Residenciais"
+              duration="2:35"
+            />
+          </div>
+        )}
 
         {/* Feature Toggles - Only visible for vendors, representatives and admins */}
         {isVendorUser && ['admin', 'vendedor_interno', 'representante'].includes(user?.role || '') && (
