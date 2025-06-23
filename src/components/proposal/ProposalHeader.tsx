@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Mail, Calendar, Clock, TrendingUp, Share, AlertTriangle, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { ShareModal } from './ShareModal';
 
 interface ProposalHeaderProps {
@@ -22,10 +23,20 @@ interface ProposalHeaderProps {
 
 export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const handleShare = () => {
     setIsShareModalOpen(true);
+  };
+
+  // Check if current user is internal (not client)
+  const isInternalUser = user?.role !== 'cliente';
+
+  const handleLogoClick = () => {
+    if (isInternalUser) {
+      navigate('/dashboard');
+    }
   };
 
   // Extrair o primeiro nome do cliente para personalização
@@ -59,7 +70,15 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
             
             {/* Center - Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-32 h-32 flex items-center justify-center">
+              <div 
+                className={`w-32 h-32 flex items-center justify-center ${
+                  isInternalUser 
+                    ? 'cursor-pointer hover:scale-105 transition-transform duration-200' 
+                    : ''
+                }`}
+                onClick={handleLogoClick}
+                title={isInternalUser ? 'Ir para Dashboard' : undefined}
+              >
                 <img 
                   src="/lovable-uploads/54b2f5dc-8781-4f2f-9f68-d966142e985d.png" 
                   alt="Drystore Logo" 
