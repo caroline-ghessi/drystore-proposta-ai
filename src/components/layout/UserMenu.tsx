@@ -35,7 +35,9 @@ export const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <MenuTrigger />
+        <div className="flex items-center space-x-2 cursor-pointer">
+          <MenuTrigger />
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
