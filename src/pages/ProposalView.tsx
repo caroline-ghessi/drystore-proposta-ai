@@ -51,6 +51,10 @@ const ProposalView = () => {
   // Buscar dados reais da proposta no Supabase
   const { data: proposalData, isLoading, error } = useProposal(id || '');
   
+  // Custom hooks - devem ser chamados SEMPRE, antes de qualquer return condicional
+  const { interactions, addInteraction } = useProposalInteractions();
+  const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || '1');
+  
   // Carregar dados reais extraídos do PDF
   useEffect(() => {
     console.log('🔍 ProposalView: Carregando dados para proposta ID:', id);
@@ -80,23 +84,6 @@ const ProposalView = () => {
     }
   }, [id]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Carregando proposta...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    console.error('❌ ProposalView: Erro ao carregar proposta:', error);
-  }
-
   // Gerar dados da proposta baseados nos dados reais do Supabase ou extraídos
   const proposal = proposalData ? {
     id: proposalData.id,
@@ -121,6 +108,29 @@ const ProposalView = () => {
     clientName: realProposalData.client || 'PROPOSTA COMERCIAL',
     finalPrice: realProposalData.total,
   } : getMockProposal(id || '1');
+
+  // Custom hooks que dependem de proposal - também devem ser chamados sempre
+  const { status, handleAccept, handleReject, handleQuestion } = useProposalStatus(
+    proposal.clientName, 
+    addInteraction
+  );
+
+  // Loading state - agora depois de todos os hooks
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Carregando proposta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    console.error('❌ ProposalView: Erro ao carregar proposta:', error);
+  }
 
   // Gerar itens da proposta baseados nos dados reais do Supabase ou extraídos
   const proposalItems = proposalData?.proposal_items ? 
@@ -150,14 +160,6 @@ const ProposalView = () => {
   const clientQuestions = getMockClientQuestions();
   const mockAIScore = getMockAIScore(proposal.id);
   const mockNextSteps = getMockNextSteps(proposal.id);
-
-  // Custom hooks
-  const { interactions, addInteraction } = useProposalInteractions();
-  const { status, handleAccept, handleReject, handleQuestion } = useProposalStatus(
-    proposal.clientName, 
-    addInteraction
-  );
-  const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || '1');
 
   // Check if current user is a vendor (not client)
   const isVendor = user?.role !== 'cliente';
