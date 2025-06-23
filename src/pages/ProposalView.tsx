@@ -64,12 +64,14 @@ const ProposalView = () => {
       <ProposalHeader proposal={proposal} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Indicador de fonte dos dados */}
-        <ProposalDataIndicator 
-          dataSource={dataSource}
-          proposal={proposal}
-          itemsCount={proposalItems.length}
-        />
+        {/* Indicador de fonte dos dados - apenas para usuários internos */}
+        {isVendor && (
+          <ProposalDataIndicator 
+            dataSource={dataSource}
+            proposal={proposal}
+            itemsCount={proposalItems.length}
+          />
+        )}
 
         {/* Urgency Card moved to top for better conversion */}
         <div className="mb-6">
