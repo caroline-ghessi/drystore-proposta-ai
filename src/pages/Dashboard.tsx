@@ -8,7 +8,8 @@ import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp } 
 import { useNavigate } from 'react-router-dom';
 import { MotivationDisplay } from '@/components/motivation/MotivationDisplay';
 import { AdminMotivationPanel } from '@/components/motivation/AdminMotivationPanel';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useProposals } from '@/hooks/useProposals';
 
 interface RealProposal {
   id: string;
@@ -30,6 +31,9 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [realProposals, setRealProposals] = useState<RealProposal[]>([]);
+  
+  // Buscar propostas reais do Supabase
+  const { data: supabaseProposals, isLoading, error } = useProposals();
 
   // Carregar propostas reais do sessionStorage
   useEffect(() => {
@@ -51,82 +55,72 @@ const Dashboard = () => {
     loadRealProposals();
   }, []);
 
-  // Dados mockados para demonstração
-  const mockProposals = [
-    {
-      id: '2',
-      client: 'Maria Santos',
-      project: 'Cobertura Premium',
-      value: 'R$ 78.000',
-      status: 'aceita',
-      date: '2024-01-14'
-    },
-    {
-      id: '3',
-      client: 'Carlos Oliveira',
-      project: 'Casa de Campo',
-      value: 'R$ 32.000',
-      status: 'negada',
-      date: '2024-01-13'
-    },
-    {
-      id: '4',
-      client: 'Ana Costa',
-      project: 'Apartamento Duplex',
-      value: 'R$ 56.000',
-      status: 'expirada',
-      date: '2024-01-12'
-    }
-  ];
-
-  // Combinar propostas reais com mockadas
-  const allProposals = [
-    // Adicionar propostas reais primeiro (mais recentes)
-    ...realProposals.map(realProposal => ({
+  // Combinar e processar propostas
+  const allProposals = useMemo(() => {
+    const sessionProposals = realProposals.map(realProposal => ({
       id: realProposal.id,
       client: realProposal.client || 'PROPOSTA COMERCIAL',
       project: 'Proposta Extraída do PDF',
       value: `R$ ${realProposal.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       status: 'aberta',
-      date: new Date(realProposal.timestamp).toLocaleDateString('pt-BR')
-    })),
-    // Depois adicionar as mockadas
-    ...mockProposals
-  ];
+      date: new Date(realProposal.timestamp).toLocaleDateString('pt-BR'),
+      isFromSession: true
+    }));
 
-  // Dados estatísticos atualizados
-  const stats = [
-    {
-      title: 'Propostas Abertas',
-      value: String(realProposals.length + 1), // +1 para incluir as mockadas abertas
-      change: realProposals.length > 0 ? '+1 nova proposta' : '+0 esta semana',
-      icon: Clock,
-      color: 'text-yellow-600'
-    },
-    {
-      title: 'Propostas Aceitas',
-      value: '8',
-      change: '+3 este mês',
-      icon: CheckCircle,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Taxa de Conversão',
-      value: '67%',
-      change: '+5% vs mês anterior',
-      icon: TrendingUp,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Valor Total',
-      value: realProposals.length > 0 ? 
-        `R$ ${Math.round((realProposals[0]?.total || 0) + 485000).toLocaleString('pt-BR')}` : 
-        'R$ 485k',
-      change: realProposals.length > 0 ? '+17k nova proposta' : '+12% este mês',
-      icon: FileText,
-      color: 'text-purple-600'
-    }
-  ];
+    const dbProposals = (supabaseProposals || []).map(proposal => ({
+      id: proposal.id,
+      client: proposal.clients?.nome || 'Cliente',
+      project: 'Proposta Comercial',
+      value: `R$ ${(proposal.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      status: proposal.status === 'draft' ? 'aberta' : 
+              proposal.status === 'accepted' ? 'aceita' :
+              proposal.status === 'rejected' ? 'negada' : 'aberta',
+      date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
+      isFromSession: false
+    }));
+
+    return [...sessionProposals, ...dbProposals];
+  }, [realProposals, supabaseProposals]);
+
+  // Calcular estatísticas reais
+  const stats = useMemo(() => {
+    const dbProposals = supabaseProposals || [];
+    const openProposals = dbProposals.filter(p => ['draft', 'sent', 'viewed'].includes(p.status)).length + realProposals.length;
+    const acceptedProposals = dbProposals.filter(p => p.status === 'accepted').length;
+    const totalValue = dbProposals.reduce((sum, p) => sum + (p.valor_total || 0), 0) + realProposals.reduce((sum, p) => sum + p.total, 0);
+    const conversionRate = dbProposals.length > 0 ? Math.round((acceptedProposals / dbProposals.length) * 100) : 67;
+
+    return [
+      {
+        title: 'Propostas Abertas',
+        value: String(openProposals),
+        change: realProposals.length > 0 ? `+${realProposals.length} nova(s)` : '+0 esta semana',
+        icon: Clock,
+        color: 'text-yellow-600'
+      },
+      {
+        title: 'Propostas Aceitas',
+        value: String(acceptedProposals),
+        change: '+3 este mês',
+        icon: CheckCircle,
+        color: 'text-green-600'
+      },
+      {
+        title: 'Taxa de Conversão',
+        value: `${conversionRate}%`,
+        change: '+5% vs mês anterior',
+        icon: TrendingUp,
+        color: 'text-blue-600'
+      },
+      {
+        title: 'Valor Total',
+        value: `R$ ${Math.round(totalValue / 1000)}k`,
+        change: realProposals.length > 0 ? '+17k nova proposta' : '+12% este mês',
+        icon: FileText,
+        color: 'text-purple-600'
+      }
+    ];
+  }, [supabaseProposals, realProposals]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -158,6 +152,25 @@ const Dashboard = () => {
         {config.label}
       </Badge>;
   };
+
+  if (isLoading) {
+    return (
+      <Layout showBackButton={false}>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    console.error('❌ Dashboard: Erro ao carregar propostas:', error);
+  }
 
   return (
     <Layout showBackButton={false}>
@@ -233,9 +246,14 @@ const Dashboard = () => {
                 <CardTitle className="text-xl text-gray-900 dark:text-gray-100">Propostas Recentes</CardTitle>
                 <CardDescription className="text-gray-600 dark:text-gray-400">
                   Suas últimas atividades de vendas
-                  {realProposals.length > 0 && (
+                  {(supabaseProposals?.length || 0) > 0 && (
                     <span className="ml-2 text-green-600 font-medium">
-                      • {realProposals.length} nova(s) proposta(s) criada(s)
+                      • {supabaseProposals?.length} proposta(s) no sistema
+                    </span>
+                  )}
+                  {realProposals.length > 0 && (
+                    <span className="ml-2 text-blue-600 font-medium">
+                      • {realProposals.length} nova(s) do PDF
                     </span>
                   )}
                 </CardDescription>
@@ -247,37 +265,56 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {allProposals.map(proposal => (
-                <div 
-                  key={proposal.id} 
-                  className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer" 
-                  onClick={() => navigate(`/proposal/${proposal.id}`)}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center bg-orange-600">
-                      <FileText className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">{proposal.client}</p>
-                        {realProposals.find(rp => rp.id === proposal.id) && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                            Nova
-                          </Badge>
-                        )}
+              {allProposals.length > 0 ? (
+                allProposals.slice(0, 5).map(proposal => (
+                  <div 
+                    key={proposal.id} 
+                    className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer" 
+                    onClick={() => navigate(`/proposal/${proposal.id}`)}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center bg-orange-600">
+                        <FileText className="w-5 h-5 text-white" />
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{proposal.project}</p>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{proposal.client}</p>
+                          {proposal.isFromSession && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                              PDF
+                            </Badge>
+                          )}
+                          {!proposal.isFromSession && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                              Sistema
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{proposal.project}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">{proposal.value}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{proposal.date}</p>
+                      </div>
+                      {getStatusBadge(proposal.status)}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{proposal.value}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{proposal.date}</p>
-                    </div>
-                    {getStatusBadge(proposal.status)}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">Nenhuma proposta encontrada</p>
+                  <Button 
+                    onClick={() => navigate('/create-proposal')}
+                    className="gradient-bg hover:opacity-90"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeira Proposta
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
