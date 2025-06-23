@@ -3,7 +3,6 @@ import { InvestmentCard } from '@/components/proposal/InvestmentCard';
 import AIScoreCard from '@/components/ai/AIScoreCard';
 import NextStepSuggestions from '@/components/ai/NextStepSuggestions';
 import AIAssistant from '@/components/proposal/AIAssistant';
-import ProposalActions from '@/components/proposal/ProposalActions';
 import ProposalAcceptedActions from '@/components/proposal/ProposalAcceptedActions';
 import { AIScore, NextStepSuggestion } from '@/types/aiScore';
 
@@ -55,12 +54,6 @@ const ProposalSidebar = ({
           />
         </>
       )}
-
-      <ProposalActions 
-        status={status}
-        onAccept={onAccept}
-        onReject={onReject}
-      />
 
       {status === 'accepted' && (
         <ProposalAcceptedActions 
