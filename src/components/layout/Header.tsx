@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { useClientContext } from '@/hooks/useClientContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
   const navigate = useNavigate();
   const { isClient } = useClientContext();
+  const { user } = useAuth();
 
   const handleBack = () => {
     if (backPath) {
@@ -21,6 +23,9 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
       navigate(-1);
     }
   };
+
+  // Show UserMenu for authenticated users who are not clients
+  const showUserMenu = user && !isClient;
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200 transition-colors">
@@ -50,9 +55,9 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             </div>
           </div>
           
-          {/* Right Side - Only show UserMenu for vendors/internal users */}
+          {/* Right Side - Show UserMenu for authenticated non-client users */}
           <div className="flex items-center space-x-2">
-            {!isClient && <UserMenu />}
+            {showUserMenu && <UserMenu />}
           </div>
         </div>
       </div>
