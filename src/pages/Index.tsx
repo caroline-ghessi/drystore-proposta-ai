@@ -1,14 +1,29 @@
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import DrystoreCube from '@/components/DrystoreCube';
-import { ArrowRight, FileText, Zap, Shield, Star } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Shield, Loader2, User, Building2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
+  const { loginWithEmail } = useClientAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [userType, setUserType] = useState<'auto' | 'client' | 'vendor'>('auto');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [loginStep, setLoginStep] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -16,8 +31,122 @@ const Index = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  const detectUserType = async (emailValue: string) => {
+    if (!emailValue || userType !== 'auto') return;
+
+    try {
+      // Verificar se é cliente primeiro
+      const { loginWithEmail: checkClient } = useClientAuth();
+      const clientResult = await checkClient(emailValue);
+      
+      if (clientResult.success) {
+        setUserType('client');
+        return 'client';
+      } else {
+        setUserType('vendor');
+        return 'vendor';
+      }
+    } catch (error) {
+      // Se der erro, assumir que é vendedor
+      setUserType('vendor');
+      return 'vendor';
+    }
+  };
+
+  const handleEmailChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const emailValue = e.target.value;
+    setEmail(emailValue);
+    setError('');
+
+    // Auto-detectar tipo de usuário quando email estiver completo
+    if (emailValue.includes('@') && emailValue.includes('.')) {
+      await detectUserType(emailValue);
+    }
+  };
+
+  const handleClientLogin = async () => {
+    if (!email) {
+      setError('Por favor, insira seu email');
+      return;
+    }
+
+    setLoading(true);
+    setLoginStep('Verificando acesso...');
+
+    try {
+      const result = await loginWithEmail(email);
+      
+      if (result.success) {
+        toast({
+          title: "Acesso autorizado!",
+          description: `Bem-vindo, ${result.client?.nome || 'Cliente'}!`,
+        });
+        navigate('/client-portal');
+      } else {
+        setError('Email não encontrado. Verifique se digitou corretamente ou entre em contato com seu vendedor.');
+      }
+    } catch (error) {
+      setError('Erro inesperado. Tente novamente.');
+    } finally {
+      setLoading(false);
+      setLoginStep('');
+    }
+  };
+
+  const handleVendorLogin = async () => {
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+    setLoginStep('Conectando...');
+
+    try {
+      const result = await login(email, password);
+      
+      if (result.success) {
+        setLoginStep('Carregando perfil...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
+      } else {
+        setError(result.error || 'Email ou senha inválidos');
+      }
+    } catch (error) {
+      setError('Erro inesperado. Tente novamente.');
+    } finally {
+      setLoading(false);
+      setLoginStep('');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (userType === 'client') {
+      await handleClientLogin();
+    } else {
+      await handleVendorLogin();
+    }
+  };
+
+  const resetForm = () => {
+    setUserType('auto');
+    setEmail('');
+    setPassword('');
+    setError('');
+    setLoginStep('');
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-drystore-gray-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,138 +162,197 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate('/login')}
-              className="bg-drystore-orange hover:bg-drystore-orange-light text-white"
-            >
-              Entrar
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex justify-center mb-8">
-            <DrystoreCube size="lg" className="animate-fade-in" />
-          </div>
-          
-          <h1 className="text-5xl md:text-6xl font-bold text-drystore-gray-dark mb-6 animate-fade-in">
-            Orçamentos Inteligentes
-            <span className="block drystore-text-gradient mt-2">
-              com Poder de IA
-            </span>
-          </h1>
-          
-          <p className="text-xl text-drystore-gray-medium mb-10 max-w-3xl mx-auto animate-fade-in">
-            Transforme projetos arquitetônicos em propostas comerciais de alta conversão. 
-            Upload de PDFs, análise automática e geração de orçamentos personalizados.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-            <Button 
-              size="lg" 
-              className="bg-drystore-orange hover:bg-drystore-orange-light text-white text-lg px-8 py-3"
-              onClick={() => navigate('/login')}
-            >
-              Começar Agora
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-          
-          {/* Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 animate-slide-in">
-            <div className="text-center">
-              <div className="text-3xl font-bold drystore-text-gradient">+50.000</div>
-              <div className="text-drystore-gray-medium">Clientes Atendidos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold drystore-text-gradient">22 anos</div>
-              <div className="text-drystore-gray-medium">de Atuação</div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-3xl font-bold drystore-text-gradient">
-                4,6 <Star className="w-6 h-6 fill-current" />
+      {/* Main Content */}
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-2xl border-0 animate-fade-in">
+            <CardHeader className="space-y-1 text-center">
+              <CardTitle className="text-2xl font-bold">
+                {userType === 'auto' ? 'Acesse sua conta' : 
+                 userType === 'client' ? 'Portal do Cliente' : 'Área do Vendedor'}
+              </CardTitle>
+              <CardDescription>
+                {userType === 'auto' ? 'Digite seu email para começar' :
+                 userType === 'client' ? 'Acesse suas propostas' : 'Digite suas credenciais para continuar'}
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={handleEmailChange}
+                      className="pl-10"
+                      required
+                      disabled={loading}
+                    />
+                    {userType !== 'auto' && (
+                      <div className="absolute right-3 top-3">
+                        {userType === 'client' ? (
+                          <User className="h-4 w-4 text-blue-500" />
+                        ) : (
+                          <Building2 className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Password Field (apenas para vendedores) */}
+                {userType === 'vendor' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Sua senha"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* User Type Indicator */}
+                {userType !== 'auto' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      {userType === 'client' ? (
+                        <>
+                          <User className="h-4 w-4 text-blue-500" />
+                          <span className="text-blue-600">Acesso como Cliente</span>
+                        </>
+                      ) : (
+                        <>
+                          <Building2 className="h-4 w-4 text-green-500" />
+                          <span className="text-green-600">Acesso como Vendedor</span>
+                        </>
+                      )}
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={resetForm}
+                      disabled={loading}
+                    >
+                      Alterar
+                    </Button>
+                  </div>
+                )}
+
+                {/* Error Display */}
+                {error && (
+                  <Alert variant="destructive">
+                    <Shield className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Loading State */}
+                {loading && loginStep && (
+                  <Alert>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertDescription>{loginStep}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Submit Button */}
+                <Button 
+                  type="submit" 
+                  className="w-full gradient-bg hover:opacity-90"
+                  disabled={loading || userType === 'auto'}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : userType === 'client' ? (
+                    <>
+                      Acessar Propostas
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  ) : userType === 'vendor' ? (
+                    'Entrar no Sistema'
+                  ) : (
+                    'Digite seu email para continuar'
+                  )}
+                </Button>
+              </form>
+
+              {/* Additional Options */}
+              <div className="mt-6 space-y-4">
+                {userType === 'vendor' && (
+                  <div className="text-center">
+                    <Button 
+                      variant="link" 
+                      onClick={() => navigate('/forgot-password')}
+                      disabled={loading}
+                    >
+                      Esqueceu a senha?
+                    </Button>
+                  </div>
+                )}
+
+                {/* Info Cards */}
+                <div className="space-y-2">
+                  {userType === 'auto' && (
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-2">Como funciona:</p>
+                      <p className="text-xs text-gray-500">
+                        • <strong>Clientes:</strong> Use o email fornecido pelo vendedor<br/>
+                        • <strong>Vendedores:</strong> Faça login com email e senha<br/>
+                        • Sistema detecta automaticamente seu tipo de acesso
+                      </p>
+                    </div>
+                  )}
+
+                  {userType === 'client' && (
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-2">Portal do Cliente:</p>
+                      <p className="text-xs text-gray-500">
+                        Use o mesmo email fornecido pelo seu vendedor para acessar suas propostas e acompanhar o status dos pedidos.
+                      </p>
+                    </div>
+                  )}
+
+                  {userType === 'vendor' && (
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-2">Área do Vendedor:</p>
+                      <p className="text-xs text-gray-500">
+                        Acesse o sistema completo para gerenciar propostas, clientes e acompanhar suas vendas.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-xs text-gray-500 flex items-center justify-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Conexão segura e protegida
+                </div>
               </div>
-              <div className="text-drystore-gray-medium">Avaliação Google</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold drystore-text-gradient">+15.000</div>
-              <div className="text-drystore-gray-medium">Produtos</div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-16 bg-drystore-gray-light">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-drystore-gray-dark mb-4">
-              Revolucione Suas Vendas
-            </h2>
-            <p className="text-lg text-drystore-gray-medium max-w-2xl mx-auto">
-              Tecnologia de ponta para vendedores e representantes comerciais
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center p-8 rounded-2xl bg-white shadow-sm border border-drystore-gray-light animate-slide-in">
-              <div className="w-16 h-16 bg-drystore-orange rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <FileText className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-drystore-gray-dark mb-4">Upload Inteligente</h3>
-              <p className="text-drystore-gray-medium">
-                Faça upload de PDFs de projetos arquitetônicos e listas de materiais. 
-                Nossa IA analisa automaticamente o documento.
-              </p>
-            </div>
-
-            <div className="text-center p-8 rounded-2xl bg-white shadow-sm border border-drystore-gray-light animate-slide-in">
-              <div className="w-16 h-16 bg-drystore-green-sustainable rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Zap className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-drystore-gray-dark mb-4">Geração Automática</h3>
-              <p className="text-drystore-gray-medium">
-                Orçamentos personalizados gerados automaticamente com base no projeto. 
-                Edite e ajuste conforme necessário.
-              </p>
-            </div>
-
-            <div className="text-center p-8 rounded-2xl bg-white shadow-sm border border-drystore-gray-light animate-slide-in">
-              <div className="w-16 h-16 bg-drystore-blue-technical rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-drystore-gray-dark mb-4">Alta Conversão</h3>
-              <p className="text-drystore-gray-medium">
-                Propostas comerciais profissionais com alto poder de conversão. 
-                Acompanhe o status em tempo real.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-drystore-gray-dark text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <DrystoreCube size="sm" />
-            <div>
-              <span className="text-xl font-bold">Drystore</span>
-              <div className="text-sm text-drystore-gray-light">Soluções Inteligentes</div>
-            </div>
-          </div>
-          <p className="text-drystore-gray-light">
-            © 2024 Drystore - Soluções Inteligentes. Todos os direitos reservados.
-          </p>
-          <div className="mt-4 text-sm text-drystore-gray-light">
-            Desde 2002 • Frete grátis RS/SC/PR/SP/MG/GO • 5% desconto à vista
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 };
