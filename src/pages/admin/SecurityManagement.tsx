@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, Lock, AlertTriangle, Users, Settings } from 'lucide-react';
 import SecurityDashboard from '@/components/security/SecurityDashboard';
+import SecurityAuditPanel from '@/components/security/SecurityAuditPanel';
 import PermissionGuard from '@/components/PermissionGuard';
 
 const SecurityManagement = () => {
@@ -24,10 +25,14 @@ const SecurityManagement = () => {
             </div>
 
             <Tabs defaultValue="dashboard" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="dashboard" className="flex items-center gap-2">
                   <Eye className="w-4 h-4" />
                   Dashboard
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Auditoria RLS
                 </TabsTrigger>
                 <TabsTrigger value="events" className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
@@ -45,6 +50,10 @@ const SecurityManagement = () => {
 
               <TabsContent value="dashboard" className="space-y-6">
                 <SecurityDashboard />
+              </TabsContent>
+
+              <TabsContent value="audit" className="space-y-6">
+                <SecurityAuditPanel />
               </TabsContent>
 
               <TabsContent value="events" className="space-y-6">
