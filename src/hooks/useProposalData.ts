@@ -6,10 +6,12 @@ import { useSolutionImages } from '@/hooks/useSolutions';
 export const useProposalData = (proposalId: string) => {
   const { data: proposalData, isLoading, error } = useProposal(proposalId);
 
-  // Extrair IDs das soluções para buscar imagens
+  // Extrair IDs das soluções para buscar imagens - com verificação de segurança
   const solutionIds = useMemo(() => {
-    if (!proposalData?.proposal_solutions) return [];
-    return proposalData.proposal_solutions.map(ps => ps.solutions?.id).filter(Boolean) as string[];
+    if (!proposalData?.proposal_solutions || !Array.isArray(proposalData.proposal_solutions)) return [];
+    return proposalData.proposal_solutions
+      .map((ps: any) => ps.solutions?.id)
+      .filter(Boolean) as string[];
   }, [proposalData]);
 
   // Buscar imagens das soluções
@@ -24,7 +26,7 @@ export const useProposalData = (proposalId: string) => {
       };
     }
 
-    // Mapear dados reais da proposta
+    // Mapear dados reais da proposta - com verificações de segurança
     const proposal = {
       id: proposalData.id,
       clientName: proposalData.clients?.nome || 'Cliente',
@@ -39,29 +41,33 @@ export const useProposalData = (proposalId: string) => {
       createdBy: 'Vendedor Drystore',
       observations: proposalData.observacoes || '',
       
-      // Novos campos para funcionalidades
-      includeVideo: proposalData.include_video || false,
-      videoUrl: proposalData.video_url || '',
-      includeTechnicalDetails: proposalData.include_technical_details || false,
+      // Novos campos - com fallbacks seguros
+      includeVideo: (proposalData as any).include_video || false,
+      videoUrl: (proposalData as any).video_url || '',
+      includeTechnicalDetails: (proposalData as any).include_technical_details || false,
       
-      // Mapear soluções com valores
-      solutions: proposalData.proposal_solutions?.map(ps => ({
-        id: ps.solutions?.id || '',
-        name: ps.solutions?.nome || '',
-        description: ps.solutions?.descricao || '',
-        category: ps.solutions?.categoria || '',
-        value: ps.valor_solucao || 0,
-        images: solutionImages.filter(img => img.solution_id === ps.solutions?.id)
-      })) || [],
+      // Mapear soluções com valores - com verificação de array
+      solutions: Array.isArray((proposalData as any).proposal_solutions) 
+        ? (proposalData as any).proposal_solutions.map((ps: any) => ({
+            id: ps.solutions?.id || '',
+            name: ps.solutions?.nome || '',
+            description: ps.solutions?.descricao || '',
+            category: ps.solutions?.categoria || '',
+            value: ps.valor_solucao || 0,
+            images: solutionImages.filter(img => img.solution_id === ps.solutions?.id)
+          })) || []
+        : [],
       
-      // Mapear produtos recomendados
-      recommendedProducts: proposalData.proposal_recommended_products?.map(prp => ({
-        id: prp.recommended_products?.id || '',
-        name: prp.recommended_products?.nome || '',
-        description: prp.recommended_products?.descricao || '',
-        price: prp.recommended_products?.preco || 0,
-        category: prp.recommended_products?.categoria || ''
-      })) || [],
+      // Mapear produtos recomendados - com verificação de array
+      recommendedProducts: Array.isArray((proposalData as any).proposal_recommended_products)
+        ? (proposalData as any).proposal_recommended_products.map((prp: any) => ({
+            id: prp.recommended_products?.id || '',
+            name: prp.recommended_products?.nome || '',
+            description: prp.recommended_products?.descricao || '',
+            price: prp.recommended_products?.preco || 0,
+            category: prp.recommended_products?.categoria || ''
+          })) || []
+        : [],
 
       // Manter campos existentes para compatibilidade
       benefits: [
@@ -70,8 +76,8 @@ export const useProposalData = (proposalId: string) => {
         'Suporte técnico especializado',
         'Materiais certificados e de alta qualidade'
       ],
-      technicalDetails: proposalData.proposal_solutions?.length > 0 
-        ? proposalData.proposal_solutions.map(ps => ps.solutions?.descricao || '').filter(Boolean)
+      technicalDetails: Array.isArray((proposalData as any).proposal_solutions) && (proposalData as any).proposal_solutions.length > 0 
+        ? (proposalData as any).proposal_solutions.map((ps: any) => ps.solutions?.descricao || '').filter(Boolean)
         : [],
       technicalImages: solutionImages.map(img => ({
         url: img.image_url,
@@ -80,15 +86,17 @@ export const useProposalData = (proposalId: string) => {
       }))
     };
 
-    const proposalItems = proposalData.proposal_items?.map(item => ({
-      id: item.id,
-      category: item.descricao_item?.split(' - ')[0] || 'Item',
-      description: item.produto_nome,
-      quantity: Number(item.quantidade),
-      unit: item.descricao_item?.split(' - ')[1] || 'un',
-      unitPrice: Number(item.preco_unit),
-      totalPrice: Number(item.preco_total)
-    })) || [];
+    const proposalItems = Array.isArray(proposalData.proposal_items) 
+      ? proposalData.proposal_items.map(item => ({
+          id: item.id,
+          category: item.descricao_item?.split(' - ')[0] || 'Item',
+          description: item.produto_nome,
+          quantity: Number(item.quantidade),
+          unit: item.descricao_item?.split(' - ')[1] || 'un',
+          unitPrice: Number(item.preco_unit),
+          totalPrice: Number(item.preco_total)
+        }))
+      : [];
 
     return {
       proposal,

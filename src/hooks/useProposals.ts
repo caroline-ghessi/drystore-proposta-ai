@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -80,34 +81,50 @@ export const useProposal = (id: string) => {
             preco_unit,
             preco_total,
             descricao_item
-          ),
-          proposal_solutions (
-            id,
-            valor_solucao,
-            observacoes,
-            solutions (
-              id,
-              nome,
-              descricao,
-              categoria
-            )
-          ),
-          proposal_recommended_products (
-            id,
-            recommended_products (
-              id,
-              nome,
-              descricao,
-              preco,
-              categoria
-            )
           )
         `)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      return data;
+
+      // Buscar soluções associadas separadamente usando any temporariamente
+      const { data: proposalSolutions } = await (supabase as any)
+        .from('proposal_solutions')
+        .select(`
+          id,
+          valor_solucao,
+          observacoes,
+          solutions (
+            id,
+            nome,
+            descricao,
+            categoria
+          )
+        `)
+        .eq('proposal_id', id);
+
+      // Buscar produtos recomendados associados separadamente
+      const { data: proposalRecommendedProducts } = await (supabase as any)
+        .from('proposal_recommended_products')
+        .select(`
+          id,
+          recommended_products (
+            id,
+            nome,
+            descricao,
+            preco,
+            categoria
+          )
+        `)
+        .eq('proposal_id', id);
+
+      // Adicionar os dados relacionados ao resultado principal
+      return {
+        ...data,
+        proposal_solutions: proposalSolutions || [],
+        proposal_recommended_products: proposalRecommendedProducts || []
+      };
     },
     enabled: !!id,
   });
@@ -217,7 +234,8 @@ export const useCreateProposal = () => {
         include_technical_details: includeTechnicalDetails
       });
 
-      const { data: proposal, error: proposalError } = await supabase
+      // Usar any temporariamente para os novos campos
+      const { data: proposal, error: proposalError } = await (supabase as any)
         .from('proposals')
         .insert({
           client_id: client.id,
@@ -292,7 +310,7 @@ export const useCreateProposal = () => {
           valor_solucao: solution.value,
         }));
 
-        const { error: solutionsError } = await supabase
+        const { error: solutionsError } = await (supabase as any)
           .from('proposal_solutions')
           .insert(solutionsData);
 
@@ -311,7 +329,7 @@ export const useCreateProposal = () => {
           recommended_product_id: productId,
         }));
 
-        const { error: recommendedProductsError } = await supabase
+        const { error: recommendedProductsError } = await (supabase as any)
           .from('proposal_recommended_products')
           .insert(recommendedProductsData);
 

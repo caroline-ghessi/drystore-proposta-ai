@@ -18,7 +18,7 @@ export const useRecommendedProducts = () => {
   return useQuery({
     queryKey: ['recommended-products'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('recommended_products')
         .select('*')
         .eq('ativo', true)
@@ -41,7 +41,7 @@ export const useCreateRecommendedProduct = () => {
       preco: number;
       categoria: string;
     }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('recommended_products')
         .insert({
           ...productData,
@@ -64,7 +64,7 @@ export const useUpdateRecommendedProduct = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<RecommendedProduct> }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('recommended_products')
         .update(updates)
         .eq('id', id)

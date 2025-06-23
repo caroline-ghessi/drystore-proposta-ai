@@ -27,7 +27,8 @@ export const useSolutions = () => {
   return useQuery({
     queryKey: ['solutions'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Usar any temporariamente até os tipos serem atualizados
+      const { data, error } = await (supabase as any)
         .from('solutions')
         .select('*')
         .eq('ativo', true)
@@ -45,7 +46,7 @@ export const useSolutionImages = (solutionIds: string[]) => {
     queryFn: async () => {
       if (solutionIds.length === 0) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('solution_images')
         .select('*')
         .in('solution_id', solutionIds)
@@ -68,7 +69,7 @@ export const useCreateSolution = () => {
       descricao: string;
       categoria: string;
     }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('solutions')
         .insert({
           ...solutionData,
@@ -91,7 +92,7 @@ export const useUpdateSolution = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Solution> }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('solutions')
         .update(updates)
         .eq('id', id)
