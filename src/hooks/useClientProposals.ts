@@ -8,6 +8,8 @@ export const useClientProposals = (email: string) => {
     queryFn: async () => {
       if (!email) throw new Error('Email is required');
 
+      console.log('🔍 Buscando propostas para email:', email);
+
       // Buscar cliente pelo email
       const { data: client, error: clientError } = await supabase
         .from('clients')
@@ -15,10 +17,18 @@ export const useClientProposals = (email: string) => {
         .eq('email', email)
         .single();
 
-      if (clientError) throw clientError;
-      if (!client) throw new Error('Cliente não encontrado');
+      if (clientError) {
+        console.error('❌ Erro ao buscar cliente:', clientError);
+        throw clientError;
+      }
+      if (!client) {
+        console.error('❌ Cliente não encontrado para email:', email);
+        throw new Error('Cliente não encontrado');
+      }
 
-      // Buscar propostas do cliente com funcionalidades
+      console.log('✅ Cliente encontrado:', client);
+
+      // Buscar propostas do cliente com funcionalidades - FILTRAR APENAS PROPOSTAS NÃO-DRAFT
       const { data: proposals, error: proposalsError } = await supabase
         .from('proposals')
         .select(`
@@ -44,9 +54,16 @@ export const useClientProposals = (email: string) => {
           )
         `)
         .eq('client_id', client.id)
+        .neq('status', 'draft') // FILTRAR PROPOSTAS EM DRAFT
         .order('created_at', { ascending: false });
 
-      if (proposalsError) throw proposalsError;
+      if (proposalsError) {
+        console.error('❌ Erro ao buscar propostas:', proposalsError);
+        throw proposalsError;
+      }
+
+      console.log('📄 Propostas encontradas (filtradas):', proposals?.length || 0);
+      console.log('📋 Status das propostas:', proposals?.map(p => ({ id: p.id, status: p.status })));
 
       return {
         client,
@@ -95,6 +112,7 @@ export const useClientProposal = (linkAccess: string) => {
           )
         `)
         .eq('link_acesso', linkAccess)
+        .neq('status', 'draft') // FILTRAR PROPOSTAS EM DRAFT TAMBÉM AQUI
         .single();
 
       if (error) throw error;

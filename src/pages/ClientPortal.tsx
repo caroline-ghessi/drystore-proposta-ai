@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -79,10 +78,14 @@ const ClientPortal = () => {
 
   const { client, proposals } = clientData;
 
+  console.log('🎯 Processando propostas no ClientPortal:', proposals.length);
+
   // Processar propostas para o formato esperado pelos componentes
   const processedProposals = proposals.map(proposal => {
     const isExpired = new Date(proposal.validade) < new Date();
     let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
+    
+    console.log(`📊 Processando proposta ${proposal.id}: status=${proposal.status}, expirada=${isExpired}`);
     
     if (isExpired) {
       mappedStatus = 'expirada';
@@ -102,9 +105,12 @@ const ClientPortal = () => {
           mappedStatus = 'pendente';
           break;
         default:
+          // Não deveria chegar aqui já que filtramos drafts, mas por segurança
           mappedStatus = 'pendente';
       }
     }
+
+    console.log(`✅ Status final da proposta ${proposal.id}: ${mappedStatus}`);
 
     return {
       id: proposal.id,
@@ -121,10 +127,14 @@ const ClientPortal = () => {
   // Separar propostas aceitas
   const acceptedProposals = processedProposals.filter(p => p.status === 'aceita');
 
+  console.log('✅ Propostas aceitas:', acceptedProposals.length);
+
   // Verificar se há propostas aceitas com controle de entregas ativado
   const hasDeliveryTracking = acceptedProposals.some(proposal => 
     proposal.features.delivery_control === true
   );
+
+  console.log('🚚 Acompanhamento de entregas habilitado:', hasDeliveryTracking);
 
   // Mock data para funcionalidades ainda não implementadas
   const mockCashbackHistory = [];

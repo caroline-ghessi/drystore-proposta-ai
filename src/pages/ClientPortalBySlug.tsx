@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
@@ -118,10 +117,14 @@ const ClientPortalBySlug = () => {
 
   const { client, proposals } = clientData;
 
-  // Processar propostas com tipo correto
+  console.log('🎯 Processando propostas no ClientPortalBySlug:', proposals.length);
+
+  // Processar propostas com tipo correto - MELHOR MAPEAMENTO DE STATUS
   const processedProposals = proposals.map(proposal => {
     const isExpired = new Date(proposal.validade) < new Date();
     let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
+    
+    console.log(`📊 Processando proposta ${proposal.id}: status=${proposal.status}, expirada=${isExpired}`);
     
     if (isExpired) {
       mappedStatus = 'expirada';
@@ -141,9 +144,12 @@ const ClientPortalBySlug = () => {
           mappedStatus = 'pendente';
           break;
         default:
+          // Não deveria chegar aqui já que filtramos drafts
           mappedStatus = 'pendente';
       }
     }
+
+    console.log(`✅ Status final da proposta ${proposal.id}: ${mappedStatus}`);
 
     return {
       id: proposal.id,
