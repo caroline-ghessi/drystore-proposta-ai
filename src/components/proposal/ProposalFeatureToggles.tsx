@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { FileText, Package, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useClientContext } from '@/hooks/useClientContext';
 
 interface ProposalFeatureTogglesProps {
   proposalId: string;
@@ -20,6 +21,13 @@ const ProposalFeatureToggles = ({
   onToggleContractGeneration,
   onToggleDeliveryControl
 }: ProposalFeatureTogglesProps) => {
+  const { isClient } = useClientContext();
+
+  // Não exibir configurações para clientes
+  if (isClient) {
+    return null;
+  }
+
   return (
     <Card className="border-0 shadow-md">
       <CardHeader>

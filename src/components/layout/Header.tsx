@@ -1,9 +1,9 @@
 
-
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Menu } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { UserMenu } from './UserMenu';
+import { useClientContext } from '@/hooks/useClientContext';
 
 interface HeaderProps {
   showBackButton?: boolean;
@@ -12,6 +12,7 @@ interface HeaderProps {
 
 export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
   const navigate = useNavigate();
+  const { isClient } = useClientContext();
 
   const handleBack = () => {
     if (backPath) {
@@ -49,14 +50,12 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
             </div>
           </div>
           
-          {/* Right Side - Menu Icon + User Menu */}
+          {/* Right Side - Only show UserMenu for vendors/internal users */}
           <div className="flex items-center space-x-2">
-            {/* User Menu - includes both menu icon and avatar */}
-            <UserMenu />
+            {!isClient && <UserMenu />}
           </div>
         </div>
       </div>
     </nav>
   );
 };
-

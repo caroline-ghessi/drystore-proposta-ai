@@ -1,4 +1,6 @@
 
+import { useClientContext } from '@/hooks/useClientContext';
+
 interface ProposalDataIndicatorProps {
   dataSource: 'supabase' | 'pdf' | 'mock';
   proposal: {
@@ -10,7 +12,10 @@ interface ProposalDataIndicatorProps {
 }
 
 const ProposalDataIndicator = ({ dataSource, proposal, itemsCount }: ProposalDataIndicatorProps) => {
-  if (dataSource === 'mock') {
+  const { isClient } = useClientContext();
+
+  // Não exibir para clientes ou quando é mock data
+  if (isClient || dataSource === 'mock') {
     return null;
   }
 

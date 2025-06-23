@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ProposalHeader } from '@/components/proposal/ProposalHeader';
@@ -14,8 +13,8 @@ import { useProposalStatus } from '@/hooks/useProposalStatus';
 import { useProposalFeatures } from '@/hooks/useProposalFeatures';
 import { useProposalData } from '@/hooks/useProposalData';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getMockRecommendedProducts, 
+import { useClientContext } from '@/hooks/useClientContext';
+import { getMockRecommendedProducts, 
   getMockClientQuestions 
 } from '@/data/mockProposalData';
 import { getMockAIScore, getMockNextSteps } from '@/data/mockAIData';
@@ -24,6 +23,7 @@ const ProposalView = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { isClient, isVendor } = useClientContext();
   const showAI = searchParams.get('ai') === 'true';
   const [internalNotes, setInternalNotes] = useState<string>('');
   
@@ -56,8 +56,8 @@ const ProposalView = () => {
   const mockAIScore = getMockAIScore(proposal.id);
   const mockNextSteps = getMockNextSteps(proposal.id);
 
-  // Check if current user is a vendor (not client)
-  const isVendor = user?.role !== 'cliente';
+  // Check if current user is a vendor (not client) - using the new context
+  const isVendorUser = isVendor || (user && !isClient);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -65,7 +65,7 @@ const ProposalView = () => {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Indicador de fonte dos dados - apenas para usuários internos */}
-        {isVendor && (
+        {isVendorUser && (
           <ProposalDataIndicator 
             dataSource={dataSource}
             proposal={proposal}
@@ -89,7 +89,7 @@ const ProposalView = () => {
         </div>
 
         {/* Feature Toggles - Only visible for vendors, representatives and admins */}
-        {isVendor && ['admin', 'vendedor_interno', 'representante'].includes(user?.role || '') && (
+        {isVendorUser && ['admin', 'vendedor_interno', 'representante'].includes(user?.role || '') && (
           <div className="mb-6">
             <ProposalFeatureToggles
               proposalId={id || '1'}
