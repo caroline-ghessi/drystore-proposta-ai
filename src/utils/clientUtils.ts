@@ -41,3 +41,59 @@ export const formatClientName = (name: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 };
+
+// Função para obter a cor do status da proposta
+export const getProposalStatusColor = (status: string): string => {
+  switch (status) {
+    case 'aceita':
+    case 'accepted':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'pendente':
+    case 'sent':
+    case 'viewed':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'expirada':
+    case 'expired':
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'rejeitada':
+    case 'rejected':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'draft':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+// Função para obter o label do status da proposta
+export const getProposalStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'aceita':
+    case 'accepted':
+      return 'Aceita';
+    case 'pendente':
+    case 'sent':
+    case 'viewed':
+      return 'Pendente';
+    case 'expirada':
+    case 'expired':
+      return 'Expirada';
+    case 'rejeitada':
+    case 'rejected':
+      return 'Rejeitada';
+    case 'draft':
+      return 'Rascunho';
+    default:
+      return 'Desconhecido';
+  }
+};
+
+// Função para formatar número da proposta
+export const formatProposalNumber = (id: string, createdAt?: string): string => {
+  return `PROP-${id.substring(0, 8)}`;
+};
+
+// Função para verificar se uma proposta está expirada
+export const isProposalExpired = (validUntil: string): boolean => {
+  return new Date(validUntil) < new Date();
+};
