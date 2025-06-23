@@ -224,8 +224,8 @@ const ProposalBuilder = () => {
         description: "A proposta foi salva com sucesso.",
       });
 
-      // Ir direto para visualização da proposta (sem página de prévia)
-      navigate(`/proposal/${result.proposal.id}`);
+      // Navegar para a visualização completa da proposta usando proposal-view
+      navigate(`/proposal-view/${result.proposal.id}`);
     } catch (error: any) {
       toast({
         title: "Erro ao salvar",
