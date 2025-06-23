@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -232,7 +231,8 @@ export const useCreateProposal = () => {
         valor_total: subtotal,
         desconto_percentual: discount,
         include_video: includeVideo,
-        include_technical_details: includeTechnicalDetails
+        include_technical_details: includeTechnicalDetails,
+        status: 'sent' // Status alterado de 'draft' para 'sent'
       });
 
       const { data: proposal, error: proposalError } = await supabase
@@ -243,7 +243,7 @@ export const useCreateProposal = () => {
           valor_total: subtotal,
           desconto_percentual: discount,
           validade: validUntil.toISOString(),
-          status: 'draft',
+          status: 'sent', // ✅ Alterado de 'draft' para 'sent'
           observacoes: observations,
           link_acesso: linkAccess,
           include_video: includeVideo,
