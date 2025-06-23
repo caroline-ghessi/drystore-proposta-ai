@@ -34,7 +34,7 @@ export const useClientProposals = (email: string) => {
       console.log('✅ [DEBUG] Cliente encontrado:', client);
       console.log('📊 [DEBUG] === STEP 2: Buscando propostas do cliente ===');
 
-      // Buscar propostas do cliente com dados do vendedor
+      // Buscar propostas do cliente sem tentar fazer join com profiles
       const { data: proposals, error: proposalsError } = await supabase
         .from('proposals')
         .select(`
@@ -58,11 +58,6 @@ export const useClientProposals = (email: string) => {
           proposal_features (
             contract_generation,
             delivery_control
-          ),
-          profiles!proposals_user_id_fkey (
-            id,
-            nome,
-            user_id
           )
         `)
         .eq('client_id', client.id)
@@ -77,7 +72,7 @@ export const useClientProposals = (email: string) => {
         throw proposalsError;
       }
 
-      // Buscar dados do vendedor da primeira proposta (assumindo que é o mesmo para todas)
+      // Buscar dados do vendedor da primeira proposta (se existir)
       let salesRepresentative = null;
       if (proposals && proposals.length > 0 && proposals[0].user_id) {
         console.log('📊 [DEBUG] === STEP 3: Buscando dados do vendedor ===');
@@ -89,7 +84,6 @@ export const useClientProposals = (email: string) => {
           .single();
 
         if (vendorProfile && !vendorError) {
-          // Buscar email do vendedor na tabela auth.users via RPC ou assumir padrão
           salesRepresentative = {
             id: vendorProfile.id,
             name: vendorProfile.nome,

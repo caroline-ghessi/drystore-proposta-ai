@@ -2,7 +2,7 @@
 import { useParams } from 'react-router-dom';
 import { useSecureClientProposals } from '@/hooks/useSecureClientProposals';
 import { useSecureClientAuth } from '@/hooks/useSecureClientAuth';
-import { getClientNameFromSlug } from '@/utils/clientUtils';
+import { useClientBySlugOrId } from '@/hooks/useClientBySlugOrId';
 import SecureClientAuth from '@/components/security/SecureClientAuth';
 import ClientAuthLoadingState from '@/components/client/ClientAuthLoadingState';
 import ClientAuthErrorState from '@/components/client/ClientAuthErrorState';
@@ -10,7 +10,11 @@ import ClientPortalDashboard from '@/components/client/ClientPortalDashboard';
 
 const SecureClientPortalBySlug = () => {
   const { clientSlug } = useParams<{ clientSlug: string }>();
-  const clientName = clientSlug ? getClientNameFromSlug(clientSlug) : '';
+  
+  // Buscar dados do cliente pelo slug/ID
+  const { data: clientInfo, isLoading: isLoadingClientInfo, error: clientInfoError } = useClientBySlugOrId(
+    clientSlug || ''
+  );
   
   const { 
     clientAuth, 
@@ -31,6 +35,18 @@ const SecureClientPortalBySlug = () => {
   const handleRetry = () => {
     logout();
   };
+
+  // Mostrar loading enquanto busca informações do cliente
+  if (isLoadingClientInfo) {
+    return <ClientAuthLoadingState />;
+  }
+
+  // Mostrar erro se não conseguir carregar informações do cliente
+  if (clientInfoError || !clientInfo) {
+    return <ClientAuthErrorState onRetry={() => window.location.reload()} />;
+  }
+
+  const clientName = clientInfo.clientName;
 
   // Show authentication form if not authenticated
   if (!clientAuth) {

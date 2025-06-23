@@ -2,7 +2,7 @@
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useClientProposals } from '@/hooks/useClientProposals';
-import { getClientNameFromSlug } from '@/utils/clientUtils';
+import { useClientBySlugOrId } from '@/hooks/useClientBySlugOrId';
 import ClientEmailAuth from '@/components/client/ClientEmailAuth';
 import ClientAuthLoadingState from '@/components/client/ClientAuthLoadingState';
 import ClientAuthErrorState from '@/components/client/ClientAuthErrorState';
@@ -14,7 +14,10 @@ const ClientPortalBySlug = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const clientName = clientSlug ? getClientNameFromSlug(clientSlug) : '';
+  // Buscar dados do cliente pelo slug/ID
+  const { data: clientInfo, isLoading: isLoadingClientInfo, error: clientInfoError } = useClientBySlugOrId(
+    clientSlug || ''
+  );
 
   const { data: clientData, isLoading: isLoadingData, error } = useClientProposals(
     isAuthenticated ? email : ''
@@ -31,6 +34,18 @@ const ClientPortalBySlug = () => {
     setIsAuthenticated(false);
     setEmail('');
   };
+
+  // Mostrar loading enquanto busca informações do cliente
+  if (isLoadingClientInfo) {
+    return <ClientAuthLoadingState />;
+  }
+
+  // Mostrar erro se não conseguir carregar informações do cliente
+  if (clientInfoError || !clientInfo) {
+    return <ClientAuthErrorState onRetry={() => window.location.reload()} />;
+  }
+
+  const clientName = clientInfo.clientName;
 
   if (!isAuthenticated) {
     return (
@@ -54,7 +69,7 @@ const ClientPortalBySlug = () => {
 
   console.log('🎯 Processando propostas no ClientPortalBySlug:', proposals.length);
 
-  // Processar propostas com tipo correto - MELHOR MAPEAMENTO DE STATUS
+  // Processar propostas com tipo correto
   const processedProposals = proposals.map(proposal => {
     const isExpired = new Date(proposal.validade) < new Date();
     let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
@@ -79,7 +94,6 @@ const ClientPortalBySlug = () => {
           mappedStatus = 'pendente';
           break;
         default:
-          // Não deveria chegar aqui já que filtramos drafts
           mappedStatus = 'pendente';
       }
     }
