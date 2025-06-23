@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecurityValidation } from './useSecurityValidation';
@@ -25,13 +24,13 @@ export const useSecureClientProposals = (token: string) => {
       if (!token) throw new Error('Token is required');
 
       // Enhanced token validation
-      const tokenValidation = validateToken(token);
-      if (!tokenValidation.isValid) {
-        throw new Error(tokenValidation.error || 'Invalid token format');
+      const clientSideValidation = validateToken(token);
+      if (!clientSideValidation.isValid) {
+        throw new Error(clientSideValidation.error || 'Invalid token format');
       }
 
       // First validate the token
-      const { data: tokenValidation, error: tokenError } = await supabase.rpc('validate_client_access_token', {
+      const { data: serverValidationData, error: tokenError } = await supabase.rpc('validate_client_access_token', {
         token: token
       });
 
@@ -40,13 +39,13 @@ export const useSecureClientProposals = (token: string) => {
         throw new Error('Failed to validate token');
       }
 
-      const validationResponse = tokenValidation as unknown as TokenValidationResponse;
+      const serverValidationResponse = serverValidationData as unknown as TokenValidationResponse;
 
-      if (!validationResponse.valid) {
+      if (!serverValidationResponse.valid) {
         throw new Error('Invalid or expired token');
       }
 
-      const client = validationResponse.client;
+      const client = serverValidationResponse.client;
 
       // Use the new secure function to get proposals
       const { data: proposals, error: proposalsError } = await supabase.rpc('get_client_proposals_by_token', {
