@@ -33,7 +33,7 @@ export const TechnicalDetails = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="leading-relaxed mb-6 text-slate-200">{technicalDetails}</p>
+        <p className="leading-relaxed mb-6 text-neutral-900">{technicalDetails}</p>
         
         {/* Imagens Técnicas */}
         <div className="mb-8">
