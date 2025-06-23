@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import { useSecurityHeaders } from '@/hooks/useSecurityHeaders';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import SessionTimeoutWarning from '@/components/security/SessionTimeoutWarning';
 import { useAuth } from '@/contexts/AuthContext';
+import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -33,6 +35,7 @@ const AppContent = () => {
   return (
     <>
       <Routes>
+        <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -41,7 +44,6 @@ const AppContent = () => {
         <Route path="/secure/client/:clientSlug" element={<SecureClientPortalBySlug />} />
         <Route path="/proposal/:linkAccess" element={<ProposalDetails />} />
 
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/register-user" element={<AdminRoute><UserRegistration /></AdminRoute>} />
         <Route path="/security-management" element={<AdminRoute><SecurityManagement /></AdminRoute>} />
