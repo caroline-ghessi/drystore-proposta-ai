@@ -2,69 +2,8 @@
 import Layout from '@/components/Layout';
 import PermissionGuard from '@/components/PermissionGuard';
 import ApprovalWorkflow from '@/components/approval/ApprovalWorkflow';
-import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-
-interface PendingApproval {
-  id: string;
-  proposalId: string;
-  proposalNumber: string;
-  clientName: string;
-  projectName: string;
-  value: number;
-  requestedBy: string;
-  requestedAt: string;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  approverComments?: string;
-}
 
 const ApprovalManagement = () => {
-  const { toast } = useToast();
-  
-  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([
-    {
-      id: '1',
-      proposalId: 'prop-1',
-      proposalNumber: 'PROP-2024-007',
-      clientName: 'Construtora ABC',
-      projectName: 'Galpão Industrial 2000m²',
-      value: 350000.00,
-      requestedBy: 'Carlos Vendedor',
-      requestedAt: '2024-06-19T09:00:00',
-      reason: 'Valor acima do limite de R$ 300.000',
-      status: 'pending'
-    },
-    {
-      id: '2',
-      proposalId: 'prop-2',
-      proposalNumber: 'PROP-2024-008',
-      clientName: 'Shopping Center XYZ',
-      projectName: 'Reforma Completa',
-      value: 890000.00,
-      requestedBy: 'Ana Vendedora',
-      requestedAt: '2024-06-19T10:30:00',
-      reason: 'Valor acima do limite de R$ 300.000 + desconto especial de 15%',
-      status: 'pending'
-    }
-  ]);
-
-  const handleApprove = (approvalId: string, comments: string) => {
-    setPendingApprovals(prev => prev.map(approval => 
-      approval.id === approvalId 
-        ? { ...approval, status: 'approved' as const, approverComments: comments }
-        : approval
-    ));
-  };
-
-  const handleReject = (approvalId: string, comments: string) => {
-    setPendingApprovals(prev => prev.map(approval => 
-      approval.id === approvalId 
-        ? { ...approval, status: 'rejected' as const, approverComments: comments }
-        : approval
-    ));
-  };
-
   return (
     <Layout>
       <PermissionGuard 
@@ -81,11 +20,7 @@ const ApprovalManagement = () => {
             <p className="text-gray-600">Gerencie propostas que precisam de aprovação interna</p>
           </div>
 
-          <ApprovalWorkflow
-            pendingApprovals={pendingApprovals}
-            onApprove={handleApprove}
-            onReject={handleReject}
-          />
+          <ApprovalWorkflow />
         </div>
       </PermissionGuard>
     </Layout>
