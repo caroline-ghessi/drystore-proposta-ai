@@ -1,7 +1,5 @@
-
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,7 +190,7 @@ export const UserMenu = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <div className="flex items-center space-x-2 cursor-pointer">
-          {/* Menu Icon with Text - Desktop */}
+          {/* Menu Button - Desktop */}
           <Button
             variant="ghost"
             size="sm"
@@ -202,7 +200,7 @@ export const UserMenu = () => {
             <span>Menu</span>
           </Button>
           
-          {/* Menu Icon Only - Mobile */}
+          {/* Menu Button - Mobile */}
           <Button
             variant="ghost"
             size="sm"
@@ -210,14 +208,6 @@ export const UserMenu = () => {
           >
             <Menu className="w-5 h-5" />
             <span className="sr-only">Menu</span>
-          </Button>
-          
-          {/* Avatar */}
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
           </Button>
         </div>
       </DropdownMenuTrigger>
