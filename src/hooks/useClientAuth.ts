@@ -14,20 +14,28 @@ export const useClientAuth = () => {
 
   const validateClientEmail = async (email: string): Promise<{ isValid: boolean; client?: any }> => {
     try {
+      console.log('Validating client email:', email);
+      
       const { data: client, error } = await supabase
         .from('clients')
         .select('id, nome, email, empresa, telefone')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
-      if (error || !client) {
-        console.log('Cliente não encontrado:', error);
+      if (error) {
+        console.error('Erro na consulta do cliente:', error);
         return { isValid: false };
       }
 
+      if (!client) {
+        console.log('Cliente não encontrado para email:', email);
+        return { isValid: false };
+      }
+
+      console.log('Cliente encontrado:', client);
       return { isValid: true, client };
     } catch (error) {
-      console.error('Erro ao validar email do cliente:', error);
+      console.error('Erro inesperado ao validar email do cliente:', error);
       return { isValid: false };
     }
   };
