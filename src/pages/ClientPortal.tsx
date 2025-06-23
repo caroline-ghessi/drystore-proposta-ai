@@ -113,23 +113,9 @@ const ClientPortal = () => {
     );
   }
 
-  const { client, proposals } = clientData;
+  const { client, proposals, salesRepresentative } = clientData;
 
   console.log('🎯 [DEBUG] Processando propostas no ClientPortal:', proposals.length);
-
-  // DEBUG INFO detalhada das propostas
-  if (showDebugInfo) {
-    console.log('🔍 [DEBUG] Detalhes das propostas encontradas:');
-    proposals.forEach((proposal, index) => {
-      console.log(`Proposta ${index + 1}:`, {
-        id: proposal.id.substring(0, 8),
-        status: proposal.status,
-        validade: proposal.validade,
-        valor_total: proposal.valor_total,
-        created_at: proposal.created_at
-      });
-    });
-  }
 
   // Processar propostas para o formato esperado pelos componentes
   const processedProposals = proposals.map(proposal => {
@@ -156,7 +142,6 @@ const ClientPortal = () => {
           mappedStatus = 'pendente';
           break;
         default:
-          // Não deveria chegar aqui já que filtramos drafts, mas por segurança
           mappedStatus = 'pendente';
       }
     }
@@ -190,7 +175,9 @@ const ClientPortal = () => {
   // Mock data para funcionalidades ainda não implementadas
   const mockCashbackHistory = [];
   const mockDeliveryProgress = [];
-  const mockRepresentative = {
+
+  // Usar dados reais do vendedor ou fallback para mock
+  const representativeData = salesRepresentative || {
     id: '1',
     name: 'Representante Comercial',
     email: 'vendedor@drystore.com',
@@ -238,6 +225,7 @@ const ClientPortal = () => {
                 <p><strong>Total de propostas:</strong> {proposals.length}</p>
                 <p><strong>Propostas processadas:</strong> {processedProposals.length}</p>
                 <p><strong>Propostas aceitas:</strong> {acceptedProposals.length}</p>
+                <p><strong>Vendedor:</strong> {salesRepresentative ? salesRepresentative.name : 'Usando dados mock'}</p>
                 <div className="mt-2">
                   <strong>Status das propostas:</strong>
                   {processedProposals.map(p => (
@@ -276,8 +264,8 @@ const ClientPortal = () => {
         {/* Histórico Completo de Propostas */}
         <ClientProposalHistory proposals={processedProposals} />
 
-        {/* Informações do Representante */}
-        <SalesRepContact representative={mockRepresentative} />
+        {/* Informações do Representante - AGORA COM DADOS REAIS */}
+        <SalesRepContact representative={representativeData} />
       </div>
     </Layout>
   );

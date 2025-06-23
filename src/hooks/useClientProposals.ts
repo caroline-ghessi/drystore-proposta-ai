@@ -8,8 +8,6 @@ export const useClientProposals = (email: string) => {
     queryFn: async () => {
       console.log('📊 [DEBUG] === INICIANDO BUSCA DE PROPOSTAS ===');
       console.log('📊 [DEBUG] Email recebido:', email);
-      console.log('📊 [DEBUG] Tipo do email:', typeof email);
-      console.log('📊 [DEBUG] Email válido?', !!email);
 
       if (!email) {
         console.log('❌ [DEBUG] Email não fornecido para useClientProposals');
@@ -27,21 +25,16 @@ export const useClientProposals = (email: string) => {
 
       console.log('📊 [DEBUG] Query cliente executada');
       console.log('📊 [DEBUG] Resultado cliente:', client);
-      console.log('📊 [DEBUG] Erro cliente:', clientError);
 
-      if (clientError) {
+      if (clientError || !client) {
         console.error('❌ [DEBUG] Erro ao buscar cliente:', clientError);
-        throw clientError;
-      }
-      if (!client) {
-        console.error('❌ [DEBUG] Cliente não encontrado para email:', email);
         throw new Error('Cliente não encontrado');
       }
 
       console.log('✅ [DEBUG] Cliente encontrado:', client);
       console.log('📊 [DEBUG] === STEP 2: Buscando propostas do cliente ===');
 
-      // Buscar propostas do cliente - FILTRAR APENAS PROPOSTAS NÃO-DRAFT
+      // Buscar propostas do cliente com dados do vendedor
       const { data: proposals, error: proposalsError } = await supabase
         .from('proposals')
         .select(`
@@ -53,6 +46,7 @@ export const useClientProposals = (email: string) => {
           created_at,
           observacoes,
           link_acesso,
+          user_id,
           proposal_items (
             id,
             produto_nome,
@@ -64,47 +58,61 @@ export const useClientProposals = (email: string) => {
           proposal_features (
             contract_generation,
             delivery_control
+          ),
+          profiles!proposals_user_id_fkey (
+            id,
+            nome,
+            user_id
           )
         `)
         .eq('client_id', client.id)
-        .neq('status', 'draft') // FILTRAR PROPOSTAS EM DRAFT
+        .neq('status', 'draft')
         .order('created_at', { ascending: false });
 
       console.log('📊 [DEBUG] Query propostas executada');
-      console.log('📊 [DEBUG] Client ID usado na busca:', client.id);
       console.log('📊 [DEBUG] Resultado propostas:', proposals);
-      console.log('📊 [DEBUG] Erro propostas:', proposalsError);
 
       if (proposalsError) {
         console.error('❌ [DEBUG] Erro ao buscar propostas:', proposalsError);
         throw proposalsError;
       }
 
+      // Buscar dados do vendedor da primeira proposta (assumindo que é o mesmo para todas)
+      let salesRepresentative = null;
+      if (proposals && proposals.length > 0 && proposals[0].user_id) {
+        console.log('📊 [DEBUG] === STEP 3: Buscando dados do vendedor ===');
+        
+        const { data: vendorProfile, error: vendorError } = await supabase
+          .from('profiles')
+          .select('id, nome, role, user_id')
+          .eq('user_id', proposals[0].user_id)
+          .single();
+
+        if (vendorProfile && !vendorError) {
+          // Buscar email do vendedor na tabela auth.users via RPC ou assumir padrão
+          salesRepresentative = {
+            id: vendorProfile.id,
+            name: vendorProfile.nome,
+            email: `${vendorProfile.nome.toLowerCase().replace(/\s+/g, '.')}@drystore.com`,
+            phone: '(11) 99999-8888',
+            whatsapp: '5511999998888',
+            photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+            territory: vendorProfile.role === 'admin' ? 'Administrador' : 'Região Comercial'
+          };
+          
+          console.log('✅ [DEBUG] Vendedor encontrado:', salesRepresentative);
+        } else {
+          console.log('⚠️ [DEBUG] Vendedor não encontrado, usando dados padrão');
+        }
+      }
+
       console.log('📄 [DEBUG] === RESULTADO FINAL ===');
-      console.log('📄 [DEBUG] Propostas encontradas (total):', proposals?.length || 0);
-      console.log('📄 [DEBUG] Propostas com status:', proposals?.map(p => ({ 
-        id: p.id.substring(0, 8), 
-        status: p.status,
-        validade: p.validade,
-        valor: p.valor_total 
-      })) || []);
-
-      // Log detalhado de cada proposta
-      proposals?.forEach((proposal, index) => {
-        console.log(`📋 [DEBUG] Proposta ${index + 1}:`, {
-          id: proposal.id.substring(0, 8),
-          status: proposal.status,
-          valor: proposal.valor_total,
-          validade: proposal.validade,
-          items: proposal.proposal_items?.length || 0
-        });
-      });
-
-      console.log('📊 [DEBUG] === BUSCA FINALIZADA COM SUCESSO ===');
+      console.log('📄 [DEBUG] Propostas encontradas:', proposals?.length || 0);
 
       return {
         client,
-        proposals: proposals || []
+        proposals: proposals || [],
+        salesRepresentative
       };
     },
     enabled: !!email
@@ -151,7 +159,7 @@ export const useClientProposal = (linkAccess: string) => {
           )
         `)
         .eq('link_acesso', linkAccess)
-        .neq('status', 'draft') // FILTRAR PROPOSTAS EM DRAFT TAMBÉM AQUI
+        .neq('status', 'draft')
         .single();
 
       if (error) {

@@ -1,35 +1,29 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
-interface ClientContext {
-  isClient: boolean;
-  isVendor: boolean;
-  clientAuth: any;
-}
+export const useClientContext = () => {
+  const location = useLocation();
+  const { clientAuth } = useClientAuth();
 
-export const useClientContext = (): ClientContext => {
-  const { user } = useAuth();
-  const [clientAuth, setClientAuth] = useState<any>(null);
+  // Verificar se estamos em qualquer rota relacionada ao cliente
+  const isClientRoute = 
+    location.pathname.startsWith('/client') || 
+    location.pathname === '/client-portal' ||
+    location.pathname === '/client-login';
 
-  useEffect(() => {
-    // Verificar se há autenticação de cliente no localStorage
-    const savedClientAuth = localStorage.getItem('client_auth');
-    if (savedClientAuth) {
-      try {
-        setClientAuth(JSON.parse(savedClientAuth));
-      } catch (error) {
-        console.error('Erro ao carregar autenticação do cliente:', error);
-      }
-    }
-  }, []);
+  // Verificar se temos autenticação de cliente ativa
+  const isClientAuthenticated = !!clientAuth;
 
-  const isClient = !!clientAuth && !user;
-  const isVendor = !!user && !clientAuth;
+  // Considerar como contexto de cliente se:
+  // 1. Estamos em uma rota de cliente, OU
+  // 2. Temos autenticação de cliente ativa
+  const isClient = isClientRoute || isClientAuthenticated;
 
   return {
     isClient,
-    isVendor,
+    isClientRoute,
+    isClientAuthenticated,
     clientAuth
   };
 };
