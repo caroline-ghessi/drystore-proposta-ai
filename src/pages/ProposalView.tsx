@@ -13,6 +13,7 @@ import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
 import { useProposalFeatures } from '@/hooks/useProposalFeatures';
 import { useProposalData } from '@/hooks/useProposalData';
+import { useProposalDetails } from '@/hooks/useProposalDetails';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientContext } from '@/hooks/useClientContext';
 import { getMockRecommendedProducts, 
@@ -21,7 +22,7 @@ import { getMockRecommendedProducts,
 import { getMockAIScore, getMockNextSteps } from '@/data/mockAIData';
 
 const ProposalView = () => {
-  const { id } = useParams();
+  const { id, linkAccess } = useParams();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { isClient, isVendor } = useClientContext();
@@ -30,14 +31,64 @@ const ProposalView = () => {
   
   // Custom hooks - devem ser chamados SEMPRE, antes de qualquer return condicional
   const { interactions, addInteraction } = useProposalInteractions();
-  const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || '1');
+  const { features, toggleContractGeneration, toggleDeliveryControl } = useProposalFeatures(id || linkAccess || '1');
   
-  // Use the new data hook
-  const { proposal, proposalItems, dataSource, isLoading, error } = useProposalData(id || '');
+  // Use different hooks based on the route parameter
+  const { proposal: proposalByData, proposalItems: itemsByData, dataSource, isLoading: isLoadingData, error: errorData } = useProposalData(id || '');
+  const { data: proposalByDetails, isLoading: isLoadingDetails, error: errorDetails } = useProposalDetails(linkAccess || '');
+
+  // Determine which data to use
+  let proposal, proposalItems, isLoading, error;
+  
+  if (id) {
+    // Using ID route - for client portal
+    proposal = proposalByData;
+    proposalItems = itemsByData;
+    isLoading = isLoadingData;
+    error = errorData;
+  } else if (linkAccess) {
+    // Using linkAccess route - for direct proposal access
+    if (proposalByDetails) {
+      proposal = {
+        id: proposalByDetails.id,
+        clientName: proposalByDetails.clients?.nome || 'Cliente',
+        clientEmail: proposalByDetails.clients?.email || '',
+        totalPrice: Number(proposalByDetails.valor_total),
+        finalPrice: Number(proposalByDetails.valor_total),
+        validUntil: proposalByDetails.validade,
+        benefits: [],
+        solutions: [],
+        recommendedProducts: [],
+        includeVideo: false,
+        includeTechnicalDetails: false,
+        videoUrl: '',
+        technicalImages: [],
+        createdBy: 'Vendedor'
+      };
+      proposalItems = proposalByDetails.proposal_items?.map(item => ({
+        id: item.id,
+        name: item.produto_nome,
+        description: item.descricao_item || '',
+        quantity: Number(item.quantidade),
+        unitPrice: Number(item.preco_unit),
+        totalPrice: Number(item.preco_total)
+      })) || [];
+    } else {
+      proposal = null;
+      proposalItems = [];
+    }
+    isLoading = isLoadingDetails;
+    error = errorDetails;
+  } else {
+    proposal = null;
+    proposalItems = [];
+    isLoading = false;
+    error = new Error('ID ou link de acesso obrigatório');
+  }
 
   // Custom hooks que dependem de proposal - também devem ser chamados sempre
   const { status, handleAccept, handleReject, handleQuestion } = useProposalStatus(
-    proposal.clientName, 
+    proposal?.clientName || 'Cliente', 
     addInteraction
   );
 
@@ -47,8 +98,15 @@ const ProposalView = () => {
   }
 
   // Error state
-  if (error) {
-    console.error('❌ ProposalView: Erro ao carregar proposta:', error);
+  if (error || !proposal) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Proposta não encontrada</h1>
+          <p className="text-gray-600">A proposta solicitada não foi encontrada ou não está disponível.</p>
+        </div>
+      </div>
+    );
   }
 
   // Dados adicionais (usar mock para compatibilidade)
@@ -73,7 +131,7 @@ const ProposalView = () => {
   };
 
   // Fix dataSource type mapping
-  const mappedDataSource: 'mock' | 'supabase' | 'pdf' = dataSource === 'database' ? 'supabase' : dataSource;
+  const mappedDataSource: 'mock' | 'supabase' | 'pdf' = dataSource === 'database' ? 'supabase' : (dataSource || 'supabase');
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -110,7 +168,7 @@ const ProposalView = () => {
         {isVendorUser && ['admin', 'vendedor_interno', 'representante'].includes(user?.role || '') && (
           <div className="mb-6">
             <ProposalFeatureToggles
-              proposalId={id || '1'}
+              proposalId={id || linkAccess || '1'}
               contractGeneration={features.contractGeneration}
               deliveryControl={features.deliveryControl}
               onToggleContractGeneration={toggleContractGeneration}

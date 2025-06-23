@@ -20,6 +20,7 @@ import UserRegistration from '@/pages/UserRegistration';
 import ClientPortalBySlug from '@/pages/ClientPortalBySlug';
 import SecureClientPortalBySlug from '@/pages/SecureClientPortalBySlug';
 import ProposalDetails from '@/pages/ProposalDetails';
+import ProposalView from '@/pages/ProposalView';
 import AdminRoute from '@/components/AdminRoute';
 import SecurityManagement from '@/pages/admin/SecurityManagement';
 import ClientLogin from '@/pages/ClientLogin';
@@ -47,6 +48,7 @@ const AppContent = () => {
         <Route path="/client/:clientSlug" element={<ClientPortalBySlug />} />
         <Route path="/secure/client/:clientSlug" element={<SecureClientPortalBySlug />} />
         <Route path="/proposal/:linkAccess" element={<ProposalDetails />} />
+        <Route path="/proposal-view/:id" element={<ProposalView />} />
 
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/register-user" element={<AdminRoute><UserRegistration /></AdminRoute>} />

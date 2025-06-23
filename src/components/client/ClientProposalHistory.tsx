@@ -82,7 +82,7 @@ const ClientProposalHistory = ({ proposals, title = "Histórico de Propostas" }:
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/proposal/${proposal.id}`)}
+                        onClick={() => navigate(`/proposal-view/${proposal.id}`)}
                       >
                         <Eye className="w-4 h-4 mr-1" />
                         Ver Detalhes
