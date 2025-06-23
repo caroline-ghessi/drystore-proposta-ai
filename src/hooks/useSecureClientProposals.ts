@@ -1,6 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSecurityValidation } from './useSecurityValidation';
 
 interface TokenValidationResponse {
   valid: boolean;
@@ -16,10 +17,18 @@ interface TokenValidationResponse {
 }
 
 export const useSecureClientProposals = (token: string) => {
+  const { validateToken } = useSecurityValidation();
+  
   return useQuery({
     queryKey: ['secure-client-proposals', token],
     queryFn: async () => {
       if (!token) throw new Error('Token is required');
+
+      // Enhanced token validation
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.isValid) {
+        throw new Error(tokenValidation.error || 'Invalid token format');
+      }
 
       // First validate the token
       const { data: tokenValidation, error: tokenError } = await supabase.rpc('validate_client_access_token', {
@@ -27,6 +36,7 @@ export const useSecureClientProposals = (token: string) => {
       });
 
       if (tokenError) {
+        console.error('Token validation error:', tokenError);
         throw new Error('Failed to validate token');
       }
 
@@ -38,43 +48,59 @@ export const useSecureClientProposals = (token: string) => {
 
       const client = validationResponse.client;
 
-      // Fetch proposals for this client with enhanced security
-      const { data: proposals, error: proposalsError } = await supabase
-        .from('proposals')
-        .select(`
-          id,
-          valor_total,
-          desconto_percentual,
-          validade,
-          status,
-          created_at,
-          observacoes,
-          link_acesso,
-          proposal_items (
-            id,
-            produto_nome,
-            quantidade,
-            preco_unit,
-            preco_total,
-            descricao_item
-          ),
-          proposal_features (
-            contract_generation,
-            delivery_control
-          )
-        `)
-        .eq('client_id', client!.id)
-        .neq('status', 'draft')
-        .order('created_at', { ascending: false });
+      // Use the new secure function to get proposals
+      const { data: proposals, error: proposalsError } = await supabase.rpc('get_client_proposals_by_token', {
+        access_token: token
+      });
 
       if (proposalsError) {
         console.error('Error fetching proposals:', proposalsError);
         throw new Error('Failed to fetch proposals');
       }
 
+      // Get detailed proposal information for each proposal
+      const detailedProposals = await Promise.all(
+        (proposals as any[]).map(async (proposal) => {
+          const { data: items, error: itemsError } = await supabase
+            .from('proposal_items')
+            .select('*')
+            .eq('proposal_id', proposal.proposal_id);
+
+          const { data: features, error: featuresError } = await supabase
+            .from('proposal_features')
+            .select('*')
+            .eq('proposal_id', proposal.proposal_id);
+
+          if (itemsError) {
+            console.error('Error fetching proposal items:', itemsError);
+          }
+
+          if (featuresError) {
+            console.error('Error fetching proposal features:', featuresError);
+          }
+
+          return {
+            id: proposal.proposal_id,
+            valor_total: proposal.valor_total,
+            status: proposal.status,
+            validade: proposal.validade,
+            created_at: proposal.created_at,
+            proposal_items: items || [],
+            proposal_features: features || []
+          };
+        })
+      );
+
+      // Log successful access
+      await supabase.rpc('log_security_event', {
+        event_type: 'client_proposals_accessed',
+        client_id: client!.id,
+        severity: 'low'
+      });
+
       return {
         client,
-        proposals: proposals || []
+        proposals: detailedProposals
       };
     },
     enabled: !!token,
@@ -85,13 +111,17 @@ export const useSecureClientProposals = (token: string) => {
 };
 
 export const useSecureClientProposal = (linkAccess: string) => {
+  const { sanitizeInput } = useSecurityValidation();
+  
   return useQuery({
     queryKey: ['secure-client-proposal', linkAccess],
     queryFn: async () => {
       if (!linkAccess) throw new Error('Link de acesso é obrigatório');
 
-      // Enhanced security: validate link format
-      if (typeof linkAccess !== 'string' || linkAccess.length < 10) {
+      // Enhanced security: sanitize and validate link format
+      const sanitizedLink = sanitizeInput(linkAccess, { maxLength: 100, allowSpecialChars: false });
+      
+      if (!sanitizedLink || sanitizedLink.length < 10) {
         throw new Error('Link de acesso inválido');
       }
 
@@ -126,12 +156,18 @@ export const useSecureClientProposal = (linkAccess: string) => {
             delivery_control
           )
         `)
-        .eq('link_acesso', linkAccess)
+        .eq('link_acesso', sanitizedLink)
         .neq('status', 'draft')
         .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
+          // Log security event for invalid proposal access attempt
+          await supabase.rpc('log_security_event', {
+            event_type: 'invalid_proposal_access_attempt',
+            details: { link_access: sanitizedLink },
+            severity: 'medium'
+          });
           throw new Error('Proposta não encontrada');
         }
         throw new Error('Erro ao carregar proposta');
@@ -140,6 +176,14 @@ export const useSecureClientProposal = (linkAccess: string) => {
       if (!proposal) {
         throw new Error('Proposta não encontrada');
       }
+
+      // Log successful proposal access
+      await supabase.rpc('log_security_event', {
+        event_type: 'proposal_accessed_via_link',
+        client_id: proposal.clients?.id,
+        details: { proposal_id: proposal.id },
+        severity: 'low'
+      });
 
       return proposal;
     },

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSecurityValidation } from './useSecurityValidation';
 
 interface SecureClientAuth {
   token: string;
@@ -32,13 +33,26 @@ export const useSecureClientAuth = () => {
   const [clientAuth, setClientAuth] = useState<SecureClientAuth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  
+  const { sanitizeInput, validateEmail, validateToken } = useSecurityValidation();
 
   const generateSecureToken = async (email: string): Promise<{ success: boolean; token?: string; error?: string }> => {
     try {
-      // Input validation and sanitization
-      const sanitizedEmail = email.trim().toLowerCase();
-      if (!sanitizedEmail || !isValidEmail(sanitizedEmail)) {
-        return { success: false, error: 'Email inválido' };
+      // Enhanced input validation
+      const sanitizedEmail = sanitizeInput(email.toLowerCase().trim(), { maxLength: 254 });
+      const emailValidation = validateEmail(sanitizedEmail);
+      
+      if (!emailValidation.isValid) {
+        return { success: false, error: emailValidation.error };
+      }
+
+      // Rate limiting check
+      if (attempts >= 5) {
+        setIsBlocked(true);
+        await logSecurityEvent('rate_limit_exceeded', undefined, sanitizedEmail);
+        return { success: false, error: 'Muitas tentativas. Tente novamente em 15 minutos.' };
       }
 
       // Call the secure token generation function
@@ -49,21 +63,25 @@ export const useSecureClientAuth = () => {
 
       if (error) {
         console.error('Error generating token:', error);
+        await logSecurityEvent('token_generation_failed', undefined, sanitizedEmail);
         return { success: false, error: 'Cliente não encontrado ou erro interno' };
       }
 
+      await logSecurityEvent('token_generated', undefined, sanitizedEmail);
       return { success: true, token: data as string };
     } catch (error) {
       console.error('Unexpected error:', error);
+      await logSecurityEvent('token_generation_error', undefined, email);
       return { success: false, error: 'Erro interno do sistema' };
     }
   };
 
-  const validateToken = async (token: string): Promise<{ success: boolean; client?: any; error?: string }> => {
+  const validateTokenSecurity = async (token: string): Promise<{ success: boolean; client?: any; error?: string }> => {
     try {
-      // Input validation
-      if (!token || typeof token !== 'string') {
-        return { success: false, error: 'Token inválido' };
+      // Enhanced token validation
+      const tokenValidation = validateToken(token);
+      if (!tokenValidation.isValid) {
+        return { success: false, error: tokenValidation.error };
       }
 
       // Validate token through secure function
@@ -73,25 +91,34 @@ export const useSecureClientAuth = () => {
 
       if (error) {
         console.error('Error validating token:', error);
+        await logSecurityEvent('token_validation_failed', undefined, undefined);
         return { success: false, error: 'Erro ao validar token' };
       }
 
       const validationResponse = data as unknown as TokenValidationResponse;
 
       if (!validationResponse.valid) {
+        await logSecurityEvent('invalid_token_used', undefined, undefined);
         return { success: false, error: validationResponse.error || 'Token inválido ou expirado' };
       }
 
+      await logSecurityEvent('successful_token_validation', validationResponse.client?.id, undefined);
       return { success: true, client: validationResponse.client };
     } catch (error) {
       console.error('Unexpected error validating token:', error);
+      await logSecurityEvent('token_validation_error', undefined, undefined);
       return { success: false, error: 'Erro interno do sistema' };
     }
   };
 
   const loginWithEmail = async (email: string): Promise<{ success: boolean; client?: any; error?: string }> => {
+    if (isBlocked) {
+      return { success: false, error: 'Acesso temporariamente bloqueado' };
+    }
+
     setLoading(true);
     setError(null);
+    setAttempts(prev => prev + 1);
 
     try {
       const tokenResult = await generateSecureToken(email);
@@ -102,7 +129,7 @@ export const useSecureClientAuth = () => {
         return { success: false, error: tokenResult.error };
       }
 
-      const validationResult = await validateToken(tokenResult.token!);
+      const validationResult = await validateTokenSecurity(tokenResult.token!);
       
       if (!validationResult.success) {
         setError(validationResult.error || 'Erro ao validar token');
@@ -118,68 +145,120 @@ export const useSecureClientAuth = () => {
       };
       
       setClientAuth(auth);
-      localStorage.setItem('secure_client_auth', JSON.stringify(auth));
+      // Use sessionStorage instead of localStorage for better security
+      sessionStorage.setItem('secure_client_auth', JSON.stringify(auth));
+      setAttempts(0); // Reset attempts on successful login
+      setError(null);
       setLoading(false);
       
       return { success: true, client: validationResult.client };
     } catch (error) {
       console.error('Login error:', error);
-      setError('Erro interno do sistema');
+      const errorMsg = 'Erro interno do sistema';
+      setError(errorMsg);
       setLoading(false);
-      return { success: false, error: 'Erro interno do sistema' };
+      return { success: false, error: errorMsg };
     }
   };
 
   const logout = () => {
+    if (clientAuth) {
+      logSecurityEvent('client_logout', clientAuth.client.id, undefined);
+    }
     setClientAuth(null);
     setError(null);
-    localStorage.removeItem('secure_client_auth');
+    setAttempts(0);
+    setIsBlocked(false);
+    sessionStorage.removeItem('secure_client_auth');
+    localStorage.removeItem('secure_client_auth'); // Clean up old localStorage data
   };
 
   const checkTokenExpiry = () => {
     if (clientAuth && new Date(clientAuth.expiresAt) <= new Date()) {
+      logSecurityEvent('token_expired', clientAuth.client.id, undefined);
       logout();
       setError('Sessão expirada. Faça login novamente.');
     }
   };
 
+  const logSecurityEvent = async (eventType: string, clientId?: string, email?: string) => {
+    try {
+      await supabase.rpc('log_security_event', {
+        event_type: eventType,
+        client_id: clientId || null,
+        details: email ? { email } : null,
+        severity: eventType.includes('failed') || eventType.includes('error') ? 'medium' : 'low'
+      });
+    } catch (error) {
+      console.error('Failed to log security event:', error);
+    }
+  };
+
   useEffect(() => {
-    // Check for saved authentication
-    const savedAuth = localStorage.getItem('secure_client_auth');
+    // Check for saved authentication in sessionStorage first, then localStorage
+    const savedAuth = sessionStorage.getItem('secure_client_auth') || localStorage.getItem('secure_client_auth');
     if (savedAuth) {
       try {
         const auth = JSON.parse(savedAuth);
-        // Validate expiry
-        if (new Date(auth.expiresAt) > new Date()) {
+        // Validate expiry and token format
+        if (new Date(auth.expiresAt) > new Date() && validateToken(auth.token).isValid) {
           setClientAuth(auth);
+          // Migrate from localStorage to sessionStorage
+          if (localStorage.getItem('secure_client_auth')) {
+            sessionStorage.setItem('secure_client_auth', savedAuth);
+            localStorage.removeItem('secure_client_auth');
+          }
         } else {
+          sessionStorage.removeItem('secure_client_auth');
           localStorage.removeItem('secure_client_auth');
           setError('Sessão expirada. Faça login novamente.');
         }
       } catch (error) {
         console.error('Error loading saved auth:', error);
+        sessionStorage.removeItem('secure_client_auth');
         localStorage.removeItem('secure_client_auth');
       }
     }
     setLoading(false);
 
-    // Set up token expiry checker
+    // Set up token expiry checker and cleanup on unload
     const interval = setInterval(checkTokenExpiry, 60000); // Check every minute
-    return () => clearInterval(interval);
+    
+    const handleBeforeUnload = () => {
+      // Log session end
+      if (clientAuth) {
+        logSecurityEvent('session_ended', clientAuth.client.id, undefined);
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [clientAuth]);
+
+  // Reset blocked state after 15 minutes
+  useEffect(() => {
+    if (isBlocked) {
+      const timeout = setTimeout(() => {
+        setIsBlocked(false);
+        setAttempts(0);
+      }, 15 * 60 * 1000); // 15 minutes
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isBlocked]);
 
   return {
     clientAuth,
     loading,
     error,
+    attempts,
+    isBlocked,
     loginWithEmail,
     logout,
     setClientAuth
   };
-};
-
-// Helper function for email validation
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email) && email.length <= 254; // RFC 5321 limit
 };

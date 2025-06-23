@@ -1,6 +1,5 @@
 
 import { useParams } from 'react-router-dom';
-import { useState } from 'react';
 import { useSecureClientProposals } from '@/hooks/useSecureClientProposals';
 import { useSecureClientAuth } from '@/hooks/useSecureClientAuth';
 import { getClientNameFromSlug } from '@/utils/clientUtils';
@@ -17,6 +16,8 @@ const SecureClientPortalBySlug = () => {
     clientAuth, 
     loading: authLoading, 
     error: authError, 
+    attempts,
+    isBlocked,
     loginWithEmail, 
     logout 
   } = useSecureClientAuth();
@@ -39,6 +40,8 @@ const SecureClientPortalBySlug = () => {
         onEmailSubmit={loginWithEmail}
         loading={authLoading}
         error={authError}
+        attempts={attempts}
+        isBlocked={isBlocked}
       />
     );
   }

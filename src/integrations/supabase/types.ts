@@ -797,6 +797,42 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       solution_images: {
         Row: {
           created_at: string | null
@@ -867,6 +903,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_enhanced_rate_limit: {
+        Args: {
+          endpoint_name: string
+          user_identifier: string
+          max_requests?: number
+          window_minutes?: number
+          block_duration_minutes?: number
+        }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           endpoint_name: string
@@ -880,9 +926,30 @@ export type Database = {
         Args: { client_email: string; expires_in_hours?: number }
         Returns: string
       }
+      get_client_proposals_by_token: {
+        Args: { access_token: string }
+        Returns: {
+          proposal_id: string
+          client_id: string
+          valor_total: number
+          status: Database["public"]["Enums"]["proposal_status"]
+          validade: string
+          created_at: string
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      log_security_event: {
+        Args: {
+          event_type: string
+          user_id?: string
+          client_id?: string
+          details?: Json
+          severity?: string
+        }
+        Returns: undefined
       }
       test_user_role_enum: {
         Args: Record<PropertyKey, never>
