@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -8,7 +9,7 @@ import { useClientAuth } from '@/hooks/useClientAuth';
 import { useClientProposals } from '@/hooks/useClientProposals';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Bug } from 'lucide-react';
 
 const ClientPortal = () => {
   const navigate = useNavigate();
@@ -18,6 +19,9 @@ const ClientPortal = () => {
   const { data: clientData, isLoading: isLoadingData, error } = useClientProposals(
     clientAuth?.email || ''
   );
+
+  // Estado de debug
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !clientAuth) {
@@ -32,6 +36,13 @@ const ClientPortal = () => {
           <CardContent className="flex flex-col items-center justify-center p-8">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
             <p className="text-gray-600">Carregando suas propostas...</p>
+            
+            {/* DEBUG INFO */}
+            <div className="mt-4 text-xs text-gray-400 text-center">
+              <p>🔍 Debug: authLoading={authLoading ? 'true' : 'false'}</p>
+              <p>🔍 Debug: isLoadingData={isLoadingData ? 'true' : 'false'}</p>
+              <p>🔍 Debug: clientAuth={clientAuth ? clientAuth.email : 'null'}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -48,6 +59,13 @@ const ClientPortal = () => {
             <p className="text-gray-600 text-center mb-6">
               Você precisa fazer login para acessar este portal.
             </p>
+            
+            {/* DEBUG INFO */}
+            <div className="mb-4 text-xs text-gray-400 text-center">
+              <p>🔍 Debug: clientAuth é null</p>
+              <p>🔍 Debug: authLoading={authLoading ? 'true' : 'false'}</p>
+            </div>
+            
             <Button onClick={() => navigate('/client-login')}>
               Fazer Login
             </Button>
@@ -67,8 +85,27 @@ const ClientPortal = () => {
             <p className="text-gray-600 text-center mb-6">
               Não foi possível carregar suas propostas. Tente novamente.
             </p>
-            <Button onClick={() => window.location.reload()}>
+            
+            {/* DEBUG INFO */}
+            <div className="mb-4 text-xs text-gray-400 text-center border p-2 rounded">
+              <p>🔍 Debug Info:</p>
+              <p>Email: {clientAuth?.email}</p>
+              <p>ClientId: {clientAuth?.clientId}</p>
+              <p>Error: {error?.message || 'Erro desconhecido'}</p>
+              <p>ClientData: {clientData ? 'Carregado' : 'Null'}</p>
+            </div>
+            
+            <Button onClick={() => window.location.reload()} className="mb-2">
               Tentar Novamente
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowDebugInfo(!showDebugInfo)}
+            >
+              <Bug className="w-4 h-4 mr-2" />
+              {showDebugInfo ? 'Ocultar' : 'Mostrar'} Debug
             </Button>
           </CardContent>
         </Card>
@@ -78,14 +115,28 @@ const ClientPortal = () => {
 
   const { client, proposals } = clientData;
 
-  console.log('🎯 Processando propostas no ClientPortal:', proposals.length);
+  console.log('🎯 [DEBUG] Processando propostas no ClientPortal:', proposals.length);
+
+  // DEBUG INFO detalhada das propostas
+  if (showDebugInfo) {
+    console.log('🔍 [DEBUG] Detalhes das propostas encontradas:');
+    proposals.forEach((proposal, index) => {
+      console.log(`Proposta ${index + 1}:`, {
+        id: proposal.id.substring(0, 8),
+        status: proposal.status,
+        validade: proposal.validade,
+        valor_total: proposal.valor_total,
+        created_at: proposal.created_at
+      });
+    });
+  }
 
   // Processar propostas para o formato esperado pelos componentes
   const processedProposals = proposals.map(proposal => {
     const isExpired = new Date(proposal.validade) < new Date();
     let mappedStatus: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
     
-    console.log(`📊 Processando proposta ${proposal.id}: status=${proposal.status}, expirada=${isExpired}`);
+    console.log(`📊 [DEBUG] Processando proposta ${proposal.id.substring(0, 8)}: status=${proposal.status}, expirada=${isExpired}`);
     
     if (isExpired) {
       mappedStatus = 'expirada';
@@ -110,7 +161,7 @@ const ClientPortal = () => {
       }
     }
 
-    console.log(`✅ Status final da proposta ${proposal.id}: ${mappedStatus}`);
+    console.log(`✅ [DEBUG] Status final da proposta ${proposal.id.substring(0, 8)}: ${mappedStatus}`);
 
     return {
       id: proposal.id,
@@ -127,14 +178,14 @@ const ClientPortal = () => {
   // Separar propostas aceitas
   const acceptedProposals = processedProposals.filter(p => p.status === 'aceita');
 
-  console.log('✅ Propostas aceitas:', acceptedProposals.length);
+  console.log('✅ [DEBUG] Propostas aceitas:', acceptedProposals.length);
 
   // Verificar se há propostas aceitas com controle de entregas ativado
   const hasDeliveryTracking = acceptedProposals.some(proposal => 
     proposal.features.delivery_control === true
   );
 
-  console.log('🚚 Acompanhamento de entregas habilitado:', hasDeliveryTracking);
+  console.log('🚚 [DEBUG] Acompanhamento de entregas habilitado:', hasDeliveryTracking);
 
   // Mock data para funcionalidades ainda não implementadas
   const mockCashbackHistory = [];
@@ -166,6 +217,53 @@ const ClientPortal = () => {
   return (
     <Layout showBackButton={false}>
       <div className="animate-fade-in space-y-6">
+        {/* DEBUG INFO PANEL */}
+        {showDebugInfo && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-orange-800">🔍 Debug Info</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowDebugInfo(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+              <div className="text-sm text-orange-700 space-y-1">
+                <p><strong>Email autenticado:</strong> {clientAuth?.email}</p>
+                <p><strong>Client ID:</strong> {clientAuth?.clientId}</p>
+                <p><strong>Cliente carregado:</strong> {client?.nome} ({client?.email})</p>
+                <p><strong>Total de propostas:</strong> {proposals.length}</p>
+                <p><strong>Propostas processadas:</strong> {processedProposals.length}</p>
+                <p><strong>Propostas aceitas:</strong> {acceptedProposals.length}</p>
+                <div className="mt-2">
+                  <strong>Status das propostas:</strong>
+                  {processedProposals.map(p => (
+                    <div key={p.id} className="ml-2">
+                      • {p.number}: {p.status}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Header com botão de debug */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Portal do Cliente</h1>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowDebugInfo(!showDebugInfo)}
+          >
+            <Bug className="w-4 h-4 mr-2" />
+            Debug
+          </Button>
+        </div>
+
         {/* Dashboard Principal */}
         <ClientDashboard
           client={clientProfile}

@@ -30,7 +30,7 @@ export const useClientAuth = () => {
 
   const validateClientEmail = async (email: string): Promise<{ isValid: boolean; client?: any }> => {
     try {
-      console.log('Validating client email:', email);
+      console.log('🔍 [DEBUG] Validating client email:', email);
       
       const { data: client, error } = await supabase
         .from('clients')
@@ -39,28 +39,30 @@ export const useClientAuth = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Erro na consulta do cliente:', error);
+        console.error('❌ [DEBUG] Erro na consulta do cliente:', error);
         await logClientAccessAttempt(email, false);
         return { isValid: false };
       }
 
       if (!client) {
-        console.log('Cliente não encontrado para email:', email);
+        console.log('❌ [DEBUG] Cliente não encontrado para email:', email);
         await logClientAccessAttempt(email, false);
         return { isValid: false };
       }
 
-      console.log('Cliente encontrado:', client);
+      console.log('✅ [DEBUG] Cliente encontrado:', client);
       await logClientAccessAttempt(email, true, client.id);
       return { isValid: true, client };
     } catch (error) {
-      console.error('Erro inesperado ao validar email do cliente:', error);
+      console.error('❌ [DEBUG] Erro inesperado ao validar email do cliente:', error);
       await logClientAccessAttempt(email, false);
       return { isValid: false };
     }
   };
 
   const loginWithEmail = async (email: string): Promise<{ success: boolean; client?: any }> => {
+    console.log('🚀 [DEBUG] Iniciando login com email:', email);
+    
     const validation = await validateClientEmail(email);
     
     if (validation.isValid && validation.client) {
@@ -70,34 +72,47 @@ export const useClientAuth = () => {
         clientId: validation.client.id
       };
       
+      console.log('✅ [DEBUG] Definindo clientAuth:', auth);
       setClientAuth(auth);
       localStorage.setItem('client_auth', JSON.stringify(auth));
       
       return { success: true, client: validation.client };
     }
     
+    console.log('❌ [DEBUG] Login falhou para email:', email);
     return { success: false };
   };
 
   const logout = () => {
+    console.log('🔓 [DEBUG] Fazendo logout do cliente');
     setClientAuth(null);
     localStorage.removeItem('client_auth');
   };
 
   useEffect(() => {
+    console.log('🔄 [DEBUG] Verificando autenticação salva no localStorage');
+    
     // Verificar autenticação salva no localStorage
     const savedAuth = localStorage.getItem('client_auth');
     if (savedAuth) {
       try {
         const auth = JSON.parse(savedAuth);
+        console.log('✅ [DEBUG] Autenticação encontrada no localStorage:', auth);
         setClientAuth(auth);
       } catch (error) {
-        console.error('Erro ao carregar autenticação salva:', error);
+        console.error('❌ [DEBUG] Erro ao carregar autenticação salva:', error);
         localStorage.removeItem('client_auth');
       }
+    } else {
+      console.log('❌ [DEBUG] Nenhuma autenticação encontrada no localStorage');
     }
     setLoading(false);
   }, []);
+
+  // Log sempre que clientAuth mudar
+  useEffect(() => {
+    console.log('🔄 [DEBUG] ClientAuth atualizado:', clientAuth);
+  }, [clientAuth]);
 
   return {
     clientAuth,

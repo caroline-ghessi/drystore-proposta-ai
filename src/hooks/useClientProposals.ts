@@ -6,9 +6,12 @@ export const useClientProposals = (email: string) => {
   return useQuery({
     queryKey: ['client-proposals', email],
     queryFn: async () => {
-      if (!email) throw new Error('Email is required');
+      if (!email) {
+        console.log('❌ [DEBUG] Email não fornecido para useClientProposals');
+        throw new Error('Email is required');
+      }
 
-      console.log('🔍 Buscando propostas para email:', email);
+      console.log('🔍 [DEBUG] Buscando propostas para email:', email);
 
       // Buscar cliente pelo email
       const { data: client, error: clientError } = await supabase
@@ -18,17 +21,17 @@ export const useClientProposals = (email: string) => {
         .single();
 
       if (clientError) {
-        console.error('❌ Erro ao buscar cliente:', clientError);
+        console.error('❌ [DEBUG] Erro ao buscar cliente:', clientError);
         throw clientError;
       }
       if (!client) {
-        console.error('❌ Cliente não encontrado para email:', email);
+        console.error('❌ [DEBUG] Cliente não encontrado para email:', email);
         throw new Error('Cliente não encontrado');
       }
 
-      console.log('✅ Cliente encontrado:', client);
+      console.log('✅ [DEBUG] Cliente encontrado:', client);
 
-      // Buscar propostas do cliente com funcionalidades - FILTRAR APENAS PROPOSTAS NÃO-DRAFT
+      // Buscar propostas do cliente - FILTRAR APENAS PROPOSTAS NÃO-DRAFT
       const { data: proposals, error: proposalsError } = await supabase
         .from('proposals')
         .select(`
@@ -58,12 +61,24 @@ export const useClientProposals = (email: string) => {
         .order('created_at', { ascending: false });
 
       if (proposalsError) {
-        console.error('❌ Erro ao buscar propostas:', proposalsError);
+        console.error('❌ [DEBUG] Erro ao buscar propostas:', proposalsError);
         throw proposalsError;
       }
 
-      console.log('📄 Propostas encontradas (filtradas):', proposals?.length || 0);
-      console.log('📋 Status das propostas:', proposals?.map(p => ({ id: p.id, status: p.status })));
+      console.log('📄 [DEBUG] Query executada com sucesso');
+      console.log('📄 [DEBUG] Propostas encontradas (total):', proposals?.length || 0);
+      console.log('📄 [DEBUG] Propostas com status:', proposals?.map(p => ({ id: p.id.substring(0, 8), status: p.status })) || []);
+
+      // Log detalhado de cada proposta
+      proposals?.forEach((proposal, index) => {
+        console.log(`📋 [DEBUG] Proposta ${index + 1}:`, {
+          id: proposal.id.substring(0, 8),
+          status: proposal.status,
+          valor: proposal.valor_total,
+          validade: proposal.validade,
+          items: proposal.proposal_items?.length || 0
+        });
+      });
 
       return {
         client,
@@ -79,6 +94,8 @@ export const useClientProposal = (linkAccess: string) => {
     queryKey: ['client-proposal', linkAccess],
     queryFn: async () => {
       if (!linkAccess) throw new Error('Link de acesso é obrigatório');
+
+      console.log('🔍 [DEBUG] Buscando proposta por linkAccess:', linkAccess);
 
       const { data: proposal, error } = await supabase
         .from('proposals')
@@ -115,8 +132,16 @@ export const useClientProposal = (linkAccess: string) => {
         .neq('status', 'draft') // FILTRAR PROPOSTAS EM DRAFT TAMBÉM AQUI
         .single();
 
-      if (error) throw error;
-      if (!proposal) throw new Error('Proposta não encontrada');
+      if (error) {
+        console.error('❌ [DEBUG] Erro ao buscar proposta por link:', error);
+        throw error;
+      }
+      if (!proposal) {
+        console.error('❌ [DEBUG] Proposta não encontrada para link:', linkAccess);
+        throw new Error('Proposta não encontrada');
+      }
+
+      console.log('✅ [DEBUG] Proposta encontrada por link:', proposal.id.substring(0, 8));
 
       return proposal;
     },
