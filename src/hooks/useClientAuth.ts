@@ -12,6 +12,22 @@ export const useClientAuth = () => {
   const [clientAuth, setClientAuth] = useState<ClientAuth | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logClientAccessAttempt = async (email: string, success: boolean, clientId?: string) => {
+    try {
+      const { error } = await supabase.rpc('log_client_access_attempt', {
+        client_email: email,
+        success: success,
+        client_id: clientId || null
+      });
+      
+      if (error) {
+        console.error('Erro ao fazer log da tentativa de acesso:', error);
+      }
+    } catch (error) {
+      console.error('Erro inesperado no log de acesso:', error);
+    }
+  };
+
   const validateClientEmail = async (email: string): Promise<{ isValid: boolean; client?: any }> => {
     try {
       console.log('Validating client email:', email);
@@ -24,18 +40,22 @@ export const useClientAuth = () => {
 
       if (error) {
         console.error('Erro na consulta do cliente:', error);
+        await logClientAccessAttempt(email, false);
         return { isValid: false };
       }
 
       if (!client) {
         console.log('Cliente não encontrado para email:', email);
+        await logClientAccessAttempt(email, false);
         return { isValid: false };
       }
 
       console.log('Cliente encontrado:', client);
+      await logClientAccessAttempt(email, true, client.id);
       return { isValid: true, client };
     } catch (error) {
       console.error('Erro inesperado ao validar email do cliente:', error);
+      await logClientAccessAttempt(email, false);
       return { isValid: false };
     }
   };

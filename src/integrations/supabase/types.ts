@@ -957,6 +957,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      log_client_access_attempt: {
+        Args: { client_email: string; success: boolean; client_id?: string }
+        Returns: undefined
+      }
       log_security_event: {
         Args: {
           event_type: string
