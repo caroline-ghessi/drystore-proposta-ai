@@ -19,6 +19,9 @@ const ClientLogin = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🎯 [DEBUG] === FORM SUBMETIDO ===');
+    console.log('🎯 [DEBUG] Email digitado:', email);
+    
     if (!email) {
       toast({
         title: "Email obrigatório",
@@ -31,15 +34,23 @@ const ClientLogin = () => {
     setLoading(true);
     
     try {
+      console.log('🎯 [DEBUG] Chamando loginWithEmail...');
       const result = await loginWithEmail(email);
+      console.log('🎯 [DEBUG] Resultado do login:', result);
       
       if (result.success) {
+        console.log('🎯 [DEBUG] === LOGIN SUCESSO - REDIRECIONANDO ===');
+        console.log('🎯 [DEBUG] Cliente logado:', result.client);
+        
         toast({
           title: "Acesso autorizado!",
           description: `Bem-vindo, ${result.client?.nome || 'Cliente'}!`,
         });
+        
+        console.log('🎯 [DEBUG] Navegando para /client-portal');
         navigate('/client-portal');
       } else {
+        console.log('🎯 [DEBUG] === LOGIN FALHOU ===');
         toast({
           title: "Email não encontrado",
           description: "Este email não está cadastrado em nosso sistema. Verifique se digitou corretamente ou entre em contato com seu vendedor.",
@@ -47,6 +58,7 @@ const ClientLogin = () => {
         });
       }
     } catch (error) {
+      console.error('🎯 [DEBUG] Erro durante login:', error);
       toast({
         title: "Erro inesperado",
         description: "Ocorreu um erro. Tente novamente.",
@@ -104,6 +116,11 @@ const ClientLogin = () => {
               <strong>Seguro e simples:</strong> Use o mesmo email que você forneceu 
               ao seu vendedor no momento da criação da proposta.
             </p>
+          </div>
+          
+          {/* DEBUG INFO */}
+          <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+            <strong>🔍 Debug:</strong> Para testar, use: fabioghessi@gmail.com
           </div>
         </CardContent>
       </Card>

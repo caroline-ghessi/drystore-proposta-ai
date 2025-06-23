@@ -61,7 +61,9 @@ export const useClientAuth = () => {
   };
 
   const loginWithEmail = async (email: string): Promise<{ success: boolean; client?: any }> => {
-    console.log('🚀 [DEBUG] Iniciando login com email:', email);
+    console.log('🚀 [DEBUG] === INICIANDO LOGIN ===');
+    console.log('🚀 [DEBUG] Email para login:', email);
+    console.log('🚀 [DEBUG] URL atual:', window.location.href);
     
     const validation = await validateClientEmail(email);
     
@@ -72,33 +74,45 @@ export const useClientAuth = () => {
         clientId: validation.client.id
       };
       
+      console.log('✅ [DEBUG] === LOGIN SUCESSO ===');
       console.log('✅ [DEBUG] Definindo clientAuth:', auth);
+      console.log('✅ [DEBUG] Cliente encontrado:', validation.client);
+      
       setClientAuth(auth);
       localStorage.setItem('client_auth', JSON.stringify(auth));
+      
+      console.log('✅ [DEBUG] Auth salvo no localStorage');
+      console.log('✅ [DEBUG] Estado clientAuth atualizado');
       
       return { success: true, client: validation.client };
     }
     
-    console.log('❌ [DEBUG] Login falhou para email:', email);
+    console.log('❌ [DEBUG] === LOGIN FALHOU ===');
+    console.log('❌ [DEBUG] Validation result:', validation);
     return { success: false };
   };
 
   const logout = () => {
-    console.log('🔓 [DEBUG] Fazendo logout do cliente');
+    console.log('🔓 [DEBUG] === FAZENDO LOGOUT ===');
     setClientAuth(null);
     localStorage.removeItem('client_auth');
+    console.log('🔓 [DEBUG] Auth removido e estado limpo');
   };
 
   useEffect(() => {
-    console.log('🔄 [DEBUG] Verificando autenticação salva no localStorage');
+    console.log('🔄 [DEBUG] === INICIALIZANDO useClientAuth ===');
+    console.log('🔄 [DEBUG] URL atual:', window.location.href);
     
     // Verificar autenticação salva no localStorage
     const savedAuth = localStorage.getItem('client_auth');
+    console.log('🔄 [DEBUG] Auth salvo encontrado:', savedAuth);
+    
     if (savedAuth) {
       try {
         const auth = JSON.parse(savedAuth);
-        console.log('✅ [DEBUG] Autenticação encontrada no localStorage:', auth);
+        console.log('✅ [DEBUG] Auth parseado com sucesso:', auth);
         setClientAuth(auth);
+        console.log('✅ [DEBUG] Estado clientAuth restaurado');
       } catch (error) {
         console.error('❌ [DEBUG] Erro ao carregar autenticação salva:', error);
         localStorage.removeItem('client_auth');
@@ -107,11 +121,14 @@ export const useClientAuth = () => {
       console.log('❌ [DEBUG] Nenhuma autenticação encontrada no localStorage');
     }
     setLoading(false);
+    console.log('🔄 [DEBUG] === useClientAuth INICIALIZADO ===');
   }, []);
 
   // Log sempre que clientAuth mudar
   useEffect(() => {
-    console.log('🔄 [DEBUG] ClientAuth atualizado:', clientAuth);
+    console.log('🔄 [DEBUG] === CLIENT AUTH MUDOU ===');
+    console.log('🔄 [DEBUG] Novo valor de clientAuth:', clientAuth);
+    console.log('🔄 [DEBUG] URL atual:', window.location.href);
   }, [clientAuth]);
 
   return {

@@ -22,6 +22,8 @@ import SecureClientPortalBySlug from '@/pages/SecureClientPortalBySlug';
 import ProposalDetails from '@/pages/ProposalDetails';
 import AdminRoute from '@/components/AdminRoute';
 import SecurityManagement from '@/pages/admin/SecurityManagement';
+import ClientLogin from '@/pages/ClientLogin';
+import ClientPortal from '@/pages/ClientPortal';
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -40,6 +42,8 @@ const AppContent = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/client-login" element={<ClientLogin />} />
+        <Route path="/client-portal" element={<ClientPortal />} />
         <Route path="/client/:clientSlug" element={<ClientPortalBySlug />} />
         <Route path="/secure/client/:clientSlug" element={<SecureClientPortalBySlug />} />
         <Route path="/proposal/:linkAccess" element={<ProposalDetails />} />
