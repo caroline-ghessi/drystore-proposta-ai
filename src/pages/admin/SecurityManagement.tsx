@@ -9,7 +9,7 @@ import PermissionGuard from '@/components/PermissionGuard';
 
 const SecurityManagement = () => {
   return (
-    <PermissionGuard allowedRoles={['admin']}>
+    <PermissionGuard requiredRole={['admin']}>
       <Layout>
         <div className="min-h-screen bg-white p-8">
           <div className="max-w-7xl mx-auto">
