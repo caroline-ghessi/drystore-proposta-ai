@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Eye, Calendar, DollarSign } from 'lucide-react';
+import { getProposalStatusColor, getProposalStatusLabel } from '@/utils/clientUtils';
 
 interface Proposal {
   id: string;
@@ -13,52 +14,23 @@ interface Proposal {
   value: number;
   date: string;
   validUntil?: string;
-  status: 'aceita' | 'pendente' | 'expirada' | 'rejeitada';
+  status: 'aceita' | 'pendente' | 'expirada' | 'rejeitada' | 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected' | 'expired';
 }
 
 interface ClientProposalHistoryProps {
   proposals: Proposal[];
+  title?: string;
 }
 
-const ClientProposalHistory = ({ proposals }: ClientProposalHistoryProps) => {
+const ClientProposalHistory = ({ proposals, title = "Histórico de Propostas" }: ClientProposalHistoryProps) => {
   const navigate = useNavigate();
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'aceita':
-        return 'bg-green-100 text-green-800';
-      case 'pendente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'expirada':
-        return 'bg-red-100 text-red-800';
-      case 'rejeitada':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'aceita':
-        return 'Aceita';
-      case 'pendente':
-        return 'Pendente';
-      case 'expirada':
-        return 'Expirada';
-      case 'rejeitada':
-        return 'Rejeitada';
-      default:
-        return status;
-    }
-  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          Histórico de Propostas ({proposals.length})
+          {title} ({proposals.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -68,8 +40,8 @@ const ClientProposalHistory = ({ proposals }: ClientProposalHistoryProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Proposta</TableHead>
-                  <TableHead>Projeto</TableHead>
                   <TableHead>Data</TableHead>
+                  <TableHead>Validade</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
@@ -81,12 +53,19 @@ const ClientProposalHistory = ({ proposals }: ClientProposalHistoryProps) => {
                     <TableCell className="font-medium">
                       {proposal.number}
                     </TableCell>
-                    <TableCell>{proposal.project}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Calendar className="w-3 h-3" />
                         {proposal.date}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {proposal.validUntil && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Calendar className="w-3 h-3" />
+                          {proposal.validUntil}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 font-semibold text-green-600">
@@ -95,8 +74,8 @@ const ClientProposalHistory = ({ proposals }: ClientProposalHistoryProps) => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(proposal.status)}>
-                        {getStatusLabel(proposal.status)}
+                      <Badge className={getProposalStatusColor(proposal.status)}>
+                        {getProposalStatusLabel(proposal.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>

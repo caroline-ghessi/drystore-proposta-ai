@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,6 +31,8 @@ import Reports from "./pages/Reports";
 import UserRegistration from "./pages/UserRegistration";
 import ClientLogin from "./pages/ClientLogin";
 import ClientPortal from "./pages/ClientPortal";
+import ClientPortalBySlug from "./pages/ClientPortalBySlug";
+import ProposalClientView from "./pages/ProposalClientView";
 import DeliveryTracking from "./pages/DeliveryTracking";
 import DeliveryControl from "./pages/DeliveryControl";
 import PaymentOptions from "./pages/PaymentOptions";
@@ -72,6 +73,8 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/client-login" element={<ClientLogin />} />
                 <Route path="/client-portal" element={<ClientPortal />} />
+                <Route path="/client-portal/:clientSlug" element={<ClientPortalBySlug />} />
+                <Route path="/proposal-client/:linkAccess" element={<ProposalClientView />} />
                 <Route path="/user-registration" element={<UserRegistration />} />
 
                 {/* Protected Routes */}

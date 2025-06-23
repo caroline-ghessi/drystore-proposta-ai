@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Users, Phone, Mail, Calendar } from 'lucide-react';
 import ClientTags from '@/components/clients/ClientTags';
+import ClientPortalAccess from '@/components/admin/ClientPortalAccess';
 
 interface Client {
   id: string;
@@ -85,7 +85,7 @@ const Clients = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -222,6 +222,11 @@ const Clients = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Adicionar componente de acesso ao portal */}
+        <div className="mt-8">
+          <ClientPortalAccess />
+        </div>
       </div>
     </Layout>
   );
