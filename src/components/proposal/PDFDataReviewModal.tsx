@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Plus, Save, AlertCircle, User, Mail } from 'lucide-react';
+import { AlertCircle, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ClientDataSection from './ClientDataSection';
+import AdditionalInfoSection from './AdditionalInfoSection';
+import ItemsTable from './ItemsTable';
+import TotalsSection from './TotalsSection';
 
 interface ExtractedItem {
   description: string;
@@ -181,6 +182,13 @@ const PDFDataReviewModal = ({
     }
   };
 
+  const updateAdditionalInfo = (field: keyof ExtractedData, value: string) => {
+    setEditableData({
+      ...editableData,
+      [field]: value
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -193,196 +201,32 @@ const PDFDataReviewModal = ({
 
         <div className="space-y-6">
           {/* Dados do Cliente - Seção destacada */}
-          <div className="p-4 border-2 border-dashed border-blue-200 bg-blue-50 rounded-lg">
-            <h3 className="text-lg font-medium mb-4 flex items-center">
-              <User className="w-5 h-5 mr-2 text-blue-600" />
-              Dados do Cliente *
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="client-name">
-                  Nome do Cliente *
-                  {errors.name && (
-                    <span className="text-red-500 text-sm ml-1">({errors.name})</span>
-                  )}
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="client-name"
-                    value={clientData.name}
-                    onChange={(e) => updateClientData('name', e.target.value)}
-                    className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
-                    placeholder="Nome do cliente"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="client-email">
-                  Email do Cliente *
-                  {errors.email && (
-                    <span className="text-red-500 text-sm ml-1">({errors.email})</span>
-                  )}
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="client-email"
-                    type="email"
-                    value={clientData.email}
-                    onChange={(e) => updateClientData('email', e.target.value)}
-                    className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Label htmlFor="client-company">Empresa (opcional)</Label>
-              <Input
-                id="client-company"
-                value={clientData.company}
-                onChange={(e) => updateClientData('company', e.target.value)}
-                placeholder="Nome da empresa"
-              />
-            </div>
-          </div>
+          <ClientDataSection
+            clientData={clientData}
+            errors={errors}
+            onUpdateClientData={updateClientData}
+          />
 
           {/* Informações Adicionais */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informações Adicionais</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label htmlFor="paymentTerms">Condições de Pagamento</Label>
-                <Input
-                  id="paymentTerms"
-                  value={editableData.paymentTerms || ''}
-                  onChange={(e) => setEditableData({
-                    ...editableData,
-                    paymentTerms: e.target.value
-                  })}
-                  placeholder="Ex: 30 dias"
-                />
-              </div>
-            </div>
-          </div>
+          <AdditionalInfoSection
+            extractedData={editableData}
+            onUpdateData={updateAdditionalInfo}
+          />
 
           {/* Tabela de Itens */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Itens da Proposta</h3>
-              <Button onClick={addNewItem} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Item
-              </Button>
-            </div>
+          <ItemsTable
+            items={editableData.items}
+            errors={errors}
+            onUpdateItem={updateItem}
+            onAddItem={addNewItem}
+            onRemoveItem={removeItem}
+          />
 
-            {errors.items && (
-              <div className="text-red-600 text-sm">{errors.items}</div>
-            )}
-
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40%]">Descrição</TableHead>
-                    <TableHead className="w-[15%]">Quantidade</TableHead>
-                    <TableHead className="w-[10%]">Unidade</TableHead>
-                    <TableHead className="w-[15%]">Valor Unit. (R$)</TableHead>
-                    <TableHead className="w-[15%]">Total (R$)</TableHead>
-                    <TableHead className="w-[5%]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {editableData.items.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Input
-                          value={item.description}
-                          onChange={(e) => updateItem(index, 'description', e.target.value)}
-                          className={errors[`item-${index}-description`] ? 'border-red-500' : ''}
-                          placeholder="Descrição do item"
-                        />
-                        {errors[`item-${index}-description`] && (
-                          <div className="text-red-600 text-xs mt-1">
-                            {errors[`item-${index}-description`]}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                          className={errors[`item-${index}-quantity`] ? 'border-red-500' : ''}
-                          min="0"
-                          step="0.01"
-                        />
-                        {errors[`item-${index}-quantity`] && (
-                          <div className="text-red-600 text-xs mt-1">
-                            {errors[`item-${index}-quantity`]}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={item.unit}
-                          onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                          placeholder="UN"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                          className={errors[`item-${index}-unitPrice`] ? 'border-red-500' : ''}
-                          min="0"
-                          step="0.01"
-                        />
-                        {errors[`item-${index}-unitPrice`] && (
-                          <div className="text-red-600 text-xs mt-1">
-                            {errors[`item-${index}-unitPrice`]}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          onClick={() => removeItem(index)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Totais */}
-            <div className="flex justify-end">
-              <div className="w-64 space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span className="font-medium">
-                    R$ {editableData.subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-lg font-bold border-t pt-2">
-                  <span>Total:</span>
-                  <span>
-                    R$ {editableData.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Totais */}
+          <TotalsSection
+            subtotal={editableData.subtotal}
+            total={editableData.total}
+          />
 
           {/* Botões de Ação */}
           <div className="flex justify-end space-x-4 pt-6 border-t">
