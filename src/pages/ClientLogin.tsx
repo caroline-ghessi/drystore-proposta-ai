@@ -1,21 +1,22 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/hooks/useClientAuth';
-import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ClientLogin = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [linkSent, setLinkSent] = useState(false);
-  const { generateMagicLink } = useClientAuth();
+  const { loginWithEmail } = useClientAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSendMagicLink = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
@@ -30,18 +31,18 @@ const ClientLogin = () => {
     setLoading(true);
     
     try {
-      const success = await generateMagicLink(email);
+      const result = await loginWithEmail(email);
       
-      if (success) {
-        setLinkSent(true);
+      if (result.success) {
         toast({
-          title: "Link enviado!",
-          description: "Verifique seu email para acessar suas propostas.",
+          title: "Acesso autorizado!",
+          description: `Bem-vindo, ${result.client?.nome || 'Cliente'}!`,
         });
+        navigate('/client-portal');
       } else {
         toast({
-          title: "Erro ao enviar link",
-          description: "Tente novamente em alguns instantes.",
+          title: "Email não encontrado",
+          description: "Este email não está cadastrado em nosso sistema. Verifique se digitou corretamente ou entre em contato com seu vendedor.",
           variant: "destructive"
         });
       }
@@ -56,47 +57,6 @@ const ClientLogin = () => {
     }
   };
 
-  if (linkSent) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">Link Enviado!</CardTitle>
-            <CardDescription>
-              Enviamos um link de acesso seguro para <strong>{email}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Próximos passos:</strong>
-              </p>
-              <ol className="text-sm text-blue-600 mt-2 space-y-1">
-                <li>1. Verifique sua caixa de entrada</li>
-                <li>2. Clique no link de acesso</li>
-                <li>3. Visualize todas suas propostas</li>
-              </ol>
-            </div>
-            
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {
-                setLinkSent(false);
-                setEmail('');
-              }}
-            >
-              Enviar para outro email
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -104,13 +64,13 @@ const ClientLogin = () => {
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Mail className="w-8 h-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl">Minhas Propostas</CardTitle>
+          <CardTitle className="text-2xl">Portal do Cliente</CardTitle>
           <CardDescription>
-            Acesse seu histórico de propostas com segurança
+            Acesse suas propostas inserindo seu email cadastrado
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSendMagicLink} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -129,10 +89,10 @@ const ClientLogin = () => {
               disabled={loading}
             >
               {loading ? (
-                "Enviando..."
+                "Verificando..."
               ) : (
                 <>
-                  Enviar Link de Acesso
+                  Acessar Minhas Propostas
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
@@ -141,8 +101,8 @@ const ClientLogin = () => {
           
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-600">
-              <strong>Seguro e privado:</strong> Enviaremos um link único e temporário 
-              para seu email. O link expira em 24 horas.
+              <strong>Seguro e simples:</strong> Use o mesmo email que você forneceu 
+              ao seu vendedor no momento da criação da proposta.
             </p>
           </div>
         </CardContent>

@@ -1,46 +1,54 @@
 
 import { useState, useEffect } from 'react';
-import { ClientAuth } from '@/types/auth';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ClientAuth {
+  email: string;
+  isValid: boolean;
+  clientId: string;
+}
 
 export const useClientAuth = () => {
   const [clientAuth, setClientAuth] = useState<ClientAuth | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const generateMagicLink = async (email: string): Promise<boolean> => {
+  const validateClientEmail = async (email: string): Promise<{ isValid: boolean; client?: any }> => {
     try {
-      // Simular geração de token JWT
-      const token = btoa(JSON.stringify({
-        email,
-        timestamp: Date.now(),
-        expires: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
-      }));
-      
-      // Simular envio de email
-      console.log(`Magic link enviado para ${email}: /client-portal?token=${token}`);
-      
-      // Em produção, aqui faria a chamada para API de envio de email
-      return true;
+      const { data: client, error } = await supabase
+        .from('clients')
+        .select('id, nome, email, empresa, telefone')
+        .eq('email', email)
+        .single();
+
+      if (error || !client) {
+        console.log('Cliente não encontrado:', error);
+        return { isValid: false };
+      }
+
+      return { isValid: true, client };
     } catch (error) {
-      console.error('Erro ao gerar magic link:', error);
-      return false;
+      console.error('Erro ao validar email do cliente:', error);
+      return { isValid: false };
     }
   };
 
-  const validateToken = (token: string): ClientAuth | null => {
-    try {
-      const decoded = JSON.parse(atob(token));
-      const isValid = Date.now() < decoded.expires;
-      
-      return {
-        email: decoded.email,
-        token,
-        expiresAt: new Date(decoded.expires).toISOString(),
-        isValid
+  const loginWithEmail = async (email: string): Promise<{ success: boolean; client?: any }> => {
+    const validation = await validateClientEmail(email);
+    
+    if (validation.isValid && validation.client) {
+      const auth: ClientAuth = {
+        email,
+        isValid: true,
+        clientId: validation.client.id
       };
-    } catch (error) {
-      console.error('Token inválido:', error);
-      return null;
+      
+      setClientAuth(auth);
+      localStorage.setItem('client_auth', JSON.stringify(auth));
+      
+      return { success: true, client: validation.client };
     }
+    
+    return { success: false };
   };
 
   const logout = () => {
@@ -49,13 +57,14 @@ export const useClientAuth = () => {
   };
 
   useEffect(() => {
-    // Verificar token salvo no localStorage
+    // Verificar autenticação salva no localStorage
     const savedAuth = localStorage.getItem('client_auth');
     if (savedAuth) {
-      const auth = JSON.parse(savedAuth);
-      if (Date.now() < new Date(auth.expiresAt).getTime()) {
+      try {
+        const auth = JSON.parse(savedAuth);
         setClientAuth(auth);
-      } else {
+      } catch (error) {
+        console.error('Erro ao carregar autenticação salva:', error);
         localStorage.removeItem('client_auth');
       }
     }
@@ -65,8 +74,7 @@ export const useClientAuth = () => {
   return {
     clientAuth,
     loading,
-    generateMagicLink,
-    validateToken,
+    loginWithEmail,
     logout,
     setClientAuth
   };

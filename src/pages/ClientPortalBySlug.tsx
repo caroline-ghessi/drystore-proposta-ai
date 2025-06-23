@@ -1,11 +1,9 @@
 
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import ClientDashboard from '@/components/client/ClientDashboard';
 import ClientProposalHistory from '@/components/client/ClientProposalHistory';
 import { useClientProposals } from '@/hooks/useClientProposals';
-import { useClientAuth } from '@/hooks/useClientAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,32 +14,18 @@ import { useToast } from '@/hooks/use-toast';
 
 const ClientPortalBySlug = () => {
   const { clientSlug } = useParams<{ clientSlug: string }>();
-  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { validateToken } = useClientAuth();
   const { toast } = useToast();
 
   const clientName = clientSlug ? getClientNameFromSlug(clientSlug) : '';
-  const token = searchParams.get('token');
-
-  // Verificar token se presente
-  useEffect(() => {
-    if (token) {
-      const auth = validateToken(token);
-      if (auth && auth.isValid) {
-        setEmail(auth.email);
-        setIsAuthenticated(true);
-      }
-    }
-  }, [token, validateToken]);
 
   const { data: clientData, isLoading: isLoadingData, error } = useClientProposals(
     isAuthenticated ? email : ''
   );
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast({
@@ -53,6 +37,7 @@ const ClientPortalBySlug = () => {
     }
     setLoading(true);
     setIsAuthenticated(true);
+    setLoading(false);
   };
 
   if (!isAuthenticated) {
@@ -118,9 +103,9 @@ const ClientPortalBySlug = () => {
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center p-8">
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
+            <h2 className="text-xl font-semibold mb-2">Email não encontrado</h2>
             <p className="text-gray-600 text-center mb-6">
-              Email não encontrado ou você não tem propostas disponíveis.
+              Este email não possui propostas em nosso sistema.
             </p>
             <Button onClick={() => setIsAuthenticated(false)}>
               Tentar Novamente
@@ -133,12 +118,23 @@ const ClientPortalBySlug = () => {
 
   const { client, proposals } = clientData;
 
+  // Processar propostas
+  const processedProposals = proposals.map(proposal => ({
+    id: proposal.id,
+    number: `PROP-${proposal.id.substring(0, 8)}`,
+    project: `Proposta ${proposal.id.substring(0, 8)}`,
+    value: Number(proposal.valor_total),
+    date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
+    validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
+    status: new Date(proposal.validade) < new Date() ? 'expirada' : proposal.status
+  }));
+
   // Separar propostas ativas e expiradas
-  const activeProposals = proposals.filter(proposal => 
-    proposal.status !== 'expired' && new Date(proposal.validade) >= new Date()
+  const activeProposals = processedProposals.filter(proposal => 
+    proposal.status !== 'expirada' && new Date(proposal.validUntil.split('/').reverse().join('-')) >= new Date()
   );
-  const expiredProposals = proposals.filter(proposal => 
-    proposal.status === 'expired' || new Date(proposal.validade) < new Date()
+  const expiredProposals = processedProposals.filter(proposal => 
+    proposal.status === 'expirada' || new Date(proposal.validUntil.split('/').reverse().join('-')) < new Date()
   );
 
   return (
@@ -170,7 +166,7 @@ const ClientPortalBySlug = () => {
             <CardContent className="p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  R$ {activeProposals.reduce((sum, p) => sum + Number(p.valor_total), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {activeProposals.reduce((sum, p) => sum + p.value, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
                 <div className="text-gray-600">Valor Total</div>
               </div>
@@ -191,15 +187,7 @@ const ClientPortalBySlug = () => {
         {/* Propostas Ativas */}
         {activeProposals.length > 0 && (
           <ClientProposalHistory 
-            proposals={activeProposals.map(proposal => ({
-              id: proposal.id,
-              number: `PROP-${proposal.id.substring(0, 8)}`,
-              project: `Proposta ${proposal.id.substring(0, 8)}`,
-              value: Number(proposal.valor_total),
-              date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
-              validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
-              status: proposal.status as any
-            }))}
+            proposals={activeProposals}
             title="Propostas Ativas"
           />
         )}
@@ -207,15 +195,7 @@ const ClientPortalBySlug = () => {
         {/* Propostas Expiradas (se houver) */}
         {expiredProposals.length > 0 && (
           <ClientProposalHistory 
-            proposals={expiredProposals.map(proposal => ({
-              id: proposal.id,
-              number: `PROP-${proposal.id.substring(0, 8)}`,
-              project: `Proposta ${proposal.id.substring(0, 8)}`,
-              value: Number(proposal.valor_total),
-              date: new Date(proposal.created_at).toLocaleDateString('pt-BR'),
-              validUntil: new Date(proposal.validade).toLocaleDateString('pt-BR'),
-              status: 'expirada' as any
-            }))}
+            proposals={expiredProposals}
             title="Propostas Expiradas"
           />
         )}
