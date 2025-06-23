@@ -25,6 +25,8 @@ import AdminRoute from '@/components/AdminRoute';
 import SecurityManagement from '@/pages/admin/SecurityManagement';
 import ClientLogin from '@/pages/ClientLogin';
 import ClientPortal from '@/pages/ClientPortal';
+import CreateProposal from '@/pages/CreateProposal';
+import ProposalUploadChoice from '@/pages/ProposalUploadChoice';
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -51,6 +53,8 @@ const AppContent = () => {
         <Route path="/proposal-view/:id" element={<ProposalView />} />
 
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/create-proposal" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
+        <Route path="/proposal-upload-choice" element={<ProtectedRoute><ProposalUploadChoice /></ProtectedRoute>} />
         <Route path="/register-user" element={<AdminRoute><UserRegistration /></AdminRoute>} />
         <Route path="/security-management" element={<AdminRoute><SecurityManagement /></AdminRoute>} />
       </Routes>
