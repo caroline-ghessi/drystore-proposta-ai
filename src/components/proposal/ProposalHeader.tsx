@@ -91,27 +91,6 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
         proposalId={proposal.id || 'unknown'}
       />
 
-      {/* Mensagem Personalizada de Boas-vindas */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <Card className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
-                <Heart className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-orange-800 dark:text-orange-200 mb-1">
-                  👋 Olá, {firstName}!
-                </h2>
-                <p className="text-orange-700 dark:text-orange-300 text-lg">
-                  Aqui está a sua proposta personalizada, preparada especialmente para você.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Alerta de Expiração */}
       {proposal.isExpired && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
@@ -129,30 +108,48 @@ export const ProposalHeader = ({ proposal }: ProposalHeaderProps) => {
         </div>
       )}
 
-      {/* Cabeçalho da Proposta */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <Card className="dark:bg-gray-800 dark:border-gray-700">
+      {/* Card Unificado - Boas-vindas + Detalhes da Proposta */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Card className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
           <CardContent className="p-6">
-            <div className="flex items-start space-x-4">
-              <div className="w-16 h-16 bg-orange-500 dark:bg-orange-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-8 h-8 text-white" />
+            {/* Seção de Boas-vindas */}
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <Heart className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{proposal.title}</h1>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">{proposal.subtitle}</p>
-                
-                <div className="grid md:grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <Mail className="w-4 h-4 mr-2" />
-                    <span>{proposal.clientName}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>{proposal.date}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span>Válido até {proposal.validUntil}</span>
+                <h2 className="text-2xl font-bold text-orange-800 dark:text-orange-200 mb-1">
+                  👋 Olá, {firstName}!
+                </h2>
+                <p className="text-orange-700 dark:text-orange-300 text-lg">
+                  Aqui está a sua proposta personalizada, preparada especialmente para você.
+                </p>
+              </div>
+            </div>
+
+            {/* Seção de Detalhes da Proposta */}
+            <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-orange-200/50 dark:border-orange-800/50">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{proposal.title}</h1>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{proposal.subtitle}</p>
+                  
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
+                      <Mail className="w-4 h-4 mr-2" />
+                      <span>{proposal.clientName}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>{proposal.date}</span>
+                    </div>
+                    <div className="flex items-center text-gray-600 dark:text-gray-300">
+                      <Clock className="w-4 h-4 mr-2" />
+                      <span>Válido até {proposal.validUntil}</span>
+                    </div>
                   </div>
                 </div>
               </div>
