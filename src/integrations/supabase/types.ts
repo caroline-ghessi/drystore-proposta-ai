@@ -903,6 +903,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_resources: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       check_enhanced_rate_limit: {
         Args: {
           endpoint_name: string
@@ -937,9 +941,21 @@ export type Database = {
           created_at: string
         }[]
       }
+      get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       log_security_event: {
         Args: {

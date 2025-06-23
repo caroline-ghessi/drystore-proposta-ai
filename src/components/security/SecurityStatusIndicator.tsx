@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -8,6 +8,7 @@ interface SecurityStatus {
   rlsEnabled: boolean;
   tablesWithRLS: string[];
   tablesWithoutRLS: string[];
+  optimizedFunctions: string[];
   lastCheck: Date;
 }
 
@@ -20,9 +21,19 @@ const SecurityStatusIndicator = () => {
       'proposal_recommended_products',
       'proposal_solutions',
       'proposal_payment_conditions',
-      'proposal_features'
+      'proposal_features',
+      'profiles',
+      'clients',
+      'products',
+      'sales_targets'
     ],
     tablesWithoutRLS: [],
+    optimizedFunctions: [
+      'get_current_user_id',
+      'get_current_user_role',
+      'is_admin_user',
+      'can_manage_resources'
+    ],
     lastCheck: new Date()
   });
 
@@ -81,6 +92,20 @@ const SecurityStatusIndicator = () => {
             {securityStatus.tablesWithRLS.map((table) => (
               <Badge key={table} variant="outline" className="text-xs">
                 {table}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm text-green-600 flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            <strong>Funções Otimizadas:</strong>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {securityStatus.optimizedFunctions.map((func) => (
+              <Badge key={func} variant="secondary" className="text-xs bg-green-100 text-green-800">
+                {func}
               </Badge>
             ))}
           </div>
