@@ -10,6 +10,7 @@ import UrgencyCard from '@/components/proposal/UrgencyCard';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
 import { useProposalFeatures } from '@/hooks/useProposalFeatures';
+import { useProposal } from '@/hooks/useProposals';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   getMockProposal, 
@@ -47,6 +48,9 @@ const ProposalView = () => {
   const [realProposalData, setRealProposalData] = useState<ExtractedData | null>(null);
   const [isRealData, setIsRealData] = useState(false);
   
+  // Buscar dados reais da proposta no Supabase
+  const { data: proposalData, isLoading, error } = useProposal(id || '');
+  
   // Carregar dados reais extraídos do PDF
   useEffect(() => {
     console.log('🔍 ProposalView: Carregando dados para proposta ID:', id);
@@ -71,21 +75,65 @@ const ProposalView = () => {
         setIsRealData(false);
       }
     } else {
-      console.log('📝 ProposalView: Nenhum dado extraído encontrado, usando mock');
+      console.log('📝 ProposalView: Nenhum dado extraído encontrado, usando dados do Supabase');
       setIsRealData(false);
     }
   }, [id]);
 
-  // Gerar dados da proposta baseados nos dados reais ou mock
-  const proposal = isRealData && realProposalData ? {
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Carregando proposta...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    console.error('❌ ProposalView: Erro ao carregar proposta:', error);
+  }
+
+  // Gerar dados da proposta baseados nos dados reais do Supabase ou extraídos
+  const proposal = proposalData ? {
+    id: proposalData.id,
+    clientName: proposalData.clients?.nome || 'Cliente',
+    originalPrice: proposalData.desconto_percentual > 0 ? 
+      proposalData.valor_total / (1 - proposalData.desconto_percentual / 100) : 
+      proposalData.valor_total,
+    discount: proposalData.desconto_percentual || 0,
+    finalPrice: proposalData.valor_total,
+    installments: {
+      times: 12,
+      value: proposalData.valor_total / 12
+    },
+    roi: '15-25%',
+    economy: '30%',
+    validUntil: new Date(proposalData.validade).toLocaleDateString('pt-BR'),
+    status: proposalData.status,
+    // Manter outras propriedades do mock para compatibilidade
+    ...getMockProposal(id || '1')
+  } : isRealData && realProposalData ? {
     ...getMockProposal(id || '1'),
     clientName: realProposalData.client || 'PROPOSTA COMERCIAL',
     finalPrice: realProposalData.total,
-    // Manter outras propriedades do mock para compatibilidade
   } : getMockProposal(id || '1');
 
-  // Gerar itens da proposta baseados nos dados reais ou mock
-  const proposalItems = isRealData && realProposalData ? 
+  // Gerar itens da proposta baseados nos dados reais do Supabase ou extraídos
+  const proposalItems = proposalData?.proposal_items ? 
+    proposalData.proposal_items.map((item, index) => ({
+      id: item.id,
+      productName: item.produto_nome,
+      quantity: Number(item.quantidade),
+      unit: 'UN',
+      unitPrice: Number(item.preco_unit),
+      total: Number(item.preco_total),
+      description: item.descricao_item || item.produto_nome,
+      category: 'Material',
+    })) : isRealData && realProposalData ? 
     realProposalData.items.map((item, index) => ({
       id: String(index + 1),
       productName: item.description,
@@ -94,7 +142,7 @@ const ProposalView = () => {
       unitPrice: item.unitPrice,
       total: item.total,
       description: item.description,
-      category: 'Material Extraído', // Categoria padrão para itens extraídos
+      category: 'Material Extraído',
     })) : getMockProposalItems();
 
   // Dados adicionais (usar mock para compatibilidade)
@@ -114,11 +162,14 @@ const ProposalView = () => {
   // Check if current user is a vendor (not client)
   const isVendor = user?.role !== 'cliente';
 
+  const dataSource = proposalData ? 'supabase' : isRealData ? 'pdf' : 'mock';
+  
   console.log('🎯 ProposalView: Renderizando com dados:', {
-    isRealData,
+    dataSource,
     clientName: proposal.clientName,
     itemsCount: proposalItems.length,
-    total: proposal.finalPrice
+    total: proposal.finalPrice,
+    discount: proposal.discount
   });
 
   return (
@@ -126,14 +177,15 @@ const ProposalView = () => {
       <ProposalHeader proposal={proposal} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Indicador de dados reais vs mock */}
-        {isRealData && (
+        {/* Indicador de fonte dos dados */}
+        {dataSource !== 'mock' && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-700 font-medium">
-              ✅ Proposta baseada em dados extraídos do PDF
+              {dataSource === 'supabase' ? '✅ Proposta carregada do banco de dados' : '✅ Proposta baseada em dados extraídos do PDF'}
             </p>
             <p className="text-xs text-green-600">
-              Cliente: {realProposalData?.client} | {realProposalData?.items.length} itens | Total: R$ {realProposalData?.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              Cliente: {proposal.clientName} | {proposalItems.length} itens | Total: R$ {proposal.finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {proposal.discount > 0 && ` | Desconto: ${proposal.discount}%`}
             </p>
           </div>
         )}

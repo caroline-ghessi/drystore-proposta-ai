@@ -1,6 +1,8 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X, MessageCircle, Star, TrendingUp, Shield, Clock, Award } from 'lucide-react';
+
 interface InvestmentCardProps {
   proposal: {
     originalPrice: number;
@@ -19,6 +21,7 @@ interface InvestmentCardProps {
   onQuestion: () => void;
   onReject?: () => void;
 }
+
 export const InvestmentCard = ({
   proposal,
   status,
@@ -26,27 +29,41 @@ export const InvestmentCard = ({
   onQuestion,
   onReject
 }: InvestmentCardProps) => {
-  return <Card className="sticky top-8">
+  // Garantir que temos valores válidos para os cálculos
+  const discount = Number(proposal.discount) || 0;
+  const finalPrice = Number(proposal.finalPrice) || 0;
+  
+  // Calcular preço original baseado no desconto
+  const originalPrice = discount > 0 ? 
+    finalPrice / (1 - discount / 100) : 
+    Number(proposal.originalPrice) || finalPrice;
+
+  return (
+    <Card className="sticky top-8">
       <CardHeader className="text-center">
         <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
           <TrendingUp className="w-6 h-6 text-white" />
         </div>
         <CardTitle className="text-lg">Investimento Total</CardTitle>
-        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium inline-block">
-          {proposal.discount}% OFF
-        </div>
+        {discount > 0 && (
+          <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium inline-block">
+            {discount}% OFF
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="text-center">
         <div className="mb-4">
-          <p className="text-gray-500 line-through text-lg">
-            R$ {proposal.originalPrice.toLocaleString('pt-BR')}
-          </p>
+          {discount > 0 && (
+            <p className="text-gray-500 line-through text-lg">
+              R$ {originalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          )}
           <p className="text-3xl font-bold mb-1 text-orange-500">
-            R$ {proposal.finalPrice.toLocaleString('pt-BR')}
+            R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-orange-500 font-medium">
-            ou {proposal.installments.times}x R$ {proposal.installments.value.toLocaleString('pt-BR')}
+            ou {proposal.installments.times}x R$ {proposal.installments.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
 
@@ -65,7 +82,8 @@ export const InvestmentCard = ({
         </div>
 
         {/* Ações */}
-        {status === 'pending' ? <div className="space-y-3">
+        {status === 'pending' ? (
+          <div className="space-y-3">
             <Button onClick={onAccept} className="w-full bg-green-600 hover:bg-green-700 text-white" size="lg">
               <Check className="w-5 h-5 mr-2" />
               Aceitar Proposta
@@ -80,7 +98,9 @@ export const InvestmentCard = ({
               <X className="w-5 h-5 mr-2" />
               Recusar Proposta
             </Button>
-          </div> : status === 'accepted' || status === 'aguardando_pagamento' ? <div className="text-green-600 py-4">
+          </div>
+        ) : status === 'accepted' || status === 'aguardando_pagamento' ? (
+          <div className="text-green-600 py-4">
             <Check className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">
               {status === 'accepted' ? 'Proposta Aceita!' : 'Aguardando Pagamento'}
@@ -88,10 +108,13 @@ export const InvestmentCard = ({
             <p className="text-sm text-gray-600">
               {status === 'accepted' ? 'Aguarde o contato do vendedor' : 'Finalize o pagamento para confirmar'}
             </p>
-          </div> : <div className="text-red-600 py-4">
+          </div>
+        ) : (
+          <div className="text-red-600 py-4">
             <X className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">Proposta Rejeitada</p>
-          </div>}
+          </div>
+        )}
 
         {/* Informações de Garantia */}
         <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
@@ -109,5 +132,6 @@ export const InvestmentCard = ({
           </div>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
