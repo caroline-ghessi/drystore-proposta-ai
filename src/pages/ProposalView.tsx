@@ -60,15 +60,30 @@ const ProposalView = () => {
   // Check if current user is a vendor (not client) - using the new context
   const isVendorUser = isVendor || (user && !isClient);
 
+  // Map proposal data to ProposalHeader format
+  const headerData = {
+    id: proposal.id,
+    title: 'PROPOSTA COMERCIAL',
+    subtitle: 'Solução personalizada para seu projeto',
+    clientName: proposal.clientName,
+    date: new Date().toLocaleDateString('pt-BR'),
+    validUntil: proposal.validUntil,
+    isExpired: new Date(proposal.validUntil) < new Date(),
+    expirationDate: proposal.validUntil
+  };
+
+  // Fix dataSource type mapping
+  const mappedDataSource: 'mock' | 'supabase' | 'pdf' = dataSource === 'database' ? 'supabase' : dataSource;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <ProposalHeader proposal={proposal} />
+      <ProposalHeader proposal={headerData} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Indicador de fonte dos dados - apenas para usuários internos */}
         {isVendorUser && (
           <ProposalDataIndicator 
-            dataSource={dataSource}
+            dataSource={mappedDataSource}
             proposal={proposal}
             itemsCount={proposalItems.length}
           />
