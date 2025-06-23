@@ -19,7 +19,7 @@ const Index = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-green-50">
+    <div className="min-h-screen bg-gradient-to-br from-drystore-gray-light via-white to-gray-100">
       <IndexHeader />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-5rem)] p-4">
