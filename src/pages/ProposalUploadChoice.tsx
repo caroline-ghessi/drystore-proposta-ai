@@ -22,6 +22,12 @@ interface ExtractedData {
   vendor?: string;
 }
 
+interface ClientData {
+  name: string;
+  email: string;
+  company?: string;
+}
+
 const ProposalUploadChoice = () => {
   const navigate = useNavigate();
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
@@ -33,27 +39,43 @@ const ProposalUploadChoice = () => {
     setShowReviewModal(true);
   };
 
-  const handleDataConfirmed = (finalData: ExtractedData) => {
+  const handleDataConfirmed = (finalData: ExtractedData & { clientData: ClientData }) => {
     console.log('✅ Dados confirmados para transferência:', finalData);
     
     // Limpar dados antigos primeiro
     sessionStorage.removeItem('proposalExtractedData');
     
-    // Salvar os dados finais confirmados
-    const dataToSave = {
-      ...finalData,
+    // Preparar dados para o ProposalBuilder
+    const dataForBuilder = {
+      // Dados do cliente
+      client: finalData.clientData.name,
+      clientEmail: finalData.clientData.email,
+      vendor: finalData.clientData.company || finalData.vendor,
+      
+      // Itens da proposta
+      items: finalData.items,
+      
+      // Informações adicionais
+      paymentTerms: finalData.paymentTerms,
+      delivery: finalData.delivery,
+      
+      // Totais
+      subtotal: finalData.subtotal,
+      total: finalData.total,
+      
+      // Metadados
       timestamp: Date.now(),
-      source: 'pdf_extraction'
+      source: 'pdf_extraction_with_client_data'
     };
     
-    sessionStorage.setItem('proposalExtractedData', JSON.stringify(dataToSave));
+    sessionStorage.setItem('proposalExtractedData', JSON.stringify(dataForBuilder));
     
-    console.log('💾 Dados salvos no sessionStorage:', dataToSave);
+    console.log('💾 Dados salvos no sessionStorage para ProposalBuilder:', dataForBuilder);
     
     setShowReviewModal(false);
     
-    // Navegar para a página de prévia que irá usar os dados corretos
-    navigate('/proposal-preview');
+    // Navegar para a página de construção da proposta
+    navigate('/proposal-builder');
   };
 
   return (

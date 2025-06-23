@@ -68,10 +68,12 @@ const ProposalBuilder = () => {
     if (extractedDataStr) {
       const extractedData = JSON.parse(extractedDataStr);
       
-      // Mapear dados do cliente
+      console.log('📋 Dados carregados no ProposalBuilder:', extractedData);
+      
+      // Mapear dados do cliente - agora com email
       setClientData({
         name: extractedData.client || '',
-        email: '',
+        email: extractedData.clientEmail || '', // Novo campo de email
         phone: '',
         company: extractedData.vendor || '',
         address: ''

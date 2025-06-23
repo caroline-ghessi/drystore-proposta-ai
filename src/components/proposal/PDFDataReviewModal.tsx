@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Plus, Save, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, Save, AlertCircle, User, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExtractedItem {
@@ -27,11 +27,17 @@ interface ExtractedData {
   vendor?: string;
 }
 
+interface ClientData {
+  name: string;
+  email: string;
+  company?: string;
+}
+
 interface PDFDataReviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   extractedData: ExtractedData;
-  onConfirm: (finalData: ExtractedData) => void;
+  onConfirm: (finalData: ExtractedData & { clientData: ClientData }) => void;
 }
 
 const PDFDataReviewModal = ({ 
@@ -41,12 +47,30 @@ const PDFDataReviewModal = ({
   onConfirm 
 }: PDFDataReviewModalProps) => {
   const [editableData, setEditableData] = useState<ExtractedData>(extractedData);
+  const [clientData, setClientData] = useState<ClientData>({
+    name: extractedData.client || '',
+    email: '',
+    company: extractedData.vendor || ''
+  });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
   useEffect(() => {
     setEditableData(extractedData);
+    setClientData({
+      name: extractedData.client || '',
+      email: '',
+      company: extractedData.vendor || ''
+    });
   }, [extractedData]);
+
+  const updateClientData = (field: keyof ClientData, value: string) => {
+    setClientData(prev => ({ ...prev, [field]: value }));
+    // Limpar erro do campo quando usuário começar a digitar
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   const updateItem = (index: number, field: keyof ExtractedItem, value: string | number) => {
     const newItems = [...editableData.items];
@@ -105,6 +129,17 @@ const PDFDataReviewModal = ({
   const validateData = (): boolean => {
     const newErrors: {[key: string]: string} = {};
 
+    // Validar dados do cliente
+    if (!clientData.name.trim()) {
+      newErrors.name = 'Nome do cliente é obrigatório';
+    }
+
+    if (!clientData.email.trim()) {
+      newErrors.email = 'Email do cliente é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientData.email)) {
+      newErrors.email = 'Email deve ter um formato válido';
+    }
+
     // Validar se há pelo menos um item
     if (editableData.items.length === 0) {
       newErrors.items = 'Deve haver pelo menos um item na proposta';
@@ -129,10 +164,13 @@ const PDFDataReviewModal = ({
 
   const handleConfirm = () => {
     if (validateData()) {
-      onConfirm(editableData);
+      onConfirm({
+        ...editableData,
+        clientData
+      });
       toast({
         title: "Dados confirmados!",
-        description: "Gerando proposta com os dados revisados...",
+        description: "Redirecionando para finalizar a proposta...",
       });
     } else {
       toast({
@@ -154,22 +192,66 @@ const PDFDataReviewModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Informações do Cliente */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informações Gerais</h3>
+          {/* Dados do Cliente - Seção destacada */}
+          <div className="p-4 border-2 border-dashed border-blue-200 bg-blue-50 rounded-lg">
+            <h3 className="text-lg font-medium mb-4 flex items-center">
+              <User className="w-5 h-5 mr-2 text-blue-600" />
+              Dados do Cliente *
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="client">Cliente Identificado</Label>
-                <Input
-                  id="client"
-                  value={editableData.client || ''}
-                  onChange={(e) => setEditableData({
-                    ...editableData,
-                    client: e.target.value
-                  })}
-                  placeholder="Nome do cliente (opcional)"
-                />
+                <Label htmlFor="client-name">
+                  Nome do Cliente *
+                  {errors.name && (
+                    <span className="text-red-500 text-sm ml-1">({errors.name})</span>
+                  )}
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="client-name"
+                    value={clientData.name}
+                    onChange={(e) => updateClientData('name', e.target.value)}
+                    className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
+                    placeholder="Nome do cliente"
+                  />
+                </div>
               </div>
+              <div>
+                <Label htmlFor="client-email">
+                  Email do Cliente *
+                  {errors.email && (
+                    <span className="text-red-500 text-sm ml-1">({errors.email})</span>
+                  )}
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="client-email"
+                    type="email"
+                    value={clientData.email}
+                    onChange={(e) => updateClientData('email', e.target.value)}
+                    className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label htmlFor="client-company">Empresa (opcional)</Label>
+              <Input
+                id="client-company"
+                value={clientData.company}
+                onChange={(e) => updateClientData('company', e.target.value)}
+                placeholder="Nome da empresa"
+              />
+            </div>
+          </div>
+
+          {/* Informações Adicionais */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Informações Adicionais</h3>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <Label htmlFor="paymentTerms">Condições de Pagamento</Label>
                 <Input
@@ -309,7 +391,7 @@ const PDFDataReviewModal = ({
             </Button>
             <Button onClick={handleConfirm} className="gradient-bg">
               <Save className="w-4 h-4 mr-2" />
-              Confirmar e Gerar Proposta
+              Confirmar e Continuar
             </Button>
           </div>
         </div>
