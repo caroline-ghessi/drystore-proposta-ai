@@ -47,7 +47,7 @@ const ProposalMainContent = ({
 
   return (
     <div className="lg:col-span-2 space-y-6">
-      <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
+      <ProposalItemsTable items={proposalItems} />
 
       {/* Produtos Recomendados - apenas se houver produtos selecionados */}
       {recommendedProducts.length > 0 && (
