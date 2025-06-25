@@ -1,16 +1,12 @@
+
 import { useParams } from 'react-router-dom';
 import { useClientProposal } from '@/hooks/useClientProposals';
-import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
-import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
-import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
-import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
-import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
-import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
-import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
+import { ProposalClientHeader } from '@/components/proposal/ProposalClientHeader';
+import { ProposalClientContent } from '@/components/proposal/ProposalClientContent';
+import { ProposalExpiredMessage } from '@/components/proposal/ProposalExpiredMessage';
+import { ProposalObservations } from '@/components/proposal/ProposalObservations';
 import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { getProposalStatusLabel, isProposalExpired } from '@/utils/clientUtils';
+import { isProposalExpired } from '@/utils/clientUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
@@ -39,14 +35,12 @@ const ProposalClientView = () => {
     const isAlreadySelected = selectedSolutions.find(s => s.id === solution.id);
     
     if (isAlreadySelected) {
-      // Remove solution
       setSelectedSolutions(prev => prev.filter(s => s.id !== solution.id));
       toast({
         title: "Solução removida",
         description: `${solution.name} foi removida da proposta`,
       });
     } else {
-      // Add solution
       setSelectedSolutions(prev => [...prev, { id: solution.id, price: solution.price }]);
       toast({
         title: "Solução adicionada!",
@@ -56,7 +50,6 @@ const ProposalClientView = () => {
   };
 
   const handleCloseDeal = () => {
-    // Navigate to investment section and trigger accept
     const investmentSection = document.getElementById('investment-section');
     if (investmentSection) {
       investmentSection.scrollIntoView({ behavior: 'smooth' });
@@ -70,17 +63,14 @@ const ProposalClientView = () => {
 
   if (error || !proposalData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center p-8">
-            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Proposta não encontrada</h2>
-            <p className="text-gray-600 text-center">
-              O link de acesso é inválido ou a proposta não existe mais.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <ProposalClientHeader
+        clientName=""
+        proposalNumber=""
+        validUntil=""
+        isExpired={false}
+        isLoading={false}
+        error={error}
+      />
     );
   }
 
@@ -109,100 +99,42 @@ const ProposalClientView = () => {
     ]
   };
 
-  // Map proposal items to new structure (removing price info)
+  // Map proposal items to new structure
   const proposalItems = proposalData.proposal_items.map(item => ({
     description: item.produto_nome,
-    solution: 'Sistema de Armazenamento Inteligente' // Default solution name - in real app this would come from database
+    solution: 'Sistema de Armazenamento Inteligente'
   }));
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Modern Header */}
-      <ModernProposalHeader
+      {/* Header */}
+      <ProposalClientHeader
         clientName={proposal.clientName}
         proposalNumber={proposalNumber}
         validUntil={proposal.validUntil}
         isExpired={isExpired}
       />
 
-      {/* Dream Home Section */}
-      <DreamHomeSection benefits={proposal.benefits} />
-
-      {/* Why Choose Section */}
-      <WhyChooseSection />
-
-      {/* Detailed Proposal Items */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Detalhamento da Proposta
-          </h2>
-          <p className="text-lg text-gray-600">
-            Confira todas as soluções e materiais inclusos no seu projeto personalizado
-          </p>
-        </div>
-        
-        <ProposalItemsTable items={proposalItems} />
-
-        {/* Technical Chat - logo após o detalhamento da proposta */}
-        <div className="mt-8">
-          <TechnicalChatCard />
-        </div>
-      </div>
-
-      {/* Investment Section - Only if can interact */}
-      {canInteract && !isExpired && (
-        <div id="investment-section" className="bg-gray-50">
-          <ModernInvestmentSection
-            totalPrice={proposal.finalPrice}
-            discount={proposal.discount}
-            validUntil={proposal.validUntil}
-            onAccept={handleAcceptProposal}
-            onReject={handleRejectProposal}
-          />
-        </div>
-      )}
-
-      {/* Recommended Solutions - After Investment Section */}
-      <RecommendedSolutionsSection 
-        onSolutionSelect={handleSolutionSelect}
+      {/* Main Content */}
+      <ProposalClientContent
+        proposal={proposal}
+        proposalItems={proposalItems}
         selectedSolutions={selectedSolutions}
+        canInteract={canInteract}
+        isExpired={isExpired}
+        onAcceptProposal={handleAcceptProposal}
+        onRejectProposal={handleRejectProposal}
+        onSolutionSelect={handleSolutionSelect}
         onCloseDeal={handleCloseDeal}
       />
 
       {/* Expired Message */}
       {isExpired && (
-        <div className="bg-red-50 border-t border-red-200">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="p-8 text-center">
-                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-                <h3 className="text-2xl font-bold text-red-800 mb-4">Proposta Expirada</h3>
-                <p className="text-red-600 text-lg mb-6">
-                  Esta proposta expirou em {proposal.validUntil}.
-                </p>
-                <p className="text-red-600">
-                  Entre em contato conosco para uma nova proposta atualizada.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <ProposalExpiredMessage validUntil={proposal.validUntil} />
       )}
 
-      {/* Observações */}
-      {proposalData.observacoes && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <Card className="shadow-lg">
-            <CardContent className="p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Observações Importantes</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                {proposalData.observacoes}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Observations */}
+      <ProposalObservations observacoes={proposalData.observacoes} />
     </div>
   );
 };
