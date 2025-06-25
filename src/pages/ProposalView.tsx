@@ -1,18 +1,10 @@
+
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
-import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
-import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
-import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
-import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
-import RecommendedProducts from '@/components/proposal/RecommendedProducts';
-import { TechnicalDetails } from '@/components/proposal/TechnicalDetails';
-import InteractionLog from '@/components/proposal/InteractionLog';
-import InternalNotes from '@/components/proposal/InternalNotes';
-import ClientQuestionForm from '@/components/proposal/ClientQuestionForm';
-import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
-import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
-import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
+import { ProposalViewHeader } from '@/components/proposal/ProposalViewHeader';
+import { ProposalClientContent } from '@/components/proposal/ProposalClientContent';
+import { ProposalVendorTools } from '@/components/proposal/ProposalVendorTools';
+import { ProposalClientForm } from '@/components/proposal/ProposalClientForm';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
 import { useProposalData } from '@/hooks/useProposalData';
@@ -26,7 +18,6 @@ const ProposalView = () => {
   const { user } = useAuth();
   const { isClient, isVendor } = useClientContext();
   const showAI = searchParams.get('ai') === 'true';
-  const [internalNotes, setInternalNotes] = useState<string>('');
   const [selectedSolutions, setSelectedSolutions] = useState<Array<{ id: string; price: number }>>([]);
   
   // Custom hooks - devem ser chamados SEMPRE, antes de qualquer return condicional
@@ -123,127 +114,50 @@ const ProposalView = () => {
     handleAccept();
   };
 
-  // Loading state
-  if (isLoading) {
-    return <ProposalLoadingState />;
-  }
-
-  // Error state
-  if (error || !proposal) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Proposta não encontrada</h1>
-          <p className="text-gray-600">A proposta solicitada não foi encontrada ou não está disponível.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Check if current user is a vendor (not client)
   const isVendorUser = isVendor || (user && !isClient);
-  const proposalNumber = `PROP-${proposal.id.slice(0, 8).toUpperCase()}`;
-  const isExpired = new Date(proposal.validUntil) < new Date();
+  const proposalNumber = `PROP-${proposal?.id?.slice(0, 8).toUpperCase() || 'UNKNOWN'}`;
+  const isExpired = proposal ? new Date(proposal.validUntil) < new Date() : false;
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Modern Header */}
-      <ModernProposalHeader
-        clientName={proposal.clientName}
+      <ProposalViewHeader
+        isLoading={isLoading}
+        error={error}
+        proposal={proposal}
+        clientName={proposal?.clientName || 'Cliente'}
         proposalNumber={proposalNumber}
-        validUntil={proposal.validUntil}
+        validUntil={proposal?.validUntil || ''}
         isExpired={isExpired}
       />
 
-      {/* Dream Home Section */}
-      <DreamHomeSection benefits={proposal.benefits} />
-
-      {/* Detailed Proposal Items */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Detalhamento da Proposta
-          </h2>
-          <p className="text-lg text-gray-600">
-            Confira todas as soluções e materiais inclusos no seu projeto personalizado
-          </p>
-        </div>
-        
-        <ProposalItemsTable items={proposalItems} />
-
-        {/* Technical Chat - logo após o detalhamento da proposta */}
-        <div className="mt-8">
-          <TechnicalChatCard />
-        </div>
-
-        {/* Recommended Products */}
-        {proposal.recommendedProducts && proposal.recommendedProducts.length > 0 && (
-          <div className="mt-12">
-            <RecommendedProducts products={proposal.recommendedProducts} />
-          </div>
-        )}
-
-        {/* Technical Details */}
-        {proposal.includeTechnicalDetails && proposal.solutions?.length > 0 && (
-          <div className="mt-12">
-            <TechnicalDetails 
-              technicalDetails={proposal.solutions.map(s => s.description).filter(Boolean)}
-              technicalImages={proposal.technicalImages}
-              solutions={proposal.solutions}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Technical Documentation Section - logo após Technical Chat */}
-      <TechnicalDocumentationSection />
-
-      {/* Investment Section */}
-      <div id="investment-section" className="bg-gray-50">
-        <ModernInvestmentSection
-          totalPrice={proposal.finalPrice}
-          discount={proposal.discount}
-          validUntil={proposal.validUntil}
-          onAccept={handleAccept}
-          onReject={handleReject}
+      {proposal && (
+        <ProposalClientContent
+          proposal={proposal}
+          proposalItems={proposalItems}
+          selectedSolutions={selectedSolutions}
+          canInteract={!isExpired}
+          isExpired={isExpired}
+          onAcceptProposal={handleAccept}
+          onRejectProposal={handleReject}
+          onSolutionSelect={handleSolutionSelect}
+          onCloseDeal={handleCloseDeal}
         />
-      </div>
-
-      {/* Recommended Solutions - After Investment Section */}
-      <RecommendedSolutionsSection 
-        onSolutionSelect={handleSolutionSelect}
-        selectedSolutions={selectedSolutions}
-        onCloseDeal={handleCloseDeal}
-      />
+      )}
 
       {/* Internal Tools - Only for vendors */}
-      {isVendorUser && (
-        <div className="bg-gray-50 border-t">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Ferramentas Internas</h3>
-            <div className="grid lg:grid-cols-2 gap-8">
-              <InternalNotes
-                proposalId={proposal.id!}
-                notes={internalNotes}
-                onNotesChange={setInternalNotes}
-              />
-
-              <InteractionLog
-                proposalId={proposal.id!}
-                interactions={interactions}
-                onAddInteraction={addInteraction}
-                proposalCreatedBy={proposal.createdBy}
-              />
-            </div>
-          </div>
-        </div>
+      {isVendorUser && proposal && (
+        <ProposalVendorTools
+          proposalId={proposal.id!}
+          interactions={interactions}
+          onAddInteraction={addInteraction}
+          proposalCreatedBy={proposal.createdBy}
+        />
       )}
 
       {/* Client Question Form */}
       {!isVendorUser && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <ClientQuestionForm onQuestionSubmit={handleQuestion} />
-        </div>
+        <ProposalClientForm onQuestionSubmit={handleQuestion} />
       )}
     </div>
   );
