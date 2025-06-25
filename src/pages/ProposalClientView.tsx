@@ -1,18 +1,21 @@
 
 import { useParams } from 'react-router-dom';
-import Layout from '@/components/Layout';
 import { useClientProposal } from '@/hooks/useClientProposals';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, Loader2, FileText, Calendar, DollarSign, CheckCircle, Clock } from 'lucide-react';
-import { getProposalStatusLabel, getProposalStatusColor, formatProposalNumber, isProposalExpired } from '@/utils/clientUtils';
+import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
+import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
+import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
+import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
+import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
+import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
+import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
+import { Card, CardContent } from '@/components/ui/card';
+import { AlertCircle } from 'lucide-react';
+import { getProposalStatusLabel, isProposalExpired } from '@/utils/clientUtils';
 import { useToast } from '@/hooks/use-toast';
 
 const ProposalClientView = () => {
   const { linkAccess } = useParams<{ linkAccess: string }>();
-  const { data: proposal, isLoading, error } = useClientProposal(linkAccess || '');
+  const { data: proposalData, isLoading, error } = useClientProposal(linkAccess || '');
   const { toast } = useToast();
 
   const handleAcceptProposal = () => {
@@ -31,19 +34,10 @@ const ProposalClientView = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-gray-600">Carregando proposta...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ProposalLoadingState />;
   }
 
-  if (error || !proposal) {
+  if (error || !proposalData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -59,195 +53,125 @@ const ProposalClientView = () => {
     );
   }
 
-  const proposalNumber = formatProposalNumber(proposal.id, proposal.created_at);
-  const isExpired = isProposalExpired(proposal.validade);
-  const canInteract = proposal.status === 'sent' || proposal.status === 'viewed';
+  const isExpired = isProposalExpired(proposalData.validade);
+  const canInteract = proposalData.status === 'sent' || proposalData.status === 'viewed';
+  const proposalNumber = `PROP-${proposalData.id.slice(0, 8).toUpperCase()}`;
+
+  // Map proposal data
+  const proposal = {
+    id: proposalData.id,
+    clientName: proposalData.clients.nome,
+    totalPrice: Number(proposalData.valor_total),
+    finalPrice: Number(proposalData.valor_total),
+    validUntil: new Date(proposalData.validade).toLocaleDateString('pt-BR'),
+    discount: proposalData.desconto_percentual || 0,
+    benefits: [
+      'Garantia de 5 anos para estruturas metálicas',
+      'Instalação profissional inclusa',
+      'Suporte técnico especializado 24/7',
+      'Materiais certificados e de alta qualidade',
+      'Consultoria personalizada gratuita',
+      'Manutenção preventiva no primeiro ano'
+    ]
+  };
+
+  const proposalItems = proposalData.proposal_items.map(item => ({
+    id: item.id,
+    description: item.produto_nome,
+    quantity: Number(item.quantidade),
+    unit: 'un',
+    unitPrice: Number(item.preco_unit),
+    totalPrice: Number(item.preco_total)
+  }));
+
+  const scrollToInvestment = () => {
+    const element = document.getElementById('investment-section');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <Layout showBackButton={false}>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header da Proposta */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-              <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-2">
-                  <FileText className="w-6 h-6" />
-                  {proposalNumber}
-                </CardTitle>
-                <p className="text-gray-600 mt-1">
-                  Para: {proposal.clients.nome} ({proposal.clients.empresa})
-                </p>
-              </div>
-              <div className="flex flex-col items-end space-y-2">
-                <Badge className={getProposalStatusColor(proposal.status)}>
-                  {getProposalStatusLabel(proposal.status)}
-                </Badge>
-                {isExpired && (
-                  <Badge variant="destructive">
-                    <Clock className="w-3 h-3 mr-1" />
-                    Expirada
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+    <div className="min-h-screen bg-white">
+      {/* Modern Header */}
+      <ModernProposalHeader
+        clientName={proposal.clientName}
+        proposalNumber={proposalNumber}
+        validUntil={proposal.validUntil}
+        isExpired={isExpired}
+      />
 
-        {/* Informações da Proposta */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <DollarSign className="w-8 h-8 text-green-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Valor Total</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    R$ {Number(proposal.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Hero Section */}
+      <ModernHeroSection
+        clientName={proposal.clientName}
+        onGetStarted={scrollToInvestment}
+      />
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <Calendar className="w-8 h-8 text-blue-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Válida até</p>
-                  <p className="text-lg font-semibold">
-                    {new Date(proposal.validade).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Dream Home Section */}
+      <DreamHomeSection benefits={proposal.benefits} />
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <FileText className="w-8 h-8 text-purple-600" />
-                <div>
-                  <p className="text-sm text-gray-600">Itens</p>
-                  <p className="text-lg font-semibold">
-                    {proposal.proposal_items.length} produto(s)
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Why Choose Section */}
+      <WhyChooseSection />
+
+      {/* Detailed Proposal Items */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            Detalhamento da Proposta
+          </h2>
+          <p className="text-lg text-gray-600">
+            Confira todos os itens inclusos na sua solução personalizada
+          </p>
         </div>
+        
+        <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
+      </div>
 
-        {/* Itens da Proposta */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Itens da Proposta</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Preço Unitário</TableHead>
-                    <TableHead>Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {proposal.proposal_items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item.produto_nome}</p>
-                          {item.descricao_item && (
-                            <p className="text-sm text-gray-500">{item.descricao_item}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{Number(item.quantidade)}</TableCell>
-                      <TableCell>
-                        R$ {Number(item.preco_unit).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        R$ {Number(item.preco_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+      {/* Investment Section - Only if can interact */}
+      {canInteract && !isExpired && (
+        <div id="investment-section" className="bg-gray-50">
+          <ModernInvestmentSection
+            totalPrice={proposal.totalPrice}
+            discount={proposal.discount}
+            validUntil={proposal.validUntil}
+            onAccept={handleAcceptProposal}
+            onReject={handleRejectProposal}
+          />
+        </div>
+      )}
 
-            {/* Totais */}
-            <div className="mt-6 border-t pt-4">
-              <div className="flex justify-end space-y-2">
-                <div className="text-right">
-                  {proposal.desconto_percentual > 0 && (
-                    <div className="text-sm text-gray-600">
-                      Desconto: {proposal.desconto_percentual}%
-                    </div>
-                  )}
-                  <div className="text-xl font-bold">
-                    Total: R$ {Number(proposal.valor_total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Expired Message */}
+      {isExpired && (
+        <div className="bg-red-50 border-t border-red-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-red-800 mb-4">Proposta Expirada</h3>
+                <p className="text-red-600 text-lg mb-6">
+                  Esta proposta expirou em {proposal.validUntil}.
+                </p>
+                <p className="text-red-600">
+                  Entre em contato conosco para uma nova proposta atualizada.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
-        {/* Observações */}
-        {proposal.observacoes && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Observações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 whitespace-pre-wrap">{proposal.observacoes}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Ações */}
-        {canInteract && !isExpired && (
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  onClick={handleAcceptProposal}
-                  size="lg"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Aceitar Proposta
-                </Button>
-                <Button
-                  onClick={handleRejectProposal}
-                  variant="outline"
-                  size="lg"
-                >
-                  Rejeitar Proposta
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {isExpired && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-6 text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-red-800 mb-2">Proposta Expirada</h3>
-              <p className="text-red-600">
-                Esta proposta expirou em {new Date(proposal.validade).toLocaleDateString('pt-BR')}.
-                Entre em contato conosco para uma nova proposta.
+      {/* Observações */}
+      {proposalData.observacoes && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <Card className="shadow-lg">
+            <CardContent className="p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Observações Importantes</h3>
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {proposalData.observacoes}
               </p>
             </CardContent>
           </Card>
-        )}
-      </div>
-    </Layout>
+        </div>
+      )}
+    </div>
   );
 };
 
