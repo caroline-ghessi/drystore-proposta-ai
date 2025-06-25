@@ -5,6 +5,8 @@ import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader
 import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
+import { OrderBumpSection } from '@/components/proposal/OrderBumpSection';
+import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import RecommendedProducts from '@/components/proposal/RecommendedProducts';
@@ -28,6 +30,7 @@ const ProposalView = () => {
   const { isClient, isVendor } = useClientContext();
   const showAI = searchParams.get('ai') === 'true';
   const [internalNotes, setInternalNotes] = useState<string>('');
+  const [orderBumpTotal, setOrderBumpTotal] = useState(0);
   
   // Custom hooks - devem ser chamados SEMPRE, antes de qualquer return condicional
   const { interactions, addInteraction } = useProposalInteractions();
@@ -51,7 +54,7 @@ const ProposalView = () => {
         clientName: proposalByDetails.clients?.nome || 'Cliente',
         clientEmail: proposalByDetails.clients?.email || '',
         totalPrice: Number(proposalByDetails.valor_total),
-        finalPrice: Number(proposalByDetails.valor_total),
+        finalPrice: Number(proposalByDetails.valor_total) + orderBumpTotal,
         validUntil: new Date(proposalByDetails.validade).toLocaleDateString('pt-BR'),
         benefits: [
           'Garantia de 5 anos para estruturas metálicas',
@@ -96,6 +99,17 @@ const ProposalView = () => {
     proposal?.clientName || 'Cliente', 
     addInteraction
   );
+
+  const handleOrderBumpChange = (selectedItems: any[], totalValue: number) => {
+    setOrderBumpTotal(totalValue);
+    if (proposal) {
+      proposal.finalPrice = proposal.totalPrice + totalValue;
+    }
+  };
+
+  const handleSolutionSelect = (solution: any) => {
+    console.log('Solução selecionada:', solution);
+  };
 
   // Loading state
   if (isLoading) {
@@ -157,7 +171,7 @@ const ProposalView = () => {
           </p>
         </div>
         
-        <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
+        <ProposalItemsTable items={proposalItems} totalPrice={proposal.totalPrice} />
 
         {/* Recommended Products */}
         {proposal.recommendedProducts && proposal.recommendedProducts.length > 0 && (
@@ -178,10 +192,16 @@ const ProposalView = () => {
         )}
       </div>
 
+      {/* Order Bump Section */}
+      <OrderBumpSection onItemsChange={handleOrderBumpChange} />
+
+      {/* Recommended Solutions */}
+      <RecommendedSolutionsSection onSolutionSelect={handleSolutionSelect} />
+
       {/* Investment Section */}
       <div id="investment-section" className="bg-gray-50">
         <ModernInvestmentSection
-          totalPrice={proposal.totalPrice}
+          totalPrice={proposal.finalPrice}
           discount={proposal.discount}
           validUntil={proposal.validUntil}
           onAccept={handleAccept}

@@ -5,6 +5,8 @@ import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader
 import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
+import { OrderBumpSection } from '@/components/proposal/OrderBumpSection';
+import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
@@ -12,11 +14,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import { getProposalStatusLabel, isProposalExpired } from '@/utils/clientUtils';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 const ProposalClientView = () => {
   const { linkAccess } = useParams<{ linkAccess: string }>();
   const { data: proposalData, isLoading, error } = useClientProposal(linkAccess || '');
   const { toast } = useToast();
+  const [orderBumpTotal, setOrderBumpTotal] = useState(0);
 
   const handleAcceptProposal = () => {
     toast({
@@ -30,6 +34,17 @@ const ProposalClientView = () => {
       title: "Proposta rejeitada",
       description: "Agradecemos sua consideração.",
       variant: "destructive"
+    });
+  };
+
+  const handleOrderBumpChange = (selectedItems: any[], totalValue: number) => {
+    setOrderBumpTotal(totalValue);
+  };
+
+  const handleSolutionSelect = (solution: any) => {
+    toast({
+      title: "Interesse registrado!",
+      description: `Entraremos em contato sobre: ${solution.name}`,
     });
   };
 
@@ -62,7 +77,7 @@ const ProposalClientView = () => {
     id: proposalData.id,
     clientName: proposalData.clients.nome,
     totalPrice: Number(proposalData.valor_total),
-    finalPrice: Number(proposalData.valor_total),
+    finalPrice: Number(proposalData.valor_total) + orderBumpTotal,
     validUntil: new Date(proposalData.validade).toLocaleDateString('pt-BR'),
     discount: proposalData.desconto_percentual || 0,
     benefits: [
@@ -122,14 +137,22 @@ const ProposalClientView = () => {
           </p>
         </div>
         
-        <ProposalItemsTable items={proposalItems} totalPrice={proposal.finalPrice} />
+        <ProposalItemsTable items={proposalItems} totalPrice={proposal.totalPrice} />
       </div>
+
+      {/* Order Bump Section - Only if can interact */}
+      {canInteract && !isExpired && (
+        <OrderBumpSection onItemsChange={handleOrderBumpChange} />
+      )}
+
+      {/* Recommended Solutions */}
+      <RecommendedSolutionsSection onSolutionSelect={handleSolutionSelect} />
 
       {/* Investment Section - Only if can interact */}
       {canInteract && !isExpired && (
         <div id="investment-section" className="bg-gray-50">
           <ModernInvestmentSection
-            totalPrice={proposal.totalPrice}
+            totalPrice={proposal.finalPrice}
             discount={proposal.discount}
             validUntil={proposal.validUntil}
             onAccept={handleAcceptProposal}
