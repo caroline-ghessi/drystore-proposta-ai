@@ -1,8 +1,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { DollarSign, Clock, CheckCircle, CreditCard } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle } from 'lucide-react';
 import { PaymentOptionsGrid } from './PaymentOptionsGrid';
 
 interface ModernInvestmentSectionProps {
@@ -24,7 +23,7 @@ export const ModernInvestmentSection = ({
   const savings = totalPrice - finalPrice;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
       <div className="text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           💰 Investimento & Condições Exclusivas
@@ -93,10 +92,9 @@ export const ModernInvestmentSection = ({
             </CardContent>
           </Card>
 
-          {/* Payment Options Grid - Expanded */}
+          {/* Payment Options Grid */}
           <div className="mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <CreditCard className="w-6 h-6 mr-3" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
               Condições de Pagamento
             </h3>
             <PaymentOptionsGrid totalPrice={finalPrice} />

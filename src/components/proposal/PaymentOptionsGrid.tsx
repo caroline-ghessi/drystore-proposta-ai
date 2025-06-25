@@ -11,19 +11,49 @@ interface PaymentOptionsGridProps {
 export const PaymentOptionsGrid = ({ totalPrice }: PaymentOptionsGridProps) => {
   const { data: paymentConditions = [], isLoading } = usePaymentConditions();
 
+  const getColorClasses = (name: string) => {
+    if (name.includes('Vista')) return {
+      bg: 'bg-green-50',
+      border: 'border-green-200',
+      text: 'text-green-800',
+      badge: 'bg-green-500 text-white'
+    };
+    if (name.includes('Faturado')) return {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      text: 'text-blue-800',
+      badge: 'bg-blue-500 text-white'
+    };
+    if (name.includes('4x')) return {
+      bg: 'bg-purple-50',
+      border: 'border-purple-200',
+      text: 'text-purple-800',
+      badge: 'bg-purple-500 text-white'
+    };
+    if (name.includes('5x a 10x')) return {
+      bg: 'bg-orange-50',
+      border: 'border-orange-200',
+      text: 'text-orange-800',
+      badge: 'bg-orange-500 text-white'
+    };
+    if (name.includes('11x a 14x')) return {
+      bg: 'bg-indigo-50',
+      border: 'border-indigo-200',
+      text: 'text-indigo-800',
+      badge: 'bg-indigo-500 text-white'
+    };
+    return {
+      bg: 'bg-gray-50',
+      border: 'border-gray-200',
+      text: 'text-gray-800',
+      badge: 'bg-gray-500 text-white'
+    };
+  };
+
   const getIcon = (name: string) => {
     if (name.includes('Vista')) return DollarSign;
     if (name.includes('Faturado')) return FileCheck;
     return CreditCard;
-  };
-
-  const getGradientClass = (name: string) => {
-    if (name.includes('Vista')) return 'from-green-500 to-green-600';
-    if (name.includes('Faturado')) return 'from-blue-500 to-blue-600';
-    if (name.includes('4x')) return 'from-purple-500 to-purple-600';
-    if (name.includes('5x a 10x')) return 'from-orange-500 to-orange-600';
-    if (name.includes('11x a 14x')) return 'from-red-500 to-red-600';
-    return 'from-gray-500 to-gray-600';
   };
 
   const calculateFinalValue = (condition: any) => {
@@ -48,10 +78,10 @@ export const PaymentOptionsGrid = ({ totalPrice }: PaymentOptionsGridProps) => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="animate-pulse">
-            <div className="h-40 bg-gray-200 rounded-lg" />
+            <div className="h-32 bg-gray-200 rounded-lg" />
           </div>
         ))}
       </div>
@@ -59,12 +89,12 @@ export const PaymentOptionsGrid = ({ totalPrice }: PaymentOptionsGridProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {paymentConditions.map((condition) => {
         const finalValue = calculateFinalValue(condition);
         const installmentValue = finalValue / condition.installments;
         const Icon = getIcon(condition.name);
-        const gradientClass = getGradientClass(condition.name);
+        const colors = getColorClasses(condition.name);
         const savings = totalPrice - finalValue;
         const isVista = condition.name.includes('Vista');
         const isFaturado = condition.name.includes('Faturado');
@@ -73,120 +103,82 @@ export const PaymentOptionsGrid = ({ totalPrice }: PaymentOptionsGridProps) => {
         return (
           <Card 
             key={condition.id} 
-            className={`relative overflow-hidden transition-all hover:shadow-xl hover:scale-105 border-2 ${
-              isVista ? 'ring-2 ring-green-400 ring-opacity-50 border-green-200' : 'border-gray-200'
-            }`}
+            className={`relative overflow-hidden ${colors.bg} ${colors.border} border-2 hover:shadow-lg transition-shadow`}
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-10`} />
-            
-            <CardContent className="relative p-6">
+            <CardContent className="p-6">
+              {/* Header com ícone e título */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
-                  <div className={`p-2 rounded-full bg-gradient-to-r ${gradientClass}`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <h4 className="font-semibold text-gray-900 text-lg">{condition.name}</h4>
+                  <Icon className={`w-5 h-5 ${colors.text}`} />
+                  <h4 className={`font-semibold text-lg ${colors.text}`}>
+                    {condition.name}
+                  </h4>
                 </div>
                 
+                {/* Badge de desconto/juros */}
                 {condition.discount_percentage > 0 && (
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-sm px-3 py-1">
+                  <Badge className={`${colors.badge} text-xs`}>
                     -{condition.discount_percentage}%
                   </Badge>
                 )}
                 
                 {condition.interest_percentage > 0 && (
-                  <Badge variant="outline" className="text-orange-600 border-orange-300 text-sm px-3 py-1">
+                  <Badge variant="outline" className="text-red-600 border-red-300 text-xs">
                     +{condition.interest_percentage}%
                   </Badge>
                 )}
               </div>
 
-              {/* À Vista - Enfoque na Economia */}
+              {/* Conteúdo principal */}
               {isVista && (
-                <div className="space-y-4">
-                  <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <DollarSign className="w-6 h-6 text-green-600 mr-2" />
-                        <span className="text-sm font-medium text-green-800">Você economiza:</span>
-                      </div>
-                      <span className="text-2xl font-bold text-green-700">
-                        {formatCurrency(savings)}
-                      </span>
+                <div className="text-center">
+                  <div className="mb-2">
+                    <span className="text-sm text-green-600">Você economiza:</span>
+                    <div className="text-2xl font-bold text-green-700">
+                      {formatCurrency(savings)}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total a pagar:</span>
-                    <span className="font-bold text-xl text-gray-900">
-                      {formatCurrency(finalValue)}
-                    </span>
+                  <div className="text-lg font-semibold text-green-800">
+                    Total: {formatCurrency(finalValue)}
                   </div>
-                  <div className="mt-3 p-3 bg-green-50 rounded-md">
-                    <div className="flex items-center text-green-700">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span className="text-sm font-medium">Melhor opção financeira!</span>
-                    </div>
+                  <div className="mt-2 text-xs text-green-600 font-medium">
+                    ✓ Melhor opção financeira!
                   </div>
                 </div>
               )}
 
-              {/* Faturado - Com observação sobre análise */}
               {isFaturado && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Total:</span>
-                    <span className="font-bold text-xl text-gray-900">
-                      {formatCurrency(finalValue)}
-                    </span>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-800 mb-2">
+                    {formatCurrency(finalValue)}
                   </div>
                   {savings > 0 && (
-                    <div className="flex justify-between items-center text-green-600">
-                      <span className="text-sm">Economia:</span>
-                      <span className="font-semibold text-lg">
-                        {formatCurrency(savings)}
-                      </span>
+                    <div className="text-sm text-blue-600 mb-2">
+                      Economia: {formatCurrency(savings)}
                     </div>
                   )}
-                  <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
-                    <div className="flex items-start text-blue-700">
-                      <FileCheck className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm">
-                        Condição aprovada mediante análise de crédito
-                      </span>
-                    </div>
+                  <div className="text-xs text-blue-600">
+                    * Sujeito à análise de crédito
                   </div>
                 </div>
               )}
 
-              {/* Parcelado - Enfoque no valor da parcela */}
               {isParcelado && !isFaturado && (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-gray-400">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Banknote className="w-6 h-6 text-gray-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-800">
-                          {condition.installments}x de:
-                        </span>
-                      </div>
-                      <span className="text-3xl font-bold text-gray-900">
-                        {formatCurrency(installmentValue)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Total:</span>
-                    <span className="font-medium text-sm text-gray-600">
-                      {formatCurrency(finalValue)}
+                <div className="text-center">
+                  <div className="mb-1">
+                    <span className="text-sm text-gray-600">
+                      {condition.installments}x de
                     </span>
                   </div>
+                  <div className="text-2xl font-bold text-gray-800 mb-2">
+                    {formatCurrency(installmentValue)}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Total: {formatCurrency(finalValue)}
+                  </div>
                   {condition.interest_percentage > 0 && (
-                    <div className="mt-2 p-3 bg-orange-50 rounded-md">
-                      <div className="flex items-center text-orange-700">
-                        <span className="text-sm">
-                          Juros de {condition.interest_percentage}% aplicados
-                        </span>
-                      </div>
+                    <div className="mt-2 text-xs text-orange-600">
+                      Juros: {condition.interest_percentage}%
                     </div>
                   )}
                 </div>
