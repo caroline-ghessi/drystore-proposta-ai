@@ -11,6 +11,7 @@ import InteractionLog from '@/components/proposal/InteractionLog';
 import InternalNotes from '@/components/proposal/InternalNotes';
 import ClientQuestionForm from '@/components/proposal/ClientQuestionForm';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
+import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
 import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
 import { useProposalStatus } from '@/hooks/useProposalStatus';
@@ -193,6 +194,9 @@ const ProposalView = () => {
           </div>
         )}
       </div>
+
+      {/* Technical Documentation Section - logo após Technical Chat */}
+      <TechnicalDocumentationSection />
 
       {/* Investment Section */}
       <div id="investment-section" className="bg-gray-50">

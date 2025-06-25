@@ -1,9 +1,9 @@
-
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
+import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
 
 interface ProposalClientContentProps {
   proposal: {
@@ -59,6 +59,9 @@ export const ProposalClientContent = ({
           <TechnicalChatCard />
         </div>
       </div>
+
+      {/* Technical Documentation Section - logo após Technical Chat */}
+      <TechnicalDocumentationSection />
 
       {/* Investment Section - Only if can interact */}
       {canInteract && !isExpired && (
