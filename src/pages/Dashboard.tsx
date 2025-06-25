@@ -270,7 +270,7 @@ const Dashboard = () => {
                   <div 
                     key={proposal.id} 
                     className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer" 
-                    onClick={() => navigate(`/proposal/${proposal.id}`)}
+                    onClick={() => navigate(`/proposal-view/${proposal.id}`)}
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-drystore-blue rounded-full flex items-center justify-center bg-orange-600">
