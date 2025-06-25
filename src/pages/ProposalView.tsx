@@ -114,6 +114,15 @@ const ProposalView = () => {
     }
   };
 
+  const handleCloseDeal = () => {
+    // Navigate to investment section and trigger accept
+    const investmentSection = document.getElementById('investment-section');
+    if (investmentSection) {
+      investmentSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    handleAccept();
+  };
+
   // Loading state
   if (isLoading) {
     return <ProposalLoadingState />;
@@ -204,6 +213,7 @@ const ProposalView = () => {
       <RecommendedSolutionsSection 
         onSolutionSelect={handleSolutionSelect}
         selectedSolutions={selectedSolutions}
+        onCloseDeal={handleCloseDeal}
       />
 
       {/* Internal Tools - Only for vendors */}

@@ -55,6 +55,15 @@ const ProposalClientView = () => {
     }
   };
 
+  const handleCloseDeal = () => {
+    // Navigate to investment section and trigger accept
+    const investmentSection = document.getElementById('investment-section');
+    if (investmentSection) {
+      investmentSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    handleAcceptProposal();
+  };
+
   if (isLoading) {
     return <ProposalLoadingState />;
   }
@@ -158,6 +167,7 @@ const ProposalClientView = () => {
       <RecommendedSolutionsSection 
         onSolutionSelect={handleSolutionSelect}
         selectedSolutions={selectedSolutions}
+        onCloseDeal={handleCloseDeal}
       />
 
       {/* Expired Message */}
