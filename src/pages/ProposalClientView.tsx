@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useClientProposal } from '@/hooks/useClientProposals';
 import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
@@ -7,6 +6,7 @@ import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
+import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
@@ -134,6 +134,11 @@ const ProposalClientView = () => {
         </div>
         
         <ProposalItemsTable items={proposalItems} />
+
+        {/* Technical Chat - logo após o detalhamento da proposta */}
+        <div className="mt-8">
+          <TechnicalChatCard />
+        </div>
       </div>
 
       {/* Investment Section - Only if can interact */}

@@ -165,6 +165,11 @@ const ProposalView = () => {
         
         <ProposalItemsTable items={proposalItems} />
 
+        {/* Technical Chat - logo após o detalhamento da proposta */}
+        <div className="mt-8">
+          <TechnicalChatCard />
+        </div>
+
         {/* Recommended Products */}
         {proposal.recommendedProducts && proposal.recommendedProducts.length > 0 && (
           <div className="mt-12">
@@ -200,11 +205,6 @@ const ProposalView = () => {
         onSolutionSelect={handleSolutionSelect}
         selectedSolutions={selectedSolutions}
       />
-
-      {/* Technical Chat */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <TechnicalChatCard />
-      </div>
 
       {/* Internal Tools - Only for vendors */}
       {isVendorUser && (

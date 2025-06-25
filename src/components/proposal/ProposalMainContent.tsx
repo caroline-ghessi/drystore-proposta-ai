@@ -49,6 +49,9 @@ const ProposalMainContent = ({
     <div className="lg:col-span-2 space-y-6">
       <ProposalItemsTable items={proposalItems} />
 
+      {/* Dúvidas Técnicas - logo após o detalhamento da proposta */}
+      <TechnicalChatCard />
+
       {/* Produtos Recomendados - apenas se houver produtos selecionados */}
       {recommendedProducts.length > 0 && (
         <RecommendedProducts products={recommendedProducts} />
@@ -64,8 +67,6 @@ const ProposalMainContent = ({
           solutions={proposal.solutions}
         />
       )}
-
-      <TechnicalChatCard />
 
       <InternalNotes
         proposalId={proposal.id!}
