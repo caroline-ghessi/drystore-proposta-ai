@@ -1,6 +1,5 @@
 
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
-import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
@@ -41,9 +40,6 @@ export const ProposalClientContent = ({
     <>
       {/* Dream Home Section */}
       <DreamHomeSection benefits={proposal.benefits} />
-
-      {/* Why Choose Section */}
-      <WhyChooseSection />
 
       {/* Detailed Proposal Items */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
