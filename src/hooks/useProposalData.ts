@@ -4,27 +4,45 @@ import { useProposal } from '@/hooks/useProposals';
 import { useSolutionImages } from '@/hooks/useSolutions';
 
 export const useProposalData = (proposalId: string) => {
+  console.log('🔍 useProposalData: Iniciando com proposalId:', proposalId);
+  
   const { data: proposalData, isLoading, error } = useProposal(proposalId);
+
+  console.log('🔍 useProposalData: Dados recebidos:', {
+    proposalData,
+    isLoading,
+    error: error?.message
+  });
 
   // Extrair IDs das soluções para buscar imagens - com verificação de segurança
   const solutionIds = useMemo(() => {
-    if (!proposalData?.proposal_solutions || !Array.isArray(proposalData.proposal_solutions)) return [];
-    return proposalData.proposal_solutions
+    if (!proposalData?.proposal_solutions || !Array.isArray(proposalData.proposal_solutions)) {
+      console.log('🔍 useProposalData: Nenhuma solução encontrada');
+      return [];
+    }
+    const ids = proposalData.proposal_solutions
       .map((ps: any) => ps.solutions?.id)
       .filter(Boolean) as string[];
+    console.log('🔍 useProposalData: IDs das soluções:', ids);
+    return ids;
   }, [proposalData]);
 
   // Buscar imagens das soluções
   const { data: solutionImages = [] } = useSolutionImages(solutionIds);
 
   const { proposal, proposalItems, dataSource } = useMemo(() => {
+    console.log('🔍 useProposalData: Processando dados da proposta...');
+    
     if (!proposalData) {
+      console.log('🔍 useProposalData: Usando proposta padrão (mock)');
       return {
         proposal: getDefaultProposal(),
         proposalItems: [],
         dataSource: 'mock' as const
       };
     }
+
+    console.log('🔍 useProposalData: Mapeando dados reais da proposta');
 
     // Mapear dados reais da proposta - com verificações de segurança
     const proposal = {
@@ -86,6 +104,8 @@ export const useProposalData = (proposalId: string) => {
       }))
     };
 
+    console.log('🔍 useProposalData: Proposta mapeada:', proposal);
+
     const proposalItems = Array.isArray(proposalData.proposal_items) 
       ? proposalData.proposal_items.map(item => ({
           id: item.id,
@@ -98,12 +118,22 @@ export const useProposalData = (proposalId: string) => {
         }))
       : [];
 
+    console.log('🔍 useProposalData: Items mapeados:', proposalItems);
+
     return {
       proposal,
       proposalItems,
       dataSource: 'database' as const
     };
   }, [proposalData, solutionImages]);
+
+  console.log('🔍 useProposalData: Resultado final:', {
+    proposal: proposal?.id,
+    itemsCount: proposalItems.length,
+    dataSource,
+    isLoading,
+    error: error?.message
+  });
 
   return {
     proposal,
@@ -116,6 +146,7 @@ export const useProposalData = (proposalId: string) => {
 
 // Função auxiliar para proposta padrão (mock)
 function getDefaultProposal() {
+  console.log('🔍 useProposalData: Criando proposta padrão');
   return {
     id: 'mock-1',
     clientName: 'João Silva',

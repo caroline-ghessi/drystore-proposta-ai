@@ -31,10 +31,19 @@ const ProposalMainContent = ({
   onQuestionSubmit,
   status
 }: ProposalMainContentProps) => {
-  // Usar produtos recomendados da proposta ou fallback para mock
-  const recommendedProducts = proposal.recommendedProducts?.length > 0 
-    ? proposal.recommendedProducts 
-    : getMockRecommendedProducts();
+  console.log('📋 ProposalMainContent: Renderizando com proposta:', proposal?.id);
+  console.log('📋 ProposalMainContent: Produtos recomendados da proposta:', proposal?.recommendedProducts);
+
+  // Usar produtos recomendados da proposta ou fallback para mock apenas se houver produtos
+  let recommendedProducts = [];
+  
+  if (proposal?.recommendedProducts && proposal.recommendedProducts.length > 0) {
+    console.log('📋 ProposalMainContent: Usando produtos recomendados da proposta');
+    recommendedProducts = proposal.recommendedProducts;
+  } else {
+    console.log('📋 ProposalMainContent: Nenhum produto recomendado na proposta');
+    // Não usar mock por padrão - só mostrar se explicitamente configurado
+  }
 
   return (
     <div className="lg:col-span-2 space-y-6">
