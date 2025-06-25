@@ -5,7 +5,6 @@ import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader
 import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
-import { OrderBumpSection } from '@/components/proposal/OrderBumpSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
@@ -30,7 +29,7 @@ const ProposalView = () => {
   const { isClient, isVendor } = useClientContext();
   const showAI = searchParams.get('ai') === 'true';
   const [internalNotes, setInternalNotes] = useState<string>('');
-  const [orderBumpTotal, setOrderBumpTotal] = useState(0);
+  const [selectedSolutions, setSelectedSolutions] = useState<Array<{ id: string; price: number }>>([]);
   
   // Custom hooks - devem ser chamados SEMPRE, antes de qualquer return condicional
   const { interactions, addInteraction } = useProposalInteractions();
@@ -38,6 +37,9 @@ const ProposalView = () => {
   // Use different hooks based on the route parameter
   const { proposal: proposalByData, proposalItems: itemsByData, dataSource, isLoading: isLoadingData, error: errorData } = useProposalData(id || '');
   const { data: proposalByDetails, isLoading: isLoadingDetails, error: errorDetails } = useProposalDetails(linkAccess || '');
+
+  // Calculate additional value from selected solutions
+  const additionalValue = selectedSolutions.reduce((sum, solution) => sum + solution.price, 0);
 
   // Determine which data to use
   let proposal, proposalItems, isLoading, error;
@@ -54,7 +56,7 @@ const ProposalView = () => {
         clientName: proposalByDetails.clients?.nome || 'Cliente',
         clientEmail: proposalByDetails.clients?.email || '',
         totalPrice: Number(proposalByDetails.valor_total),
-        finalPrice: Number(proposalByDetails.valor_total) + orderBumpTotal,
+        finalPrice: Number(proposalByDetails.valor_total) + additionalValue,
         validUntil: new Date(proposalByDetails.validade).toLocaleDateString('pt-BR'),
         benefits: [
           'Garantia de 5 anos para estruturas metálicas',
@@ -94,21 +96,27 @@ const ProposalView = () => {
     error = new Error('ID ou link de acesso obrigatório');
   }
 
+  // Update proposal finalPrice if it exists
+  if (proposal) {
+    proposal.finalPrice = proposal.totalPrice + additionalValue;
+  }
+
   // Custom hooks que dependem de proposal - também devem ser chamados sempre
   const { status, handleAccept, handleReject, handleQuestion } = useProposalStatus(
     proposal?.clientName || 'Cliente', 
     addInteraction
   );
 
-  const handleOrderBumpChange = (selectedItems: any[], totalValue: number) => {
-    setOrderBumpTotal(totalValue);
-    if (proposal) {
-      proposal.finalPrice = proposal.totalPrice + totalValue;
-    }
-  };
-
   const handleSolutionSelect = (solution: any) => {
-    console.log('Solução selecionada:', solution);
+    const isAlreadySelected = selectedSolutions.find(s => s.id === solution.id);
+    
+    if (isAlreadySelected) {
+      // Remove solution
+      setSelectedSolutions(prev => prev.filter(s => s.id !== solution.id));
+    } else {
+      // Add solution
+      setSelectedSolutions(prev => [...prev, { id: solution.id, price: solution.price }]);
+    }
   };
 
   // Loading state
@@ -192,12 +200,6 @@ const ProposalView = () => {
         )}
       </div>
 
-      {/* Order Bump Section */}
-      <OrderBumpSection onItemsChange={handleOrderBumpChange} />
-
-      {/* Recommended Solutions */}
-      <RecommendedSolutionsSection onSolutionSelect={handleSolutionSelect} />
-
       {/* Investment Section */}
       <div id="investment-section" className="bg-gray-50">
         <ModernInvestmentSection
@@ -208,6 +210,12 @@ const ProposalView = () => {
           onReject={handleReject}
         />
       </div>
+
+      {/* Recommended Solutions - After Investment Section */}
+      <RecommendedSolutionsSection 
+        onSolutionSelect={handleSolutionSelect}
+        selectedSolutions={selectedSolutions}
+      />
 
       {/* Technical Chat */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, ArrowRight, Shield, Zap } from 'lucide-react';
+import { Star, ArrowRight, Shield, Zap, CheckCircle, Plus } from 'lucide-react';
 
 interface RecommendedSolution {
   id: string;
@@ -19,11 +19,13 @@ interface RecommendedSolution {
 interface RecommendedSolutionsSectionProps {
   solutions?: RecommendedSolution[];
   onSolutionSelect?: (solution: RecommendedSolution) => void;
+  selectedSolutions?: Array<{ id: string; price: number }>;
 }
 
 export const RecommendedSolutionsSection = ({ 
   solutions = [], 
-  onSolutionSelect 
+  onSolutionSelect,
+  selectedSolutions = []
 }: RecommendedSolutionsSectionProps) => {
   
   // Mock data se não houver soluções
@@ -80,6 +82,14 @@ export const RecommendedSolutionsSection = ({
     }
   };
 
+  const isSolutionSelected = (solutionId: string) => {
+    return selectedSolutions.some(s => s.id === solutionId);
+  };
+
+  const getTotalSelectedValue = () => {
+    return selectedSolutions.reduce((sum, solution) => sum + solution.price, 0);
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="text-center mb-12">
@@ -91,17 +101,31 @@ export const RecommendedSolutionsSection = ({
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {displaySolutions.map((solution) => {
           const IconComponent = getCategoryIcon(solution.category);
+          const isSelected = isSolutionSelected(solution.id);
           
           return (
-            <Card key={solution.id} className="relative hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <Card 
+              key={solution.id} 
+              className={`relative hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
+                isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+              }`}
+            >
               {solution.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                   <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                     ⭐ Mais Popular
                   </Badge>
+                </div>
+              )}
+
+              {isSelected && (
+                <div className="absolute -top-3 right-3 z-10">
+                  <div className="bg-green-500 text-white rounded-full p-1">
+                    <CheckCircle className="w-4 h-4" />
+                  </div>
                 </div>
               )}
 
@@ -168,11 +192,24 @@ export const RecommendedSolutionsSection = ({
                 {/* Action Button */}
                 <Button 
                   onClick={() => onSolutionSelect?.(solution)}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className={`w-full ${
+                    isSelected 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                   size="sm"
                 >
-                  Ver Detalhes
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  {isSelected ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Selecionado
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -180,8 +217,34 @@ export const RecommendedSolutionsSection = ({
         })}
       </div>
 
+      {/* Selected Solutions Summary */}
+      {selectedSolutions.length > 0 && (
+        <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 mb-8">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-green-900 mb-1">
+                  🎉 Soluções Adicionadas ({selectedSolutions.length})
+                </h3>
+                <p className="text-green-700">
+                  Itens extras selecionados para sua proposta
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-800">
+                  +R$ {getTotalSelectedValue().toLocaleString('pt-BR')}
+                </div>
+                <div className="text-sm text-green-600">
+                  Valor adicional
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Call to Action */}
-      <div className="text-center mt-12">
+      <div className="text-center">
         <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
           <CardContent className="p-8">
             <h3 className="text-xl font-bold text-gray-900 mb-4">

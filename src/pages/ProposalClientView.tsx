@@ -5,7 +5,6 @@ import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader
 import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
-import { OrderBumpSection } from '@/components/proposal/OrderBumpSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
@@ -20,7 +19,7 @@ const ProposalClientView = () => {
   const { linkAccess } = useParams<{ linkAccess: string }>();
   const { data: proposalData, isLoading, error } = useClientProposal(linkAccess || '');
   const { toast } = useToast();
-  const [orderBumpTotal, setOrderBumpTotal] = useState(0);
+  const [selectedSolutions, setSelectedSolutions] = useState<Array<{ id: string; price: number }>>([]);
 
   const handleAcceptProposal = () => {
     toast({
@@ -37,15 +36,24 @@ const ProposalClientView = () => {
     });
   };
 
-  const handleOrderBumpChange = (selectedItems: any[], totalValue: number) => {
-    setOrderBumpTotal(totalValue);
-  };
-
   const handleSolutionSelect = (solution: any) => {
-    toast({
-      title: "Interesse registrado!",
-      description: `Entraremos em contato sobre: ${solution.name}`,
-    });
+    const isAlreadySelected = selectedSolutions.find(s => s.id === solution.id);
+    
+    if (isAlreadySelected) {
+      // Remove solution
+      setSelectedSolutions(prev => prev.filter(s => s.id !== solution.id));
+      toast({
+        title: "Solução removida",
+        description: `${solution.name} foi removida da proposta`,
+      });
+    } else {
+      // Add solution
+      setSelectedSolutions(prev => [...prev, { id: solution.id, price: solution.price }]);
+      toast({
+        title: "Solução adicionada!",
+        description: `${solution.name} foi adicionada à sua proposta`,
+      });
+    }
   };
 
   if (isLoading) {
@@ -72,12 +80,15 @@ const ProposalClientView = () => {
   const canInteract = proposalData.status === 'sent' || proposalData.status === 'viewed';
   const proposalNumber = `PROP-${proposalData.id.slice(0, 8).toUpperCase()}`;
 
+  // Calculate additional value from selected solutions
+  const additionalValue = selectedSolutions.reduce((sum, solution) => sum + solution.price, 0);
+
   // Map proposal data
   const proposal = {
     id: proposalData.id,
     clientName: proposalData.clients.nome,
     totalPrice: Number(proposalData.valor_total),
-    finalPrice: Number(proposalData.valor_total) + orderBumpTotal,
+    finalPrice: Number(proposalData.valor_total) + additionalValue,
     validUntil: new Date(proposalData.validade).toLocaleDateString('pt-BR'),
     discount: proposalData.desconto_percentual || 0,
     benefits: [
@@ -140,14 +151,6 @@ const ProposalClientView = () => {
         <ProposalItemsTable items={proposalItems} totalPrice={proposal.totalPrice} />
       </div>
 
-      {/* Order Bump Section - Only if can interact */}
-      {canInteract && !isExpired && (
-        <OrderBumpSection onItemsChange={handleOrderBumpChange} />
-      )}
-
-      {/* Recommended Solutions */}
-      <RecommendedSolutionsSection onSolutionSelect={handleSolutionSelect} />
-
       {/* Investment Section - Only if can interact */}
       {canInteract && !isExpired && (
         <div id="investment-section" className="bg-gray-50">
@@ -160,6 +163,12 @@ const ProposalClientView = () => {
           />
         </div>
       )}
+
+      {/* Recommended Solutions - After Investment Section */}
+      <RecommendedSolutionsSection 
+        onSolutionSelect={handleSolutionSelect}
+        selectedSolutions={selectedSolutions}
+      />
 
       {/* Expired Message */}
       {isExpired && (
