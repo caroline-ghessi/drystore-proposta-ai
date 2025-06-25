@@ -1,8 +1,9 @@
 
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Clock, CheckCircle, Star } from 'lucide-react';
-import { PaymentOptionsGrid } from './PaymentOptionsGrid';
+import { PaymentConditionsTable } from './PaymentConditionsTable';
 
 interface ModernInvestmentSectionProps {
   totalPrice: number;
@@ -19,11 +20,20 @@ export const ModernInvestmentSection = ({
   onAccept,
   onReject 
 }: ModernInvestmentSectionProps) => {
+  const [selectedPaymentCondition, setSelectedPaymentCondition] = useState<string>('');
+  
   const finalPrice = totalPrice - (totalPrice * discount / 100);
   const savings = totalPrice - finalPrice;
 
+  const handleAcceptProposal = () => {
+    if (!selectedPaymentCondition) {
+      return; // Não permite aceitar sem selecionar forma de pagamento
+    }
+    onAccept?.();
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
       {/* Header Section */}
       <div className="text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -35,11 +45,11 @@ export const ModernInvestmentSection = ({
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        {/* Main Content - Valor Total + Condições */}
-        <div className="lg:col-span-3">
+        {/* Main Content - Valor Total + Tabela de Condições */}
+        <div className="lg:col-span-3 space-y-8">
           {/* Valor Total em Destaque Máximo */}
-          <div className="text-center mb-10">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-2xl shadow-xl mb-6">
+          <div className="text-center">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-2xl shadow-xl">
               <div className="flex justify-center items-center mb-4">
                 <Star className="w-8 h-8 text-yellow-300 mr-3" />
                 <h3 className="text-2xl font-bold">Valor Total do Projeto</h3>
@@ -70,28 +80,35 @@ export const ModernInvestmentSection = ({
             </div>
           </div>
 
-          {/* Condições de Pagamento */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
-              Escolha sua Forma de Pagamento
-            </h3>
-            <PaymentOptionsGrid totalPrice={finalPrice} />
-          </div>
+          {/* Tabela de Condições de Pagamento */}
+          <PaymentConditionsTable 
+            totalPrice={finalPrice}
+            selectedCondition={selectedPaymentCondition}
+            onConditionChange={setSelectedPaymentCondition}
+          />
 
           {/* Call to Action Principal */}
           <div className="text-center">
-            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 mb-6">
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
               <h4 className="text-xl font-bold text-green-800 mb-3">
                 🎯 Pronto para Começar seu Projeto?
               </h4>
               <p className="text-green-700 mb-4">
-                Clique em "Aceitar Proposta" e garante sua solução de armazenamento inteligente!
+                {selectedPaymentCondition 
+                  ? "Clique em 'Aceitar Proposta' e garanta sua solução de armazenamento inteligente!"
+                  : "Selecione uma forma de pagamento acima para continuar"
+                }
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
-                  onClick={onAccept}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all"
+                  onClick={handleAcceptProposal}
+                  disabled={!selectedPaymentCondition}
+                  className={`px-8 py-4 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all ${
+                    selectedPaymentCondition 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed hover:scale-100'
+                  }`}
                   size="lg"
                 >
                   <CheckCircle className="w-6 h-6 mr-2" />
@@ -107,6 +124,12 @@ export const ModernInvestmentSection = ({
                   Preciso Pensar
                 </Button>
               </div>
+              
+              {!selectedPaymentCondition && (
+                <p className="text-orange-600 text-sm mt-3">
+                  ⚠️ Selecione uma condição de pagamento para habilitar a aceitação
+                </p>
+              )}
             </div>
           </div>
         </div>
