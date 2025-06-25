@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
@@ -74,13 +73,10 @@ const ProposalView = () => {
         createdBy: 'Vendedor',
         discount: proposalByDetails.desconto_percentual || 0
       };
+      // Map proposal items to new structure (removing price info)
       proposalItems = proposalByDetails.proposal_items?.map(item => ({
-        id: item.id,
         description: item.produto_nome,
-        quantity: Number(item.quantidade),
-        unit: 'un',
-        unitPrice: Number(item.preco_unit),
-        totalPrice: Number(item.preco_total)
+        solution: 'Sistema de Armazenamento Inteligente' // Default solution name
       })) || [];
     } else {
       proposal = null;
@@ -163,11 +159,11 @@ const ProposalView = () => {
             Detalhamento da Proposta
           </h2>
           <p className="text-lg text-gray-600">
-            Confira todos os itens inclusos na sua solução personalizada
+            Confira todas as soluções e materiais inclusos no seu projeto personalizado
           </p>
         </div>
         
-        <ProposalItemsTable items={proposalItems} totalPrice={proposal.totalPrice} />
+        <ProposalItemsTable items={proposalItems} />
 
         {/* Recommended Products */}
         {proposal.recommendedProducts && proposal.recommendedProducts.length > 0 && (

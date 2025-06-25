@@ -100,13 +100,10 @@ const ProposalClientView = () => {
     ]
   };
 
+  // Map proposal items to new structure (removing price info)
   const proposalItems = proposalData.proposal_items.map(item => ({
-    id: item.id,
     description: item.produto_nome,
-    quantity: Number(item.quantidade),
-    unit: 'un',
-    unitPrice: Number(item.preco_unit),
-    totalPrice: Number(item.preco_total)
+    solution: 'Sistema de Armazenamento Inteligente' // Default solution name - in real app this would come from database
   }));
 
   return (
@@ -132,11 +129,11 @@ const ProposalClientView = () => {
             Detalhamento da Proposta
           </h2>
           <p className="text-lg text-gray-600">
-            Confira todos os itens inclusos na sua solução personalizada
+            Confira todas as soluções e materiais inclusos no seu projeto personalizado
           </p>
         </div>
         
-        <ProposalItemsTable items={proposalItems} totalPrice={proposal.totalPrice} />
+        <ProposalItemsTable items={proposalItems} />
       </div>
 
       {/* Investment Section - Only if can interact */}
