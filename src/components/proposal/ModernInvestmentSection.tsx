@@ -2,7 +2,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, DollarSign, Clock, CheckCircle, Gift } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, Gift, CreditCard } from 'lucide-react';
+import { PaymentOptionsGrid } from './PaymentOptionsGrid';
 
 interface ModernInvestmentSectionProps {
   totalPrice: number;
@@ -23,10 +24,10 @@ export const ModernInvestmentSection = ({
   const savings = totalPrice - finalPrice;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
       <div className="text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-          Investimento & Condições Exclusivas
+          💰 Investimento & Condições Exclusivas
         </h2>
         <p className="text-lg text-gray-600">
           Ofertas especiais válidas apenas para esta proposta
@@ -36,7 +37,7 @@ export const ModernInvestmentSection = ({
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Investment Card */}
         <div className="lg:col-span-2">
-          <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl">
+          <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl mb-8">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -67,13 +68,13 @@ export const ModernInvestmentSection = ({
 
                 <div className="border-t border-blue-500 pt-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xl">Valor final:</span>
+                    <span className="text-xl">Valor base:</span>
                     <div className="text-right">
                       <div className="text-4xl font-bold">
                         R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="text-blue-200 text-sm">
-                        ou 12x de R$ {(finalPrice / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        *Condições de pagamento aplicadas abaixo
                       </div>
                     </div>
                   </div>
@@ -91,6 +92,15 @@ export const ModernInvestmentSection = ({
               </div>
             </CardContent>
           </Card>
+
+          {/* Payment Options Grid */}
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <CreditCard className="w-6 h-6 mr-3" />
+              Condições de Pagamento
+            </h3>
+            <PaymentOptionsGrid totalPrice={finalPrice} />
+          </div>
         </div>
 
         {/* Actions and Benefits */}
@@ -127,26 +137,29 @@ export const ModernInvestmentSection = ({
             </CardContent>
           </Card>
 
-          {/* Payment Options */}
+          {/* Additional Benefits */}
           <Card className="shadow-lg">
             <CardContent className="p-6">
-              <h4 className="font-bold text-gray-900 mb-4 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2" />
-                Formas de Pagamento
+              <h4 className="font-bold text-gray-900 mb-4">
+                Benefícios Inclusos
               </h4>
               
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <span className="text-sm">À vista (PIX/Transferência)</span>
-                  <Badge className="bg-green-600">5% desc.</Badge>
+                <div className="flex items-center text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span>Garantia de 5 anos</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="text-sm">Cartão até 12x</span>
-                  <Badge variant="outline">Sem juros</Badge>
+                <div className="flex items-center text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span>Instalação profissional</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <span className="text-sm">Boleto parcelado</span>
-                  <Badge variant="outline">Disponível</Badge>
+                <div className="flex items-center text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span>Suporte técnico 24/7</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span>Materiais certificados</span>
                 </div>
               </div>
             </CardContent>
