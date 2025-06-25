@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ModernProposalHeader } from '@/components/proposal/ModernProposalHeader';
-import { ModernHeroSection } from '@/components/proposal/ModernHeroSection';
 import { DreamHomeSection } from '@/components/proposal/DreamHomeSection';
 import { WhyChooseSection } from '@/components/proposal/WhyChooseSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
@@ -141,11 +140,6 @@ const ProposalView = () => {
   const proposalNumber = `PROP-${proposal.id.slice(0, 8).toUpperCase()}`;
   const isExpired = new Date(proposal.validUntil) < new Date();
 
-  const scrollToInvestment = () => {
-    const element = document.getElementById('investment-section');
-    element?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Modern Header */}
@@ -154,12 +148,6 @@ const ProposalView = () => {
         proposalNumber={proposalNumber}
         validUntil={proposal.validUntil}
         isExpired={isExpired}
-      />
-
-      {/* Hero Section */}
-      <ModernHeroSection
-        clientName={proposal.clientName}
-        onGetStarted={scrollToInvestment}
       />
 
       {/* Dream Home Section */}
