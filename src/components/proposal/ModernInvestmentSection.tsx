@@ -2,7 +2,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Clock, CheckCircle, Gift, CreditCard } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, CreditCard } from 'lucide-react';
 import { PaymentOptionsGrid } from './PaymentOptionsGrid';
 
 interface ModernInvestmentSectionProps {
@@ -24,7 +24,7 @@ export const ModernInvestmentSection = ({
   const savings = totalPrice - finalPrice;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" id="investment-section">
       <div className="text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
           💰 Investimento & Condições Exclusivas
@@ -34,9 +34,9 @@ export const ModernInvestmentSection = ({
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-4 gap-8">
         {/* Main Investment Card */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl mb-8">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
@@ -93,7 +93,7 @@ export const ModernInvestmentSection = ({
             </CardContent>
           </Card>
 
-          {/* Payment Options Grid */}
+          {/* Payment Options Grid - Expanded */}
           <div className="mb-8">
             <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <CreditCard className="w-6 h-6 mr-3" />
@@ -103,7 +103,7 @@ export const ModernInvestmentSection = ({
           </div>
         </div>
 
-        {/* Actions and Benefits */}
+        {/* Actions and Benefits - Compact Sidebar */}
         <div className="space-y-6">
           {/* Action Buttons */}
           <Card className="shadow-lg">
@@ -162,19 +162,6 @@ export const ModernInvestmentSection = ({
                   <span>Materiais certificados</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Bonus */}
-          <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
-            <CardContent className="p-6">
-              <div className="flex items-center mb-3">
-                <Gift className="w-6 h-6 text-orange-600 mr-2" />
-                <h4 className="font-bold text-orange-800">Bônus Exclusivo</h4>
-              </div>
-              <p className="text-orange-700 text-sm">
-                Consultoria gratuita de design de interiores para clientes que fecharem esta semana!
-              </p>
             </CardContent>
           </Card>
         </div>
