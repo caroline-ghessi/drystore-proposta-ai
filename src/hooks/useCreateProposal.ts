@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +26,8 @@ export const useCreateProposal = () => {
         videoUrl = '',
         includeTechnicalDetails = false,
         selectedSolutions = [],
-        selectedRecommendedProducts = []
+        selectedRecommendedProducts = [],
+        productGroup // Novo campo
       } = proposalData;
 
       console.log('🔍 Iniciando criação de proposta:', {
@@ -38,7 +38,8 @@ export const useCreateProposal = () => {
         includeVideo,
         includeTechnicalDetails,
         solutionsCount: selectedSolutions.length,
-        recommendedProductsCount: selectedRecommendedProducts.length
+        recommendedProductsCount: selectedRecommendedProducts.length,
+        productGroup // Log do novo campo
       });
 
       // Validações obrigatórias
@@ -48,6 +49,10 @@ export const useCreateProposal = () => {
 
       if (items.length === 0) {
         throw new Error('Pelo menos um item é obrigatório');
+      }
+
+      if (!productGroup) {
+        throw new Error('Grupo de produtos é obrigatório');
       }
 
       // 1. Buscar ou criar cliente
@@ -106,7 +111,8 @@ export const useCreateProposal = () => {
         desconto_percentual: discount,
         include_video: includeVideo,
         include_technical_details: includeTechnicalDetails,
-        status: 'sent' // Status alterado de 'draft' para 'sent'
+        product_group: productGroup, // Novo campo
+        status: 'sent'
       });
 
       const { data: proposal, error: proposalError } = await supabase
@@ -117,12 +123,13 @@ export const useCreateProposal = () => {
           valor_total: subtotal,
           desconto_percentual: discount,
           validade: validUntil.toISOString(),
-          status: 'sent', // ✅ Alterado de 'draft' para 'sent'
+          status: 'sent',
           observacoes: observations,
           link_acesso: linkAccess,
           include_video: includeVideo,
           video_url: includeVideo ? videoUrl : null,
           include_technical_details: includeTechnicalDetails,
+          product_group: productGroup, // Salvar o grupo de produtos
         })
         .select()
         .single();

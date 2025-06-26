@@ -1,5 +1,6 @@
 
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import type { ProductGroup } from './productGroups';
 
 export type Proposal = Tables<'proposals'>;
 export type ProposalInsert = TablesInsert<'proposals'>;
@@ -31,4 +32,5 @@ export interface CreateProposalData {
   includeTechnicalDetails?: boolean;
   selectedSolutions?: Array<{ solutionId: string; value: number }>;
   selectedRecommendedProducts?: string[];
+  productGroup: ProductGroup; // Novo campo obrigatório
 }
