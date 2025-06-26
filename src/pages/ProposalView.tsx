@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ProposalViewHeader } from '@/components/proposal/ProposalViewHeader';
-import { ProposalClientContent } from '@/components/proposal/ProposalClientContent';
+import { DynamicProposalContent } from '@/components/proposal/DynamicProposalContent';
 import { ProposalVendorTools } from '@/components/proposal/ProposalVendorTools';
 import { ProposalClientForm } from '@/components/proposal/ProposalClientForm';
 import { useProposalInteractions } from '@/hooks/useProposalInteractions';
@@ -11,6 +11,7 @@ import { useProposalData } from '@/hooks/useProposalData';
 import { useProposalDetails } from '@/hooks/useProposalDetails';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientContext } from '@/hooks/useClientContext';
+import { ProductGroup } from '@/types/productGroups';
 
 const ProposalView = () => {
   const { id, linkAccess } = useParams();
@@ -31,13 +32,15 @@ const ProposalView = () => {
   const additionalValue = selectedSolutions.reduce((sum, solution) => sum + solution.price, 0);
 
   // Determine which data to use
-  let proposal, proposalItems, isLoading, error;
+  let proposal, proposalItems, isLoading, error, productGroup: ProductGroup | null = null;
   
   if (id) {
     proposal = proposalByData;
     proposalItems = itemsByData;
     isLoading = isLoadingData;
     error = errorData;
+    // Get product group from proposal data
+    productGroup = (proposalByData?.productGroup as ProductGroup) || null;
   } else if (linkAccess) {
     if (proposalByDetails) {
       proposal = {
@@ -69,6 +72,8 @@ const ProposalView = () => {
         description: item.produto_nome,
         solution: 'Sistema de Armazenamento Inteligente' // Default solution name
       })) || [];
+      // Get product group from details
+      productGroup = (proposalByDetails.product_group as ProductGroup) || null;
     } else {
       proposal = null;
       proposalItems = [];
@@ -132,7 +137,8 @@ const ProposalView = () => {
       />
 
       {proposal && (
-        <ProposalClientContent
+        <DynamicProposalContent
+          productGroup={productGroup}
           proposal={proposal}
           proposalItems={proposalItems}
           selectedSolutions={selectedSolutions}

@@ -2,13 +2,14 @@
 import { useParams } from 'react-router-dom';
 import { useClientProposal } from '@/hooks/useClientProposals';
 import { ProposalClientHeader } from '@/components/proposal/ProposalClientHeader';
-import { ProposalClientContent } from '@/components/proposal/ProposalClientContent';
+import { DynamicProposalContent } from '@/components/proposal/DynamicProposalContent';
 import { ProposalExpiredMessage } from '@/components/proposal/ProposalExpiredMessage';
 import { ProposalObservations } from '@/components/proposal/ProposalObservations';
 import ProposalLoadingState from '@/components/proposal/ProposalLoadingState';
 import { isProposalExpired } from '@/utils/clientUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { ProductGroup } from '@/types/productGroups';
 
 const ProposalClientView = () => {
   const { linkAccess } = useParams<{ linkAccess: string }>();
@@ -81,6 +82,9 @@ const ProposalClientView = () => {
   // Calculate additional value from selected solutions
   const additionalValue = selectedSolutions.reduce((sum, solution) => sum + solution.price, 0);
 
+  // Get product group from proposal data
+  const productGroup = (proposalData.product_group as ProductGroup) || null;
+
   // Map proposal data
   const proposal = {
     id: proposalData.id,
@@ -116,7 +120,8 @@ const ProposalClientView = () => {
       />
 
       {/* Main Content */}
-      <ProposalClientContent
+      <DynamicProposalContent
+        productGroup={productGroup}
         proposal={proposal}
         proposalItems={proposalItems}
         selectedSolutions={selectedSolutions}
