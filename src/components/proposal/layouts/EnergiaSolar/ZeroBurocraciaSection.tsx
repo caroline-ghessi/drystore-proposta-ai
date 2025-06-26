@@ -7,17 +7,17 @@ import { processStepsData } from './data/processStepsData';
 
 export const ZeroBurocraciaSection: React.FC = () => {
   return (
-    <section className="py-16 bg-gradient-to-br from-blue-50 to-green-50">
+    <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center px-4 py-2 bg-green-100 rounded-full text-green-800 text-sm font-medium mb-4">
+          <div className="inline-flex items-center px-4 py-2 bg-drystore-orange rounded-full text-white text-sm font-medium mb-4">
             🚀 Processo Completo Pós-Aprovação
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-drystore-gray-dark mb-4">
             Zero Burocracia Para Você
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-drystore-gray-medium mb-8">
             "Você Aprova, Nós Cuidamos de Tudo!"
           </p>
         </div>
@@ -30,7 +30,7 @@ export const ZeroBurocraciaSection: React.FC = () => {
         </div>
 
         {/* Destaque Especial */}
-        <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-2xl p-8 mb-8">
+        <div className="bg-gradient-to-r from-drystore-orange to-drystore-orange-light text-white rounded-2xl p-8 mb-8">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4">
               💡 Destaque Especial: "Zero Burocracia Para Você!"
