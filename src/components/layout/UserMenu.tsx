@@ -41,7 +41,7 @@ export const UserMenu = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50 max-h-[80vh] overflow-y-auto"
+        className="w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-[100] max-h-[80vh] overflow-y-auto"
         sideOffset={5}
       >
         <MenuSection 

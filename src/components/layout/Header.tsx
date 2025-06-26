@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { UserMenu } from './UserMenu';
-import { useClientContext } from '@/hooks/useClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
@@ -13,7 +12,6 @@ interface HeaderProps {
 
 export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
   const navigate = useNavigate();
-  const { isClient } = useClientContext();
   const { user } = useAuth();
 
   const handleBack = () => {
@@ -24,8 +22,13 @@ export const Header = ({ showBackButton = true, backPath }: HeaderProps) => {
     }
   };
 
-  // Show UserMenu for authenticated users who are not clients
-  const showUserMenu = user && !isClient;
+  // Verificar se estamos em uma rota específica de cliente
+  const isClientRoute = window.location.pathname.startsWith('/client') || 
+                       window.location.pathname === '/client-portal' ||
+                       window.location.pathname === '/client-login';
+
+  // Mostrar UserMenu para usuários autenticados que não estão em rotas de cliente
+  const showUserMenu = user && !isClientRoute;
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-200 transition-colors">
