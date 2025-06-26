@@ -47,6 +47,7 @@ export const useClientProposals = (email: string) => {
           observacoes,
           link_acesso,
           user_id,
+          product_group,
           proposal_items (
             id,
             produto_nome,
@@ -132,6 +133,7 @@ export const useClientProposal = (linkAccess: string) => {
           created_at,
           observacoes,
           link_acesso,
+          product_group,
           clients (
             id,
             nome,

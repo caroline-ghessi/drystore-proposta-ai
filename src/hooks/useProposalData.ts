@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { useProposal } from '@/hooks/useProposals';
 import { useSolutionImages } from '@/hooks/useSolutions';
+import { ProductGroup } from '@/types/productGroups';
 
 export const useProposalData = (proposalId: string) => {
   console.log('🔍 useProposalData: Iniciando com proposalId:', proposalId);
@@ -58,6 +59,9 @@ export const useProposalData = (proposalId: string) => {
       status: proposalData.status || 'draft',
       createdBy: 'Vendedor Drystore',
       observations: proposalData.observacoes || '',
+      
+      // Adicionar productGroup com type safety
+      productGroup: (proposalData.product_group as ProductGroup) || null,
       
       // Novos campos - com fallbacks seguros
       includeVideo: (proposalData as any).include_video || false,
@@ -160,6 +164,9 @@ function getDefaultProposal() {
     status: 'pending' as const,
     createdBy: 'Carlos Vendedor',
     observations: 'Prazo de entrega: 30 dias após confirmação do pedido.',
+    
+    // Adicionar productGroup
+    productGroup: null as ProductGroup | null,
     
     // Novos campos
     includeVideo: false,

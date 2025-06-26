@@ -40,7 +40,7 @@ const ProposalView = () => {
     isLoading = isLoadingData;
     error = errorData;
     // Get product group from proposal data
-    productGroup = (proposalByData?.productGroup as ProductGroup) || null;
+    productGroup = proposalByData?.productGroup || null;
   } else if (linkAccess) {
     if (proposalByDetails) {
       proposal = {
