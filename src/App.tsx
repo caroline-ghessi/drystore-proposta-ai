@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,6 +27,7 @@ import ClientPortal from '@/pages/ClientPortal';
 import CreateProposal from '@/pages/CreateProposal';
 import ProposalUploadChoice from '@/pages/ProposalUploadChoice';
 import ProposalBuilder from '@/pages/ProposalBuilder';
+import ContentManagement from './pages/admin/ContentManagement';
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -59,6 +59,14 @@ const AppContent = () => {
         <Route path="/proposal-builder" element={<ProtectedRoute><ProposalBuilder /></ProtectedRoute>} />
         <Route path="/register-user" element={<AdminRoute><UserRegistration /></AdminRoute>} />
         <Route path="/security-management" element={<AdminRoute><SecurityManagement /></AdminRoute>} />
+        <Route 
+          path="/admin/content-management" 
+          element={
+            <ProtectedRoute>
+              <ContentManagement />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
       
       {isAuthenticated && showWarning && (

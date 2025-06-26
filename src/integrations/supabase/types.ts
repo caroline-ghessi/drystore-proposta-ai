@@ -213,6 +213,57 @@ export type Database = {
           },
         ]
       }
+      client_testimonials: {
+        Row: {
+          active: boolean | null
+          avatar_url: string | null
+          client_name: string
+          company: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          location: string | null
+          order_index: number | null
+          product_group: string
+          project_type: string | null
+          rating: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          avatar_url?: string | null
+          client_name: string
+          company?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number | null
+          product_group: string
+          project_type?: string | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          avatar_url?: string | null
+          client_name?: string
+          company?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          order_index?: number | null
+          product_group?: string
+          project_type?: string | null
+          rating?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           cnpj: string | null
@@ -276,6 +327,54 @@ export type Database = {
           requires_approval_above?: number
           updated_at?: string | null
           user_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      download_files: {
+        Row: {
+          active: boolean | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_size: string | null
+          file_type: string
+          file_url: string
+          id: string
+          order_index: number | null
+          product_group: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_size?: string | null
+          file_type: string
+          file_url: string
+          id?: string
+          order_index?: number | null
+          product_group: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_size?: string | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          order_index?: number | null
+          product_group?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -392,6 +491,57 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      project_gallery: {
+        Row: {
+          active: boolean | null
+          client_name: string | null
+          completion_date: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string
+          location: string | null
+          order_index: number | null
+          product_group: string
+          project_type: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          client_name?: string | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          location?: string | null
+          order_index?: number | null
+          product_group: string
+          project_type?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          client_name?: string | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          location?: string | null
+          order_index?: number | null
+          product_group?: string
+          project_type?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -904,6 +1054,48 @@ export type Database = {
           id?: string
           nome?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      technical_images: {
+        Row: {
+          active: boolean | null
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string
+          order_index: number | null
+          product_group: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          order_index?: number | null
+          product_group: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          order_index?: number | null
+          product_group?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
