@@ -3,9 +3,35 @@ import React from 'react';
 import { ProcessStepCard } from './components/ProcessStepCard';
 import { ProcessTimeline } from './components/ProcessTimeline';
 import { ProcessGuarantee } from './components/ProcessGuarantee';
-import { processStepsData } from './data/processStepsData';
 
 export const ZeroBurocraciaSection: React.FC = () => {
+  const processSteps = [
+    {
+      numero: 1,
+      titulo: 'Vistoria Técnica Detalhada',
+      fazemos: 'Verificação completa das condições de instalação',
+      objetivo: 'Confirmar se o projeto pode ser executado com a infraestrutura existente'
+    },
+    {
+      numero: 2,
+      titulo: 'Documentação e Burocracia',
+      fazemos: 'Elaboração de contrato e procuração',
+      objetivo: 'Resolver tudo na concessionária sem você se preocupar'
+    },
+    {
+      numero: 3,
+      titulo: 'Projeto de Instalação',
+      fazemos: 'Projeto elétrico detalhado + cronograma de instalação',
+      objetivo: 'Garantir instalação perfeita e dentro do prazo'
+    },
+    {
+      numero: 4,
+      titulo: 'Instalação Profissional',
+      fazemos: 'Instalação completa + testes do sistema',
+      objetivo: 'Sistema funcionando perfeitamente'
+    }
+  ];
+
   return (
     <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,7 +50,7 @@ export const ZeroBurocraciaSection: React.FC = () => {
 
         {/* Etapas */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {processStepsData.map((etapa) => (
+          {processSteps.map((etapa) => (
             <ProcessStepCard key={etapa.numero} {...etapa} />
           ))}
         </div>
