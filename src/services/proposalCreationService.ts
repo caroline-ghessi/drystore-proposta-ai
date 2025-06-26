@@ -55,7 +55,7 @@ export class ProposalCreationService {
       include_video: request.includeVideo,
       video_url: request.includeVideo ? request.videoUrl : null,
       include_technical_details: request.includeTechnicalDetails,
-      product_group: request.productGroup,
+      product_group: request.productGroup.id, // Use the ID instead of the whole object
       show_detailed_values: request.showDetailedValues
     };
 
@@ -108,12 +108,12 @@ export class ProposalCreationService {
   static async createPaymentConditions(proposalId: string, selectedPaymentConditions: string[]) {
     const proposalPaymentConditions = [];
     
-    for (const condition of selectedPaymentConditions) {
+    for (const conditionId of selectedPaymentConditions) {
       const { data: paymentCondition, error: paymentConditionError } = await supabase
         .from('proposal_payment_conditions')
         .insert([{
           proposal_id: proposalId,
-          condicao_pagamento: condition
+          payment_condition_id: conditionId // Use payment_condition_id instead of condicao_pagamento
         }])
         .select()
         .single();
@@ -139,7 +139,7 @@ export class ProposalCreationService {
         .insert([{
           proposal_id: proposalId,
           solution_id: solution.solutionId,
-          value: solution.value
+          valor_solucao: solution.value // Use valor_solucao instead of value
         }])
         .select()
         .single();
@@ -194,27 +194,32 @@ export class ProposalCreationService {
       showDetailedValues: request.showDetailedValues
     });
 
-    // Create or retrieve client
-    const client = await this.createOrRetrieveClient(request.clientData);
+    try {
+      // Create or retrieve client
+      const client = await this.createOrRetrieveClient(request.clientData);
 
-    // Create proposal
-    const proposal = await this.createProposal(client, request);
+      // Create proposal
+      const proposal = await this.createProposal(client, request);
 
-    // Create all related data
-    const [items, paymentConditions, solutions, recommendedProducts] = await Promise.all([
-      this.createProposalItems(proposal.id, request.items),
-      this.createPaymentConditions(proposal.id, request.selectedPaymentConditions),
-      this.createSolutions(proposal.id, request.selectedSolutions),
-      this.createRecommendedProducts(proposal.id, request.selectedRecommendedProducts)
-    ]);
+      // Create all related data
+      const [items, paymentConditions, solutions, recommendedProducts] = await Promise.all([
+        this.createProposalItems(proposal.id, request.items),
+        this.createPaymentConditions(proposal.id, request.selectedPaymentConditions),
+        this.createSolutions(proposal.id, request.selectedSolutions),
+        this.createRecommendedProducts(proposal.id, request.selectedRecommendedProducts)
+      ]);
 
-    return {
-      proposal,
-      client,
-      items,
-      paymentConditions,
-      solutions,
-      recommendedProducts
-    };
+      return {
+        proposal,
+        client,
+        items,
+        paymentConditions,
+        solutions,
+        recommendedProducts
+      };
+    } catch (error) {
+      console.error('❌ Error in createCompleteProposal:', error);
+      throw error;
+    }
   }
 }
