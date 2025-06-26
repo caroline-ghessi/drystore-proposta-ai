@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { CreateProposalRequest, ProposalCreationResult, ClientData, ProposalItem } from '@/types/proposalCreation';
 
@@ -44,8 +43,17 @@ export class ProposalCreationService {
   }
 
   static async createProposal(client: any, request: CreateProposalRequest) {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('❌ Error getting user:', userError);
+      throw new Error('Usuário não autenticado');
+    }
+
     const proposalData = {
       client_id: client.id,
+      user_id: user.id, // Add the authenticated user's ID
       valor_total: request.subtotal,
       desconto_percentual: request.discount,
       discount_percentage: request.discount,
