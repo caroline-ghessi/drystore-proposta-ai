@@ -1,13 +1,13 @@
-
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, User, Mail, Phone, Building, AlertCircle, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Mail, Phone, Building, AlertCircle, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateProposal } from '@/hooks/useCreateProposal';
 import PaymentConditionsSelector from '@/components/proposal/PaymentConditionsSelector';
@@ -71,6 +71,9 @@ const ProposalBuilder = () => {
   const [includeTechnicalDetails, setIncludeTechnicalDetails] = useState(false);
   const [selectedSolutions, setSelectedSolutions] = useState<Array<{ solutionId: string; value: number }>>([]);
   const [selectedRecommendedProducts, setSelectedRecommendedProducts] = useState<string[]>([]);
+
+  // Novo estado para controlar exibição de valores discriminados
+  const [showDetailedValues, setShowDetailedValues] = useState(true);
 
   // Carregar dados extraídos ao montar o componente
   useEffect(() => {
@@ -242,7 +245,8 @@ const ProposalBuilder = () => {
         includeTechnicalDetails,
         selectedSolutions,
         selectedRecommendedProducts,
-        productGroup: selectedProductGroup!
+        productGroup: selectedProductGroup!,
+        showDetailedValues // Incluir a configuração na proposta
       });
 
       toast({
@@ -493,14 +497,41 @@ const ProposalBuilder = () => {
                 </div>
               )}
 
-              {/* Items List */}
-              <ProposalItemsManager
-                items={items}
-                onUpdateItem={updateItem}
-                onRemoveItem={removeItem}
-                onAddItem={addItem}
-                error={errors.items}
-              />
+              {/* Items List com Toggle de Exibição */}
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Material</CardTitle>
+                    <div className="flex items-center space-x-2">
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <Label htmlFor="detailed-values" className="text-sm">
+                        Mostrar valores discriminados
+                      </Label>
+                      <Switch
+                        id="detailed-values"
+                        checked={showDetailedValues}
+                        onCheckedChange={setShowDetailedValues}
+                      />
+                    </div>
+                  </div>
+                  <CardDescription>
+                    {showDetailedValues 
+                      ? "Exibindo quantidades e preços unitários detalhados"
+                      : "Exibindo apenas descrição e valor total por item"
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProposalItemsManager
+                    items={items}
+                    onUpdateItem={updateItem}
+                    onRemoveItem={removeItem}
+                    onAddItem={addItem}
+                    error={errors.items}
+                    showDetailedValues={showDetailedValues}
+                  />
+                </CardContent>
+              </Card>
 
               {/* Seção de Desconto */}
               <DiscountSection
