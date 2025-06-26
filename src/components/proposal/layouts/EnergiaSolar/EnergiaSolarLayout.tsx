@@ -2,7 +2,6 @@
 import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { SolarHeroSection } from './SolarHeroSection';
-import { ROISection } from './ROISection';
 import { ZeroBurocraciaSection } from './ZeroBurocraciaSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
@@ -28,12 +27,6 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
       {/* Hero Section Personalizado para Energia Solar */}
       <SolarHeroSection 
         benefits={proposal.benefits} 
-        clientName={proposal.clientName}
-      />
-
-      {/* Seção de ROI Personalizada */}
-      <ROISection 
-        totalPrice={proposal.totalPrice}
         clientName={proposal.clientName}
       />
 
