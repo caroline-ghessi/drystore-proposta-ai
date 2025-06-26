@@ -4,6 +4,7 @@ import type { ExtractedData } from './types.ts';
 export class TextParsers {
   static extractProposalNumber(text: string): string | undefined {
     console.log('Extracting proposal number from text...');
+    console.log('📄 Text for proposal extraction:', text.substring(0, 200));
     
     // Padrões específicos para números de orçamento brasileiros
     const proposalPatterns = [
@@ -26,7 +27,7 @@ export class TextParsers {
       const match = firstLines.match(pattern);
       if (match) {
         const proposalNumber = match[1].toUpperCase().trim();
-        console.log(`Found proposal number: ${proposalNumber}`);
+        console.log(`✅ Found proposal number: ${proposalNumber}`);
         return proposalNumber;
       }
     }
@@ -36,12 +37,12 @@ export class TextParsers {
       const match = text.match(pattern);
       if (match) {
         const proposalNumber = match[1].toUpperCase().trim();
-        console.log(`Found proposal number in full text: ${proposalNumber}`);
+        console.log(`✅ Found proposal number in full text: ${proposalNumber}`);
         return proposalNumber;
       }
     }
 
-    console.log('No proposal number found');
+    console.log('⚠️ No proposal number found');
     return undefined;
   }
 
@@ -55,6 +56,7 @@ export class TextParsers {
       const match = text.match(pattern);
       if (match) {
         result.paymentTerms = match[1].trim();
+        console.log(`✅ Payment terms found: ${result.paymentTerms}`);
         break;
       }
     }
@@ -70,6 +72,7 @@ export class TextParsers {
       const match = text.match(pattern);
       if (match) {
         result.delivery = match[1].trim();
+        console.log(`✅ Delivery info found: ${result.delivery}`);
         break;
       }
     }
@@ -85,6 +88,7 @@ export class TextParsers {
       const match = text.match(pattern);
       if (match && match[1].trim().length > 3) {
         result.vendor = match[1].trim();
+        console.log(`✅ Vendor info found: ${result.vendor}`);
         break;
       }
     }

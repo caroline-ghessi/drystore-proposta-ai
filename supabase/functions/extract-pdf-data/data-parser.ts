@@ -6,7 +6,7 @@ import { TableProcessor } from './table-processor.ts';
 
 export class DataParser {
   static parseAdobeData(adobeData: any): ExtractedData {
-    console.log('Parsing Adobe data...');
+    console.log('🔍 Starting ENHANCED PDF parsing with improved client extraction...');
     
     const result: ExtractedData = {
       items: [],
@@ -25,26 +25,34 @@ export class DataParser {
         }
       });
 
-      console.log('Extracted text length:', allText.length);
+      console.log('📄 Extracted text length:', allText.length);
+      console.log('📄 Text preview for client extraction:', allText.substring(0, 300));
 
-      // Extract proposal number
+      // Extract proposal number first
       result.proposalNumber = TextParsers.extractProposalNumber(allText);
 
-      // Extract client name with improved Drystore-specific logic
+      // Enhanced client name extraction with improved Drystore-specific logic
+      console.log('🎯 Starting enhanced client name extraction...');
       const clientName = ClientExtractor.extractDrystoreClientName(allText);
       if (clientName) {
         result.client = clientName;
-        console.log('✅ Cliente Drystore identificado:', clientName);
+        console.log('✅ Cliente Drystore identificado com sucesso:', clientName);
       } else {
+        console.log('⚠️ Fallback para padrões genéricos...');
         // Fallback para padrões genéricos melhorados
         result.client = ClientExtractor.extractBrazilianClientImproved(allText);
+        if (result.client) {
+          console.log('✅ Cliente identificado via fallback:', result.client);
+        } else {
+          console.log('❌ Nenhum cliente identificado');
+        }
       }
 
       // Extract tables
       const tables = adobeData.tables || [];
       
       tables.forEach((table: any, tableIndex: number) => {
-        console.log(`Processing table ${tableIndex + 1}:`, table);
+        console.log(`🔍 Processing table ${tableIndex + 1}:`, table);
         TableProcessor.processTable(table, result);
       });
 
@@ -57,10 +65,16 @@ export class DataParser {
       TextParsers.extractDeliveryInfo(allText, result);
       TextParsers.extractVendorInfo(allText, result);
 
-      console.log(`Parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}, proposal number: ${result.proposalNumber || 'not found'}, client: ${result.client || 'not found'}`);
+      console.log(`✅ Enhanced parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}, proposal number: ${result.proposalNumber || 'not found'}, client: ${result.client || 'NOT FOUND'}`);
+
+      // Log final result for debugging
+      if (!result.client || result.client.includes('PROPOSTA') || result.client.includes('COMERCIAL')) {
+        console.log('🚨 PROBLEMA DETECTADO: Cliente não foi extraído corretamente');
+        console.log('🔍 Texto completo para análise manual:', allText);
+      }
 
     } catch (error) {
-      console.error('Error parsing Adobe data:', error);
+      console.error('❌ Error in enhanced parsing:', error);
     }
 
     return result;

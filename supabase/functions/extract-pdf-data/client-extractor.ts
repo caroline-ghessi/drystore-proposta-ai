@@ -1,14 +1,46 @@
 
 export class ClientExtractor {
   static extractDrystoreClientName(text: string): string | undefined {
-    console.log('🔍 Extracting Drystore client name...');
+    console.log('🔍 Extracting Drystore client name - ENHANCED VERSION...');
+    console.log('📄 Full extracted text:', text);
     
-    // Dividir texto em linhas para análise posicional
+    // Estratégia 1: Padrão específico para layout Drystore em linha única
+    // "PROPOSTA COMERCIAL N131719 PEDRO BARTELLE Data: 20/02/2025"
+    const drystorePatternSingleLine = /PROPOSTA\s+COMERCIAL\s+N?\d+\s+([A-ZÁÊÔÇÃÕ\s]{3,40}?)\s+Data:/i;
+    const singleLineMatch = text.match(drystorePatternSingleLine);
+    
+    if (singleLineMatch && singleLineMatch[1]) {
+      const candidateName = singleLineMatch[1].trim();
+      if (this.isValidDrystoreClientName(candidateName)) {
+        console.log(`✅ Cliente encontrado via padrão linha única: "${candidateName}"`);
+        return candidateName;
+      }
+    }
+
+    // Estratégia 2: Busca por nome entre número da proposta e palavras-chave
+    const proposalNumberPattern = /N\d{5,8}/i;
+    const proposalMatch = text.match(proposalNumberPattern);
+    
+    if (proposalMatch) {
+      const proposalIndex = proposalMatch.index!;
+      const afterProposalText = text.substring(proposalIndex + proposalMatch[0].length);
+      
+      // Procurar por nome antes de "Data:", "DESCRIÇÃO", etc.
+      const nameAfterProposal = /^\s+([A-ZÁÊÔÇÃÕ\s]{6,40}?)\s+(?:Data:|DESCRIÇÃO|QUANTIDADE)/i.exec(afterProposalText);
+      
+      if (nameAfterProposal && nameAfterProposal[1]) {
+        const candidateName = nameAfterProposal[1].trim();
+        if (this.isValidDrystoreClientName(candidateName)) {
+          console.log(`✅ Cliente encontrado após número da proposta: "${candidateName}"`);
+          return candidateName;
+        }
+      }
+    }
+
+    // Estratégia 3: Análise de linhas (para casos com quebras de linha)
     const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
-    
     console.log('📄 Primeiras 10 linhas do texto:', lines.slice(0, 10));
     
-    // Estratégia 1: Procurar por linha que contém apenas um nome (após dados da empresa)
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
@@ -24,29 +56,19 @@ export class ClientExtractor {
       }
     }
     
-    // Estratégia 2: Procurar por padrão específico após número da proposta
-    const proposalLineIndex = lines.findIndex(line => 
-      /PROPOSTA\s+COMERCIAL\s+N?\d+/i.test(line)
-    );
+    // Estratégia 4: Busca por padrão específico "PEDRO BARTELLE" ou nomes similares
+    const specificNamePattern = /\b([A-ZÁÊÔÇÃÕ]{3,}\s+[A-ZÁÊÔÇÃÕ]{3,}(?:\s+[A-ZÁÊÔÇÃÕ]{2,})?)\b/g;
+    const nameMatches = [...text.matchAll(specificNamePattern)];
     
-    if (proposalLineIndex !== -1 && proposalLineIndex + 1 < lines.length) {
-      const nextLine = lines[proposalLineIndex + 1];
-      if (this.isPotentialClientName(nextLine)) {
-        console.log(`✅ Cliente encontrado após linha da proposta: "${nextLine}"`);
-        return nextLine.trim();
+    for (const match of nameMatches) {
+      const candidateName = match[1].trim();
+      if (this.isValidDrystoreClientName(candidateName) && !this.isExcludedPhrase(candidateName)) {
+        console.log(`✅ Nome encontrado por padrão específico: "${candidateName}"`);
+        return candidateName;
       }
     }
     
-    // Estratégia 3: Procurar especificamente por "PEDRO BARTELLE" ou padrões similares
-    for (const line of lines) {
-      if (/^[A-ZÁÊÔÇÃÕ]{2,}\s+[A-ZÁÊÔÇÃÕ]{2,}$/i.test(line) && 
-          !this.isExcludedPhrase(line)) {
-        console.log(`✅ Nome encontrado por padrão: "${line}"`);
-        return line.trim();
-      }
-    }
-    
-    console.log('⚠️ Nome do cliente Drystore não encontrado');
+    console.log('⚠️ Nome do cliente Drystore não encontrado com os novos padrões');
     return undefined;
   }
 
@@ -86,6 +108,36 @@ export class ClientExtractor {
 
     console.log('⚠️ No client identified (fallback)');
     return undefined;
+  }
+
+  private static isValidDrystoreClientName(name: string): boolean {
+    // Deve ter entre 6 e 40 caracteres
+    if (name.length < 6 || name.length > 40) {
+      return false;
+    }
+    
+    // Deve conter apenas letras, espaços e caracteres especiais brasileiros
+    if (!/^[A-ZÁÊÔÇÃÕ\s&\-\.]+$/i.test(name)) {
+      return false;
+    }
+    
+    // Deve ter pelo menos 2 palavras
+    const words = name.split(/\s+/);
+    if (words.length < 2) {
+      return false;
+    }
+    
+    // Não deve ser uma frase excluída
+    if (this.isExcludedPhrase(name)) {
+      return false;
+    }
+    
+    // Validações específicas para Drystore
+    if (name.includes('PROPOSTA') || name.includes('COMERCIAL') || name.includes('DESCRIÇÃO')) {
+      return false;
+    }
+    
+    return true;
   }
 
   private static isCompanyInfoLine(line: string): boolean {
