@@ -1,4 +1,3 @@
-
 export interface PDFTextExtraction {
   text: string;
   pages: number;
