@@ -67,6 +67,9 @@ interface ProposalBuilderContextType {
   showDetailedValues: boolean;
   setShowDetailedValues: (value: boolean) => void;
   
+  // Extracted data indicator
+  hasExtractedData: boolean;
+  
   // Calculated values
   subtotal: number;
   discountAmount: number;
@@ -84,7 +87,7 @@ export const useProposalBuilder = () => {
 };
 
 export const ProposalBuilderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Step management
+  // Step management - SEMPRE inicia na seleção de grupos
   const [currentStep, setCurrentStep] = useState<ProposalStep>('product-group');
   const [selectedProductGroup, setSelectedProductGroup] = useState<ProductGroup | null>(null);
   
@@ -115,13 +118,17 @@ export const ProposalBuilderProvider: React.FC<{ children: React.ReactNode }> = 
   const [selectedRecommendedProducts, setSelectedRecommendedProducts] = useState<string[]>([]);
   const [showDetailedValues, setShowDetailedValues] = useState(true);
 
-  // Load extracted data on mount
+  // Track if we have extracted data
+  const [hasExtractedData, setHasExtractedData] = useState(false);
+
+  // Load extracted data on mount but DON'T change the step
   useEffect(() => {
     const extractedDataStr = sessionStorage.getItem('proposalExtractedData');
     if (extractedDataStr) {
       const extractedData = JSON.parse(extractedDataStr);
       
       console.log('📋 Dados carregados no ProposalBuilder:', extractedData);
+      setHasExtractedData(true);
       
       // Map client data
       setClientData({
@@ -152,10 +159,8 @@ export const ProposalBuilderProvider: React.FC<{ children: React.ReactNode }> = 
         setObservations(obs.join('\n'));
       }
 
-      // If data is loaded, skip to second step
-      if (extractedData.items && extractedData.items.length > 0) {
-        setCurrentStep('proposal-details');
-      }
+      // IMPORTANTE: NÃO mudar o currentStep automaticamente
+      // Sempre manter na seleção de grupos primeiro
     }
   }, []);
 
@@ -248,6 +253,9 @@ export const ProposalBuilderProvider: React.FC<{ children: React.ReactNode }> = 
     setSelectedRecommendedProducts,
     showDetailedValues,
     setShowDetailedValues,
+    
+    // Extracted data indicator
+    hasExtractedData,
     
     // Calculated values
     subtotal,
