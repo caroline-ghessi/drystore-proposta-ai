@@ -4,9 +4,12 @@ import { Sun, TrendingDown, Leaf, Zap } from 'lucide-react';
 
 interface SolarHeroSectionProps {
   benefits: string[];
+  clientName: string;
 }
 
-export const SolarHeroSection: React.FC<SolarHeroSectionProps> = ({ benefits }) => {
+export const SolarHeroSection: React.FC<SolarHeroSectionProps> = ({ benefits, clientName }) => {
+  const firstName = clientName.split(' ')[0];
+  
   const specificBenefits = [
     { icon: TrendingDown, text: 'Redução de até 95% na conta de luz', color: 'text-yellow-600' },
     { icon: Leaf, text: 'Energia 100% limpa e renovável', color: 'text-green-600' },
@@ -32,13 +35,13 @@ export const SolarHeroSection: React.FC<SolarHeroSectionProps> = ({ benefits }) 
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Liberdade Energética com
-              <span className="block text-yellow-300">Energia do Sol</span>
+              Solução Personalizada
+              <span className="block text-yellow-300">para {firstName}</span>
             </h1>
             
             <p className="text-xl text-yellow-100 mb-8 leading-relaxed">
-              Transforme sua residência em uma usina de energia limpa. Economize milhares 
-              de reais por ano e contribua para um planeta mais sustentável.
+              {firstName}, criamos uma solução de energia solar exclusiva para você. 
+              Economize milhares de reais por ano e contribua para um planeta mais sustentável.
             </p>
 
             {/* Specific Benefits Grid */}

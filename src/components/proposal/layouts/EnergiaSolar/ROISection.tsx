@@ -2,32 +2,53 @@
 import React from 'react';
 import { TrendingUp, DollarSign, Calendar, Target } from 'lucide-react';
 
-export const ROISection: React.FC = () => {
+interface ROISectionProps {
+  totalPrice: number;
+  clientName: string;
+}
+
+export const ROISection: React.FC<ROISectionProps> = ({ totalPrice, clientName }) => {
+  const firstName = clientName.split(' ')[0];
+  
+  // Cálculos personalizados baseados no valor total
+  const economiaAnual = Math.round(totalPrice * 0.18); // 18% do investimento por ano
+  const paybackAnos = Math.round(totalPrice / economiaAnual);
+  const lucroApos15Anos = Math.round(economiaAnual * 15);
+  const lucroTotal25Anos = Math.round(economiaAnual * 25);
+
   const roiData = [
     {
-      year: 'Ano 1-6',
+      year: `Ano 1-${paybackAnos}`,
       status: 'Payback',
       description: 'Recuperação do investimento inicial',
-      value: 'R$ 45.000',
+      value: `R$ ${totalPrice.toLocaleString('pt-BR')}`,
       icon: Target,
       color: 'orange'
     },
     {
-      year: 'Ano 7-15',
-      status: 'Lucro',
+      year: `Ano ${paybackAnos + 1}-15`,
+      status: 'Lucro Líquido',
       description: 'Economia líquida anual',
-      value: 'R$ 8.500/ano',
+      value: `R$ ${economiaAnual.toLocaleString('pt-BR')}/ano`,
       icon: TrendingUp,
       color: 'green'
     },
     {
       year: 'Ano 16-25',
-      status: 'Lucro Total',
-      description: 'Rendimento acumulado',
-      value: 'R$ 85.000',
+      status: 'Lucro Acumulado',
+      description: 'Rendimento total em 25 anos',
+      value: `R$ ${lucroTotal25Anos.toLocaleString('pt-BR')}`,
       icon: DollarSign,
       color: 'blue'
     }
+  ];
+
+  // Comparação de investimentos
+  const comparacaoInvestimentos = [
+    { nome: 'Poupança', retorno: '6%', cor: 'red' },
+    { nome: 'CDI', retorno: '12%', cor: 'yellow' },
+    { nome: 'IPCA+', retorno: '15%', cor: 'blue' },
+    { nome: 'Energia Solar', retorno: '18%', cor: 'green', destaque: true }
   ];
 
   return (
@@ -35,18 +56,18 @@ export const ROISection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <div className="inline-flex items-center px-4 py-2 bg-yellow-100 rounded-full text-yellow-800 text-sm font-medium mb-4">
-            📈 Retorno sobre Investimento
+            📈 Retorno sobre Investimento Personalizado
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Investimento que se Paga Sozinho
+            {firstName}, Seu Investimento se Paga Sozinho
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Energia solar não é gasto, é investimento. Veja como seu dinheiro retorna 
-            e ainda gera lucro por décadas.
+            Baseado no seu investimento de R$ {totalPrice.toLocaleString('pt-BR')}, 
+            veja como seu dinheiro retorna e ainda gera lucro por décadas.
           </p>
         </div>
 
-        {/* ROI Timeline */}
+        {/* ROI Timeline Personalizada */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {roiData.map((item, index) => (
             <div 
@@ -76,6 +97,41 @@ export const ROISection: React.FC = () => {
           ))}
         </div>
 
+        {/* Resumo Personalizado */}
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 mb-8">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              💰 Resumo Financeiro do {firstName}
+            </h3>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-green-600">
+                R$ {economiaAnual.toLocaleString('pt-BR')}
+              </div>
+              <div className="text-sm text-gray-600">Economia Anual</div>
+            </div>
+            
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">{paybackAnos} anos</div>
+              <div className="text-sm text-gray-600">Payback</div>
+            </div>
+            
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-purple-600">
+                R$ {Math.round(economiaAnual / 12).toLocaleString('pt-BR')}
+              </div>
+              <div className="text-sm text-gray-600">Economia Mensal</div>
+            </div>
+            
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <div className="text-2xl font-bold text-orange-600">25 anos</div>
+              <div className="text-sm text-gray-600">Vida Útil</div>
+            </div>
+          </div>
+        </div>
+
         {/* Investment Comparison */}
         <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl p-8">
           <div className="text-center mb-8">
@@ -88,33 +144,19 @@ export const ROISection: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <Calendar className="w-8 h-8 text-red-600 mx-auto mb-2" />
-              <div className="font-bold text-red-900">Poupança</div>
-              <div className="text-2xl font-bold text-red-600">6%</div>
-              <div className="text-sm text-red-700">ao ano</div>
-            </div>
-
-            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <TrendingUp className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-              <div className="font-bold text-yellow-900">CDI</div>
-              <div className="text-2xl font-bold text-yellow-600">12%</div>
-              <div className="text-sm text-yellow-700">ao ano</div>
-            </div>
-
-            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <DollarSign className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <div className="font-bold text-blue-900">IPCA+</div>
-              <div className="text-2xl font-bold text-blue-600">15%</div>
-              <div className="text-sm text-blue-700">ao ano</div>
-            </div>
-
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200 ring-2 ring-green-300">
-              <Target className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <div className="font-bold text-green-900">Energia Solar</div>
-              <div className="text-2xl font-bold text-green-600">18%</div>
-              <div className="text-sm text-green-700">ao ano</div>
-            </div>
+            {comparacaoInvestimentos.map((investimento, index) => (
+              <div 
+                key={index}
+                className={`text-center p-4 bg-${investimento.cor}-50 rounded-lg border border-${investimento.cor}-200 ${
+                  investimento.destaque ? 'ring-2 ring-green-300' : ''
+                }`}
+              >
+                <Calendar className={`w-8 h-8 text-${investimento.cor}-600 mx-auto mb-2`} />
+                <div className={`font-bold text-${investimento.cor}-900`}>{investimento.nome}</div>
+                <div className={`text-2xl font-bold text-${investimento.cor}-600`}>{investimento.retorno}</div>
+                <div className={`text-sm text-${investimento.cor}-700`}>ao ano</div>
+              </div>
+            ))}
           </div>
 
           <div className="text-center mt-6">

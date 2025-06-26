@@ -14,8 +14,10 @@ const GenericLayout = lazy(() => import('@/components/proposal/layouts/Generic/G
 
 export interface ProposalLayoutProps {
   proposal: {
+    clientName: string;
     benefits: string[];
     finalPrice: number;
+    totalPrice: number;
     discount: number;
     validUntil: string;
   };
