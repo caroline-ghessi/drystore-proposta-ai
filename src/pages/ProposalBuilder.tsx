@@ -5,18 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Edit3, Calculator, Eye, Save, Trash2, User, Mail, Phone, Building, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, Mail, Phone, Building, AlertCircle, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateProposal } from '@/hooks/useProposals';
+import { useCreateProposal } from '@/hooks/useCreateProposal';
 import PaymentConditionsSelector from '@/components/proposal/PaymentConditionsSelector';
 import DiscountSection from '@/components/proposal/DiscountSection';
 import VideoConfigSection from '@/components/proposal/VideoConfigSection';
 import SolutionSelector from '@/components/proposal/SolutionSelector';
 import RecommendedProductSelector from '@/components/proposal/RecommendedProductSelector';
 import { ProductGroupSelector } from '@/components/proposal/ProductGroupSelector';
+import { ProposalStepIndicator } from '@/components/proposal/ProposalStepIndicator';
+import { ProposalFinancialSummary } from '@/components/proposal/ProposalFinancialSummary';
+import { ProposalItemsManager } from '@/components/proposal/ProposalItemsManager';
 import { ProductGroup, PRODUCT_GROUPS } from '@/types/productGroups';
 
 interface ProposalItem {
@@ -259,28 +261,8 @@ const ProposalBuilder = () => {
     }
   };
 
-  const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, {} as Record<string, ProposalItem[]>);
-
   const getSelectedGroupInfo = () => {
     return PRODUCT_GROUPS.find(group => group.id === selectedProductGroup);
-  };
-
-  const getProgressPercentage = () => {
-    if (currentStep === 'product-group') return 33;
-    if (currentStep === 'proposal-details') return 100;
-    return 0;
-  };
-
-  const getStepTitle = () => {
-    if (currentStep === 'product-group') return 'Grupo de Produtos';
-    if (currentStep === 'proposal-details') return 'Detalhes da Proposta';
-    return '';
   };
 
   return (
@@ -306,7 +288,7 @@ const ProposalBuilder = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Construir Proposta</h1>
               <p className="text-gray-600 mt-1">
-                {getStepTitle()} - Configure dados do cliente e condições comerciais
+                Configure dados do cliente e condições comerciais
               </p>
             </div>
           </div>
@@ -335,18 +317,7 @@ const ProposalBuilder = () => {
         </div>
 
         {/* Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span>Passo {currentStep === 'product-group' ? '1' : '2'} de 2</span>
-            <span>{getProgressPercentage()}% concluído</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-drystore-blue h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${getProgressPercentage()}%` }}
-            />
-          </div>
-        </div>
+        <ProposalStepIndicator currentStep={currentStep} />
 
         {/* Selected Product Group Badge */}
         {selectedProductGroup && (
@@ -486,7 +457,7 @@ const ProposalBuilder = () => {
                 </CardContent>
               </Card>
 
-              {/* NOVA SEÇÃO: Vídeo Personalizado */}
+              {/* Vídeo Personalizado */}
               <VideoConfigSection
                 includeVideo={includeVideo}
                 onIncludeVideoChange={setIncludeVideo}
@@ -501,13 +472,13 @@ const ProposalBuilder = () => {
                 </div>
               )}
 
-              {/* NOVA SEÇÃO: Produtos Recomendados */}
+              {/* Produtos Recomendados */}
               <RecommendedProductSelector
                 selectedProducts={selectedRecommendedProducts}
                 onSelectedProductsChange={setSelectedRecommendedProducts}
               />
 
-              {/* NOVA SEÇÃO: Soluções Técnicas */}
+              {/* Soluções Técnicas */}
               <SolutionSelector
                 includeTechnicalDetails={includeTechnicalDetails}
                 onIncludeTechnicalDetailsChange={setIncludeTechnicalDetails}
@@ -522,102 +493,14 @@ const ProposalBuilder = () => {
                 </div>
               )}
 
-              {/* Mensagem de erro para itens */}
-              {errors.items && (
-                <div className="flex items-center gap-2 p-3 border border-red-200 bg-red-50 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-red-500" />
-                  <span className="text-red-700 text-sm">{errors.items}</span>
-                </div>
-              )}
-
               {/* Items List */}
-              {Object.entries(groupedItems).map(([category, categoryItems]) => (
-                <Card key={category} className="border-0 shadow-md">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center">
-                        <Edit3 className="w-5 h-5 mr-2 text-drystore-blue" />
-                        {category}
-                      </CardTitle>
-                      <Badge variant="secondary">
-                        {categoryItems.length} item(s)
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {categoryItems.map((item) => (
-                        <div key={item.id} className="grid md:grid-cols-12 gap-3 items-center p-4 bg-gray-50 rounded-lg">
-                          <div className="md:col-span-4">
-                            <Label className="text-xs text-gray-500">Descrição</Label>
-                            <Input
-                              value={item.description}
-                              onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
-                          
-                          <div className="md:col-span-2">
-                            <Label className="text-xs text-gray-500">Qtd</Label>
-                            <Input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="text-sm"
-                            />
-                          </div>
-                          
-                          <div className="md:col-span-1">
-                            <Label className="text-xs text-gray-500">Un</Label>
-                            <Input
-                              value={item.unit}
-                              onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
-                          
-                          <div className="md:col-span-2">
-                            <Label className="text-xs text-gray-500">Preço Un.</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={item.unitPrice}
-                              onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                              className="text-sm"
-                            />
-                          </div>
-                          
-                          <div className="md:col-span-2">
-                            <Label className="text-xs text-gray-500">Total</Label>
-                            <div className="text-sm font-medium p-2 bg-white rounded border">
-                              R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                          </div>
-                          
-                          <div className="md:col-span-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(item.id)}
-                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              <Button 
-                variant="outline" 
-                onClick={addItem}
-                className="w-full border-dashed border-2 h-12"
-              >
-                + Adicionar Novo Item
-              </Button>
+              <ProposalItemsManager
+                items={items}
+                onUpdateItem={updateItem}
+                onRemoveItem={removeItem}
+                onAddItem={addItem}
+                error={errors.items}
+              />
 
               {/* Seção de Desconto */}
               <DiscountSection
@@ -646,48 +529,12 @@ const ProposalBuilder = () => {
             <div className="lg:col-span-1">
               <div className="sticky top-8 space-y-6">
                 {/* Resumo Financeiro */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Calculator className="w-5 h-5 mr-2" />
-                      Resumo Financeiro
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span>R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      
-                      {discount > 0 && (
-                        <div className="flex justify-between text-sm text-red-600">
-                          <span>Desconto ({discount}%):</span>
-                          <span>- R$ {discountAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex justify-between text-lg font-bold border-t pt-2">
-                        <span>Total:</span>
-                        <span className="text-drystore-blue">
-                          R$ {finalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="validity" className="text-sm">Validade (dias):</Label>
-                      <Input
-                        id="validity"
-                        type="number"
-                        value={validityDays}
-                        onChange={(e) => setValidityDays(parseInt(e.target.value) || 15)}
-                        className="w-20 text-sm"
-                        min="1"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProposalFinancialSummary
+                  subtotal={subtotal}
+                  discount={discount}
+                  validityDays={validityDays}
+                  onValidityDaysChange={setValidityDays}
+                />
 
                 {/* Seletor de Condições de Pagamento */}
                 <PaymentConditionsSelector
