@@ -55,7 +55,7 @@ export class ProposalCreationService {
       include_video: request.includeVideo,
       video_url: request.includeVideo ? request.videoUrl : null,
       include_technical_details: request.includeTechnicalDetails,
-      product_group: request.productGroup.id, // Use the ID instead of the whole object
+      product_group: request.productGroup, // Use the string directly, not .id
       show_detailed_values: request.showDetailedValues
     };
 
