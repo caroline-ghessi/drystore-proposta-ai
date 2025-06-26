@@ -1,3 +1,4 @@
+
 import {
   Home, FileText, Users, Target, Settings, User, LogOut,
   BarChart3, PieChart, TrendingUp, Package, CheckCircle, Truck, 
@@ -131,14 +132,54 @@ export const getAIItems = (userRole: string): MenuItem[] => [
 
 export const getAdminItems = (userRole: string): MenuItem[] => {
   return [
-    { href: '/admin/security-management', label: 'Gerenciamento de Segurança', icon: Shield },
-    { href: '/admin/content-management', label: 'Gestão de Conteúdo', icon: Settings },
-    { href: '/sales-targets', label: 'Metas de Vendas', icon: Target },
-    { href: '/user-registration', label: 'Cadastro de Usuários', icon: UserPlus },
-    { href: '/admin/technical-debug', label: 'Debug Técnico', icon: Bug },
-    { href: '/admin/recommendation-rules', label: 'Regras de Recomendação', icon: Zap },
-    { href: '/admin/export-data', label: 'Exportar Dados', icon: Download },
-    { href: '/admin/ai-prompt-tester', label: 'Testador de Prompts IA', icon: MessageSquare }
+    { 
+      label: 'Gerenciamento de Segurança', 
+      icon: Shield, 
+      path: '/admin/security-management',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Gestão de Conteúdo', 
+      icon: Settings, 
+      path: '/admin/content-management',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Metas de Vendas', 
+      icon: Target, 
+      path: '/sales-targets',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Cadastro de Usuários', 
+      icon: UserPlus, 
+      path: '/user-registration',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Debug Técnico', 
+      icon: Bug, 
+      path: '/admin/technical-debug',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Regras de Recomendação', 
+      icon: Zap, 
+      path: '/admin/recommendation-rules',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Exportar Dados', 
+      icon: Download, 
+      path: '/admin/export-data',
+      show: userRole === 'admin'
+    },
+    { 
+      label: 'Testador de Prompts IA', 
+      icon: MessageSquare, 
+      path: '/admin/ai-prompt-tester',
+      show: userRole === 'admin'
+    }
   ];
 };
 
