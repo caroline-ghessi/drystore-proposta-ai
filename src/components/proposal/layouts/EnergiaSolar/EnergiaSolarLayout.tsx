@@ -20,6 +20,9 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
   onSolutionSelect,
   onCloseDeal
 }) => {
+  console.log('🔥 EnergiaSolarLayout CARREGADO - Layout específico de energia solar');
+  console.log('📊 Dados da proposta:', { clientName: proposal.clientName, totalPrice: proposal.totalPrice });
+
   return (
     <>
       {/* Hero Section Personalizado para Energia Solar */}

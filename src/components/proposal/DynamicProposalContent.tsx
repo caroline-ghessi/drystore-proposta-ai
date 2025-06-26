@@ -12,7 +12,13 @@ export const DynamicProposalContent: React.FC<DynamicProposalContentProps> = ({
   productGroup,
   ...layoutProps
 }) => {
+  console.log('🎯 DynamicProposalContent renderizado');
+  console.log('📦 Product Group recebido:', productGroup);
+  console.log('👤 Cliente:', layoutProps.proposal?.clientName);
+  
   const LayoutComponent = ProposalLayoutService.getLayoutComponent(productGroup);
+  
+  console.log('🔧 Layout Component selecionado:', LayoutComponent);
 
   return (
     <Suspense fallback={

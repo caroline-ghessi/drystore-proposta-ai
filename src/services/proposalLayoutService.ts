@@ -36,22 +36,34 @@ export interface ProposalLayoutProps {
 
 export class ProposalLayoutService {
   static getLayoutComponent(productGroup: ProductGroup | null) {
+    console.log('🔍 ProposalLayoutService.getLayoutComponent chamado');
+    console.log('📦 Product Group recebido:', productGroup);
+    
     switch (productGroup) {
       case 'light_steel_frame':
+        console.log('✅ Retornando LightSteelFrameLayout');
         return LightSteelFrameLayout;
       case 'telha_shingle':
+        console.log('✅ Retornando TelhaShingleLayout');
         return TelhaShingleLayout;
       case 'energia_solar':
+        console.log('🔥 Retornando EnergiaSolarLayout');
         return EnergiaSolarLayout;
       case 'pisos_mantas_carpetes':
+        console.log('✅ Retornando PisosMantas');
         return PisosMantas;
       case 'forros':
+        console.log('✅ Retornando ForsLayout');
         return ForsLayout;
       case 'divisorias':
+        console.log('✅ Retornando DivisoriasLayout');
         return DivisoriasLayout;
       case 'ferramentas':
+        console.log('✅ Retornando FerramentasLayout');
         return FerramentasLayout;
       default:
+        console.log('⚠️ Product Group não encontrado, retornando GenericLayout');
+        console.log('📋 Product groups disponíveis: light_steel_frame, telha_shingle, energia_solar, pisos_mantas_carpetes, forros, divisorias, ferramentas');
         return GenericLayout;
     }
   }

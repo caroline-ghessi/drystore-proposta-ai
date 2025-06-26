@@ -41,6 +41,8 @@ const ProposalView = () => {
     error = errorData;
     // Get product group from proposal data
     productGroup = proposalByData?.productGroup || null;
+    console.log('🔍 ProposalView - Modo ID');
+    console.log('📦 Product Group da proposta:', productGroup);
   } else if (linkAccess) {
     if (proposalByDetails) {
       proposal = {
@@ -74,6 +76,9 @@ const ProposalView = () => {
       })) || [];
       // Get product group from details
       productGroup = (proposalByDetails.product_group as ProductGroup) || null;
+      console.log('🔍 ProposalView - Modo Link Access');
+      console.log('📦 Product Group dos detalhes:', productGroup);
+      console.log('📊 Raw product_group value:', proposalByDetails.product_group);
     } else {
       proposal = null;
       proposalItems = [];
