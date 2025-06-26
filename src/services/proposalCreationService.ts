@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { clientService } from './clientService';
 import { proposalDataProcessor } from '@/utils/proposalDataProcessor';
@@ -15,7 +14,8 @@ export const proposalCreationService = {
       includeTechnicalDetails: proposalData.includeTechnicalDetails,
       solutionsCount: proposalData.selectedSolutions?.length || 0,
       recommendedProductsCount: proposalData.selectedRecommendedProducts?.length || 0,
-      productGroup: proposalData.productGroup
+      productGroup: proposalData.productGroup,
+      proposalNumber: proposalData.proposalNumber
     });
 
     // Validações obrigatórias
@@ -68,6 +68,7 @@ export const proposalCreationService = {
       include_video: proposalData.includeVideo || false,
       include_technical_details: proposalData.includeTechnicalDetails || false,
       product_group: proposalData.productGroup,
+      proposal_number: proposalData.proposalNumber,
       status: 'sent'
     });
 
@@ -86,6 +87,7 @@ export const proposalCreationService = {
         video_url: proposalData.includeVideo ? proposalData.videoUrl : null,
         include_technical_details: proposalData.includeTechnicalDetails || false,
         product_group: proposalData.productGroup,
+        proposal_number: proposalData.proposalNumber, // Salvar número do orçamento
       })
       .select()
       .single();
@@ -95,7 +97,7 @@ export const proposalCreationService = {
       throw error;
     }
 
-    console.log('✅ Proposta criada com sucesso:', proposal.id);
+    console.log('✅ Proposta criada com sucesso:', proposal.id, proposalData.proposalNumber ? `com número ${proposalData.proposalNumber}` : 'sem número de orçamento');
     return proposal;
   },
 

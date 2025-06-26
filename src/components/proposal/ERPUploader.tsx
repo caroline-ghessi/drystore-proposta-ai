@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Check, AlertCircle, Eye } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, Eye, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ERPUploaderProps {
@@ -63,9 +63,9 @@ const ERPUploader = ({ onUploadComplete }: ERPUploaderProps) => {
       setIsProcessing(false);
       setIsAnalyzed(true);
       
-      // Mock dos dados extraídos do ERP (baseado na imagem)
+      // Mock dos dados extraídos do ERP (baseado na imagem) com número do orçamento
       const mockExtractedData = {
-        proposalNumber: "N131719",
+        proposalNumber: "N131719", // Número extraído do PDF
         client: "PEDRO BARTELLE",
         items: [
           {
@@ -114,7 +114,7 @@ const ERPUploader = ({ onUploadComplete }: ERPUploaderProps) => {
       
       toast({
         title: "Dados extraídos com sucesso!",
-        description: "Os quantitativos e valores foram processados do PDF do ERP.",
+        description: "Os quantitativos, valores e número do orçamento foram processados do PDF do ERP.",
       });
     }, 2500);
   };
@@ -196,7 +196,7 @@ const ERPUploader = ({ onUploadComplete }: ERPUploaderProps) => {
                 <div className="flex items-center">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
                   <p className="text-yellow-800">
-                    Extraindo quantitativos e valores do PDF do ERP...
+                    Extraindo quantitativos, valores e número do orçamento do PDF do ERP...
                   </p>
                 </div>
               </div>
@@ -209,6 +209,12 @@ const ERPUploader = ({ onUploadComplete }: ERPUploaderProps) => {
                   <p className="font-medium text-green-800">Dados Extraídos com Sucesso!</p>
                 </div>
                 <div className="text-sm text-green-700 space-y-1">
+                  {extractedData.proposalNumber && (
+                    <p className="flex items-center">
+                      <Hash className="w-4 h-4 mr-1" />
+                      <strong>Número do Orçamento:</strong> {extractedData.proposalNumber}
+                    </p>
+                  )}
                   <p>✓ Cliente: {extractedData.client}</p>
                   <p>✓ {extractedData.items.length} itens identificados</p>
                   <p>✓ Valor total: R$ {extractedData.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>

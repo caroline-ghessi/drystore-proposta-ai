@@ -32,5 +32,6 @@ export interface CreateProposalData {
   includeTechnicalDetails?: boolean;
   selectedSolutions?: Array<{ solutionId: string; value: number }>;
   selectedRecommendedProducts?: string[];
-  productGroup: ProductGroup; // Novo campo obrigatório
+  productGroup: ProductGroup;
+  proposalNumber?: string; // Novo campo para número do orçamento extraído do PDF
 }

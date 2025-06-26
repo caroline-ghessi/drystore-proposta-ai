@@ -1,6 +1,6 @@
-
 export interface ExtractedData {
   client?: string;
+  proposalNumber?: string; // Novo campo para número do orçamento
   items: Array<{
     description: string;
     quantity: number;
@@ -37,6 +37,9 @@ export class DataParser {
       });
 
       console.log('Extracted text length:', allText.length);
+
+      // Extract proposal number (priority patterns for Brazilian formats)
+      result.proposalNumber = this.extractProposalNumber(allText);
 
       // Improve client identification
       const clientPatterns = [
@@ -121,13 +124,56 @@ export class DataParser {
       this.extractDeliveryInfo(allText, result);
       this.extractVendorInfo(allText, result);
 
-      console.log(`Parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}`);
+      console.log(`Parsing completed: ${result.items.length} items, total: R$ ${result.total.toFixed(2)}, proposal number: ${result.proposalNumber || 'not found'}`);
 
     } catch (error) {
       console.error('Error parsing Adobe data:', error);
     }
 
     return result;
+  }
+
+  private static extractProposalNumber(text: string): string | undefined {
+    console.log('Extracting proposal number from text...');
+    
+    // Padrões específicos para números de orçamento brasileiros
+    const proposalPatterns = [
+      // Padrão N seguido de números (como N131719)
+      /\b(N\d{5,8})\b/i,
+      // Padrão PROP- seguido de números
+      /\b(PROP-?\d{3,8})\b/i,
+      // Padrão ORC- seguido de números
+      /\b(ORC-?\d{3,8})\b/i,
+      // Padrão número de orçamento explícito
+      /(?:orçamento|orcamento|proposta|número|numero|n[°º]?)[\s:\-]*([A-Z]?\d{4,8})/i,
+      // Padrão genérico para códigos alfanuméricos
+      /\b([A-Z]\d{4,8})\b/,
+    ];
+
+    // Tentar extrair com base na posição (início do texto - canto superior direito)
+    const firstLines = text.split(/\r?\n/).slice(0, 10).join(' ');
+    
+    for (const pattern of proposalPatterns) {
+      const match = firstLines.match(pattern);
+      if (match) {
+        const proposalNumber = match[1].toUpperCase().trim();
+        console.log(`Found proposal number: ${proposalNumber}`);
+        return proposalNumber;
+      }
+    }
+
+    // Se não encontrou nas primeiras linhas, buscar no texto completo
+    for (const pattern of proposalPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const proposalNumber = match[1].toUpperCase().trim();
+        console.log(`Found proposal number in full text: ${proposalNumber}`);
+        return proposalNumber;
+      }
+    }
+
+    console.log('No proposal number found');
+    return undefined;
   }
 
   private static extractPaymentTerms(text: string, result: ExtractedData): void {

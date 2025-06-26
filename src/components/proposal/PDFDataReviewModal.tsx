@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, Save, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ClientDataSection from './ClientDataSection';
 import AdditionalInfoSection from './AdditionalInfoSection';
@@ -20,6 +20,7 @@ interface ExtractedItem {
 interface ExtractedData {
   id?: string;
   client?: string;
+  proposalNumber?: string; // Novo campo
   items: ExtractedItem[];
   subtotal: number;
   total: number;
@@ -200,6 +201,24 @@ const PDFDataReviewModal = ({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Número do Orçamento - Destaque especial */}
+          {editableData.proposalNumber && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center">
+                <Hash className="w-5 h-5 text-blue-600 mr-2" />
+                <span className="font-medium text-blue-800">
+                  Número do Orçamento Identificado: 
+                </span>
+                <span className="font-bold text-blue-900 ml-2">
+                  {editableData.proposalNumber}
+                </span>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Este número será usado como referência da proposta no sistema
+              </p>
+            </div>
+          )}
+
           {/* Dados do Cliente - Seção destacada */}
           <ClientDataSection
             clientData={clientData}
