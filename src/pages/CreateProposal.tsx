@@ -3,12 +3,12 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Building2, Database, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, Database, FileText, PenTool } from 'lucide-react';
 
 const CreateProposal = () => {
   const navigate = useNavigate();
 
-  const handleOptionSelect = (option: 'architectural' | 'erp' | 'pdf') => {
+  const handleOptionSelect = (option: 'architectural' | 'erp' | 'pdf' | 'manual') => {
     switch (option) {
       case 'architectural':
         // Funcionalidade ainda não disponível
@@ -21,12 +21,15 @@ const CreateProposal = () => {
       case 'pdf':
         navigate('/proposal-upload-choice');
         break;
+      case 'manual':
+        navigate('/proposal-builder');
+        break;
     }
   };
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto animate-fade-in">
+      <div className="max-w-6xl mx-auto animate-fade-in">
         {/* Header */}
         <div className="flex items-center mb-8">
           <Button 
@@ -55,7 +58,7 @@ const CreateProposal = () => {
         </div>
 
         {/* Opções de Criação */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-2 xl:grid-cols-4 gap-6">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-blue-200 opacity-50"
             onClick={() => handleOptionSelect('architectural')}
@@ -92,7 +95,7 @@ const CreateProposal = () => {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Importar do ERP</h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  Conecta diretamente com seu ERP para buscar orçamentos
+                  Conecta diretamente com seu ERP para buscar orçamentos existentes
                 </p>
                 <div className="space-y-2 text-xs text-gray-500 mb-4">
                   <p>• Conexão direta com ERP</p>
@@ -134,10 +137,39 @@ const CreateProposal = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-purple-200 border-purple-300"
+            onClick={() => handleOptionSelect('manual')}
+          >
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="bg-purple-100 p-4 rounded-lg mx-auto mb-4 w-fit">
+                  <PenTool className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Criar Manualmente</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  Crie uma proposta do zero preenchendo todos os dados manualmente
+                </p>
+                <div className="space-y-2 text-xs text-gray-500 mb-4">
+                  <p>• Controle total dos dados</p>
+                  <p>• Preenchimento manual</p>
+                  <p>• Ideal para casos específicos</p>
+                </div>
+                <Button 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white mt-4"
+                  size="sm"
+                >
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Criar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>💡 Recomendamos começar com <span className="font-medium text-drystore-blue">Upload de PDF</span> para resultados rápidos</p>
+          <p>💡 Recomendamos <span className="font-medium text-drystore-blue">Upload de PDF</span> para importação automática ou <span className="font-medium text-purple-600">Criar Manualmente</span> para controle total</p>
         </div>
       </div>
     </Layout>
