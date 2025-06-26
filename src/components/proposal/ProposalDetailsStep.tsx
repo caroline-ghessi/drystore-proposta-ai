@@ -6,13 +6,13 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertCircle, Eye } from 'lucide-react';
 import { ClientDataForm } from './ClientDataForm';
-import { VideoConfigSection } from './VideoConfigSection';
-import { RecommendedProductSelector } from './RecommendedProductSelector';
-import { SolutionSelector } from './SolutionSelector';
+import VideoConfigSection from './VideoConfigSection';
+import RecommendedProductSelector from './RecommendedProductSelector';
+import SolutionSelector from './SolutionSelector';
 import { ProposalItemsManager } from './ProposalItemsManager';
-import { DiscountSection } from './DiscountSection';
+import DiscountSection from './DiscountSection';
 import { ProposalFinancialSummary } from './ProposalFinancialSummary';
-import { PaymentConditionsSelector } from './PaymentConditionsSelector';
+import PaymentConditionsSelector from './PaymentConditionsSelector';
 import { useProposalBuilder } from './ProposalBuilderProvider';
 
 export const ProposalDetailsStep: React.FC = () => {
