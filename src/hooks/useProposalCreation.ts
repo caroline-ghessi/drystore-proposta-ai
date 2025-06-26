@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { ProductGroup } from '@/types/productGroups';
@@ -65,7 +66,7 @@ export const useProposalCreation = () => {
         paymentConditions: selectedPaymentConditions.length,
         includeVideo,
         includeTechnicalDetails,
-        productGroup: productGroup.id,
+        productGroup: productGroup,
         showDetailedValues
       });
 
@@ -119,7 +120,7 @@ export const useProposalCreation = () => {
         include_video: includeVideo,
         video_url: includeVideo ? videoUrl : null,
         include_technical_details: includeTechnicalDetails,
-        product_group: productGroup.id,
+        product_group: productGroup,
         show_detailed_values: showDetailedValues
       };
 
@@ -145,12 +146,11 @@ export const useProposalCreation = () => {
           .from('proposal_items')
           .insert([{
             proposal_id: proposal.id,
-            categoria: item.category,
-            descricao: item.description,
+            produto_nome: item.description,
+            descricao_item: item.category,
             quantidade: item.quantity,
-            unidade: item.unit,
-            valor_unitario: item.unitPrice,
-            valor_total: item.total
+            preco_unit: item.unitPrice,
+            preco_total: item.total
           }])
           .select()
           .single();
@@ -214,7 +214,7 @@ export const useProposalCreation = () => {
           .from('proposal_recommended_products')
           .insert([{
             proposal_id: proposal.id,
-            product_id: productId
+            recommended_product_id: productId
           }])
           .select()
           .single();
