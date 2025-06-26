@@ -2,6 +2,7 @@
 import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { ZeroBurocraciaSection } from './ZeroBurocraciaSection';
+import { PersonalizedROISection } from './PersonalizedROISection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
@@ -23,6 +24,12 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
 
   return (
     <>
+      {/* Nova Seção de ROI Personalizada */}
+      <PersonalizedROISection 
+        clientName={proposal.clientName}
+        proposalValue={proposal.totalPrice}
+      />
+
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
