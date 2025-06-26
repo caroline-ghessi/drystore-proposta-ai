@@ -4,7 +4,6 @@ import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { ZeroBurocraciaSection } from './ZeroBurocraciaSection';
 import { PersonalizedROISection } from './PersonalizedROISection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
-import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 
@@ -30,6 +29,9 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
         proposalValue={proposal.totalPrice}
       />
 
+      {/* Nova Seção Zero Burocracia */}
+      <ZeroBurocraciaSection />
+
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
@@ -42,14 +44,7 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
         </div>
         
         <ProposalItemsTable items={proposalItems} />
-
-        <div className="mt-8">
-          <TechnicalChatCard />
-        </div>
       </div>
-
-      {/* Nova Seção Zero Burocracia */}
-      <ZeroBurocraciaSection />
 
       {/* Investment Section */}
       {canInteract && !isExpired && (
