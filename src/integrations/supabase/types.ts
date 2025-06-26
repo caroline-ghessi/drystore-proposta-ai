@@ -598,6 +598,7 @@ export type Database = {
           observacoes: string | null
           product_group: string | null
           proposal_number: string | null
+          show_detailed_values: boolean | null
           status: Database["public"]["Enums"]["proposal_status"]
           updated_at: string
           user_id: string | null
@@ -617,6 +618,7 @@ export type Database = {
           observacoes?: string | null
           product_group?: string | null
           proposal_number?: string | null
+          show_detailed_values?: boolean | null
           status?: Database["public"]["Enums"]["proposal_status"]
           updated_at?: string
           user_id?: string | null
@@ -636,6 +638,7 @@ export type Database = {
           observacoes?: string | null
           product_group?: string | null
           proposal_number?: string | null
+          show_detailed_values?: boolean | null
           status?: Database["public"]["Enums"]["proposal_status"]
           updated_at?: string
           user_id?: string | null
