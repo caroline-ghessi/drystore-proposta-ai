@@ -1,57 +1,45 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { ClientData } from '@/types/proposalCreation';
 
-interface ClientData {
-  name: string;
-  email: string;
-  phone?: string;
-  company?: string;
-  address?: string;
-}
+export class ClientService {
+  static async createOrRetrieveClient(clientData: ClientData) {
+    console.log('🎯 Creating or retrieving client:', clientData.email);
 
-export const clientService = {
-  async findOrCreateClient(clientData: ClientData) {
-    // Buscar cliente existente
-    const { data: existingClient } = await supabase
+    const { data: existingClient, error: existingClientError } = await supabase
       .from('clients')
       .select('*')
       .eq('email', clientData.email)
       .single();
 
-    if (existingClient) {
-      console.log('📋 Cliente existente encontrado:', existingClient.id);
-      
-      // Atualizar dados do cliente existente
-      const { data: updatedClient, error: updateError } = await supabase
-        .from('clients')
-        .update({
-          nome: clientData.name,
-          telefone: clientData.phone || null,
-          empresa: clientData.company || null,
-        })
-        .eq('id', existingClient.id)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-      return updatedClient;
-    } else {
-      console.log('👤 Criando novo cliente');
-      
-      // Criar novo cliente
-      const { data: newClient, error: createError } = await supabase
-        .from('clients')
-        .insert({
-          nome: clientData.name,
-          email: clientData.email,
-          telefone: clientData.phone || null,
-          empresa: clientData.company || null,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return newClient;
+    if (existingClientError && existingClientError.code !== 'PGRST116') {
+      console.error('❌ Error checking existing client:', existingClientError);
+      throw new Error(`Erro ao verificar cliente existente: ${existingClientError.message}`);
     }
+
+    if (existingClient) {
+      console.log('✅ Client already exists:', existingClient);
+      return existingClient;
+    }
+
+    const { data: newClient, error: newClientError } = await supabase
+      .from('clients')
+      .insert([{
+        nome: clientData.name,
+        email: clientData.email,
+        telefone: clientData.phone,
+        empresa: clientData.company,
+        endereco: clientData.address
+      }])
+      .select()
+      .single();
+
+    if (newClientError) {
+      console.error('❌ Error creating client:', newClientError);
+      throw new Error(`Erro ao criar cliente: ${newClientError.message}`);
+    }
+
+    console.log('✅ Client created:', newClient);
+    return newClient;
   }
-};
+}
