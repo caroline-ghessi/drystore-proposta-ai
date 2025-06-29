@@ -73,13 +73,13 @@ export const useOptimizedProposals = () => {
     }
 
     const accepted = processedProposals.filter(p => 
-      p.status === 'aceita' || p.status === 'accepted'
+      p.status === 'accepted'
     );
     const pending = processedProposals.filter(p => 
-      p.status === 'pendente' || p.status === 'sent'
+      p.status === 'sent' || p.status === 'viewed' || p.status === 'draft'
     );
     const rejected = processedProposals.filter(p => 
-      p.status === 'rejeitada' || p.status === 'rejected'
+      p.status === 'rejected' || p.status === 'expired'
     );
 
     const totalValue = processedProposals.reduce((sum, p) => sum + p.finalPrice, 0);
