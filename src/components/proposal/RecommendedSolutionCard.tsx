@@ -45,7 +45,7 @@ export const RecommendedSolutionCard = ({
   return (
     <Card 
       className={`relative hover:shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-        isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+        isSelected ? 'ring-2 ring-drystore-orange bg-orange-50' : ''
       }`}
     >
       {solution.popular && (
@@ -66,8 +66,8 @@ export const RecommendedSolutionCard = ({
 
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <IconComponent className="w-6 h-6 text-blue-600" />
+          <div className="p-2 bg-orange-100 rounded-lg">
+            <IconComponent className="w-6 h-6 text-drystore-orange" />
           </div>
           <Badge variant="outline" className="text-xs">
             {solution.category}
@@ -123,7 +123,7 @@ export const RecommendedSolutionCard = ({
                 -{discountPercentage}%
               </Badge>
             </div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-drystore-orange">
               R$ {solution.price.toLocaleString('pt-BR')}
             </div>
             <div className="text-xs text-gray-500">
@@ -138,7 +138,7 @@ export const RecommendedSolutionCard = ({
           className={`w-full ${
             isSelected 
               ? 'bg-green-600 hover:bg-green-700' 
-              : 'bg-blue-600 hover:bg-blue-700'
+              : 'bg-drystore-orange hover:bg-orange-600'
           }`}
           size="sm"
         >
