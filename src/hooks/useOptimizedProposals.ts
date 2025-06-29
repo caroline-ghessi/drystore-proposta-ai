@@ -16,8 +16,8 @@ export const useOptimizedProposals = () => {
         .from('proposals')
         .select(`
           id,
-          numero_proposta,
-          valor_final,
+          proposal_number,
+          valor_total,
           status,
           created_at,
           validade,
@@ -45,12 +45,12 @@ export const useOptimizedProposals = () => {
     
     return rawProposals.map(proposal => ({
       id: proposal.id,
-      proposalNumber: proposal.numero_proposta || `#${proposal.id.slice(0, 8)}`,
+      proposalNumber: proposal.proposal_number || `#${proposal.id.slice(0, 8)}`,
       clientName: proposal.clients?.nome || 'Cliente não informado',
       clientEmail: proposal.clients?.email || '',
       clientCompany: proposal.clients?.empresa || '',
       clientPhone: proposal.clients?.telefone || '',
-      finalPrice: proposal.valor_final || 0,
+      finalPrice: proposal.valor_total || 0,
       status: proposal.status || 'draft',
       createdAt: proposal.created_at,
       validUntil: proposal.validade,
