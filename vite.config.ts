@@ -36,7 +36,6 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-accordion',
             '@radix-ui/react-alert-dialog',
             '@radix-ui/react-avatar',
-            '@radix-ui/react-button',
             '@radix-ui/react-card',
             '@radix-ui/react-checkbox',
             '@radix-ui/react-dialog',
@@ -54,7 +53,8 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-tabs',
             '@radix-ui/react-textarea',
             '@radix-ui/react-toast',
-            '@radix-ui/react-tooltip'
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-slot'
           ],
           
           // Icons
