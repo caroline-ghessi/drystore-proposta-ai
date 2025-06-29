@@ -1,9 +1,8 @@
-
 import {
   Home, FileText, Users, Target, Settings, User, LogOut,
   BarChart3, PieChart, TrendingUp, Package, CheckCircle, Truck, 
   CreditCard, Brain, Zap, MessageSquare, Calendar, Trophy,
-  Database, Bug, Download, Search, Briefcase, Bell, Shield, UserPlus
+  Database, Bug, Download, Search, Briefcase, Bell, Shield, UserPlus, Layout
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -132,6 +131,12 @@ export const getAIItems = (userRole: string): MenuItem[] => [
 
 export const getAdminItems = (userRole: string): MenuItem[] => {
   return [
+    { 
+      label: 'Layouts de Propostas', 
+      icon: Layout, 
+      path: '/admin/proposal-layouts',
+      show: userRole === 'admin'
+    },
     { 
       label: 'Gerenciamento de Segurança', 
       icon: Shield, 

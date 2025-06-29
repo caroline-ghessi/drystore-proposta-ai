@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,6 +31,7 @@ const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
 const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
 const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
+const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLayoutsViewer'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -202,6 +202,16 @@ const AppContent = () => {
                 <ContentManagement />
               </Suspense>
             </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/proposal-layouts" 
+          element={
+            <AdminRoute>
+              <Suspense fallback={<AppLoadingFallback type="table" />}>
+                <ProposalLayoutsViewer />
+              </Suspense>
+            </AdminRoute>
           } 
         />
       </Routes>
