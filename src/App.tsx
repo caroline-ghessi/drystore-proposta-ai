@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,26 +9,29 @@ import { useSecurityHeaders } from '@/hooks/useSecurityHeaders';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import SessionTimeoutWarning from '@/components/security/SessionTimeoutWarning';
 import { useAuth } from '@/contexts/AuthContext';
-import Index from '@/pages/Index';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import ResetPassword from '@/pages/ResetPassword';
-import Dashboard from '@/pages/Dashboard';
+import { AppLoadingFallback } from '@/components/loading/AppLoadingFallback';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import UserRegistration from '@/pages/UserRegistration';
-import ClientPortalBySlug from '@/pages/ClientPortalBySlug';
-import SecureClientPortalBySlug from '@/pages/SecureClientPortalBySlug';
-import ProposalDetails from '@/pages/ProposalDetails';
-import ProposalView from '@/pages/ProposalView';
 import AdminRoute from '@/components/AdminRoute';
-import SecurityManagement from '@/pages/admin/SecurityManagement';
-import ClientLogin from '@/pages/ClientLogin';
-import ClientPortal from '@/pages/ClientPortal';
-import CreateProposal from '@/pages/CreateProposal';
-import ProposalUploadChoice from '@/pages/ProposalUploadChoice';
-import ProposalBuilder from '@/pages/ProposalBuilder';
-import ContentManagement from './pages/admin/ContentManagement';
+
+// Lazy load all route components for better performance
+const Index = React.lazy(() => import('@/pages/Index'));
+const Login = React.lazy(() => import('@/pages/Login'));
+const Register = React.lazy(() => import('@/pages/Register'));
+const ForgotPassword = React.lazy(() => import('@/pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('@/pages/ResetPassword'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const UserRegistration = React.lazy(() => import('@/pages/UserRegistration'));
+const ClientPortalBySlug = React.lazy(() => import('@/pages/ClientPortalBySlug'));
+const SecureClientPortalBySlug = React.lazy(() => import('@/pages/SecureClientPortalBySlug'));
+const ProposalDetails = React.lazy(() => import('@/pages/ProposalDetails'));
+const ProposalView = React.lazy(() => import('@/pages/ProposalView'));
+const SecurityManagement = React.lazy(() => import('@/pages/admin/SecurityManagement'));
+const ClientLogin = React.lazy(() => import('@/pages/ClientLogin'));
+const ClientPortal = React.lazy(() => import('@/pages/ClientPortal'));
+const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
+const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
+const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
+const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -41,29 +45,162 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/client-login" element={<ClientLogin />} />
-        <Route path="/client-portal" element={<ClientPortal />} />
-        <Route path="/client/:clientSlug" element={<ClientPortalBySlug />} />
-        <Route path="/secure/client/:clientSlug" element={<SecureClientPortalBySlug />} />
-        <Route path="/proposal/:linkAccess" element={<ProposalDetails />} />
-        <Route path="/proposal-view/:id" element={<ProposalView />} />
+        <Route 
+          path="/" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="spinner" message="Carregando página inicial..." />}>
+              <Index />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/login" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <Login />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/register" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <Register />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ForgotPassword />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/reset-password/:token" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ResetPassword />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/client-login" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ClientLogin />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/client-portal" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
+              <ClientPortal />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/client/:clientSlug" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
+              <ClientPortalBySlug />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/secure/client/:clientSlug" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
+              <SecureClientPortalBySlug />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/proposal/:linkAccess" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="proposal" />}>
+              <ProposalDetails />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/proposal-view/:id" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="proposal" />}>
+              <ProposalView />
+            </Suspense>
+          } 
+        />
 
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/create-proposal" element={<ProtectedRoute><CreateProposal /></ProtectedRoute>} />
-        <Route path="/proposal-upload-choice" element={<ProtectedRoute><ProposalUploadChoice /></ProtectedRoute>} />
-        <Route path="/proposal-builder" element={<ProtectedRoute><ProposalBuilder /></ProtectedRoute>} />
-        <Route path="/register-user" element={<AdminRoute><UserRegistration /></AdminRoute>} />
-        <Route path="/security-management" element={<AdminRoute><SecurityManagement /></AdminRoute>} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
+                <Dashboard />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <CreateProposal />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/proposal-upload-choice" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <ProposalUploadChoice />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/proposal-builder" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <ProposalBuilder />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/register-user" 
+          element={
+            <AdminRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <UserRegistration />
+              </Suspense>
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/security-management" 
+          element={
+            <AdminRoute>
+              <Suspense fallback={<AppLoadingFallback type="table" />}>
+                <SecurityManagement />
+              </Suspense>
+            </AdminRoute>
+          } 
+        />
         <Route 
           path="/admin/content-management" 
           element={
             <ProtectedRoute>
-              <ContentManagement />
+              <Suspense fallback={<AppLoadingFallback type="table" />}>
+                <ContentManagement />
+              </Suspense>
             </ProtectedRoute>
           } 
         />
@@ -92,7 +229,8 @@ function App() {
           }
           return failureCount < 3;
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 5 * 60 * 1000, // 5 minutes - optimized for better caching
+        gcTime: 10 * 60 * 1000, // 10 minutes - keep data in cache longer
       },
     },
   });
@@ -102,7 +240,9 @@ function App() {
       <ThemeProvider>
         <Router>
           <AuthProvider>
-            <AppContent />
+            <Suspense fallback={<AppLoadingFallback type="spinner" message="Inicializando aplicação..." />}>
+              <AppContent />
+            </Suspense>
           </AuthProvider>
         </Router>
       </ThemeProvider>
