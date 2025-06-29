@@ -1,8 +1,10 @@
 
 import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
-import { ZeroBurocraciaSection } from './ZeroBurocraciaSection';
+import { NewSolarHeroSection } from './NewSolarHeroSection';
+import { CompanyChangeSection } from './CompanyChangeSection';
 import { PersonalizedROISection } from './PersonalizedROISection';
+import { ProcessoPostAprovacaoSection } from './ProcessoPostAprovacaoSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
@@ -18,19 +20,28 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
   onSolutionSelect,
   onCloseDeal
 }) => {
-  console.log('🔥 EnergiaSolarLayout CARREGADO - Layout específico de energia solar');
+  console.log('🔥 EnergiaSolarLayout CARREGADO - Layout específico de energia solar atualizado');
   console.log('📊 Dados da proposta:', { clientName: proposal.clientName, totalPrice: proposal.totalPrice });
 
   return (
     <>
-      {/* Nova Seção de ROI Personalizada */}
+      {/* Nova Hero Section */}
+      <NewSolarHeroSection 
+        clientName={proposal.clientName}
+        monthlyEconomy={14400}
+      />
+
+      {/* Nova Seção "O Que Muda na Sua Empresa" */}
+      <CompanyChangeSection />
+
+      {/* Seção de ROI Personalizada (mantida) */}
       <PersonalizedROISection 
         clientName={proposal.clientName}
         proposalValue={proposal.totalPrice}
       />
 
-      {/* Nova Seção Zero Burocracia */}
-      <ZeroBurocraciaSection />
+      {/* Nova Seção Processo Pós-Aprovação */}
+      <ProcessoPostAprovacaoSection />
 
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
