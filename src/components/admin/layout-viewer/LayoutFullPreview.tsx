@@ -49,8 +49,8 @@ const LayoutFullPreview: React.FC<LayoutFullPreviewProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 py-4 border-b bg-white sticky top-0 z-10">
+      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b bg-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <span className="text-2xl">{productGroup?.icon}</span>
@@ -74,7 +74,7 @@ const LayoutFullPreview: React.FC<LayoutFullPreviewProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto flex-1 bg-gray-50">
+        <div className="flex-1 overflow-y-auto bg-gray-50">
           <div className="p-6">
             <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
               <div className="flex items-center justify-between text-sm text-gray-600">
