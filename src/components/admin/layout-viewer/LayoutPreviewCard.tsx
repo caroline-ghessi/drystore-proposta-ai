@@ -67,7 +67,7 @@ const LayoutPreviewCard: React.FC<LayoutPreviewCardProps> = ({
                 Calculadora:
               </span>
               <Badge variant="secondary" className="text-xs">
-                {config.calculatorType}
+                {config.calculatorType || 'Padrão'}
               </Badge>
             </div>
           )}

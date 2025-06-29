@@ -99,28 +99,32 @@ export class ProposalLayoutService {
         heroSubtitle: 'Pisos, mantas e carpetes para todos os ambientes',
         primaryColor: 'purple',
         focusAreas: ['conforto', 'estética', 'durabilidade'],
-        showCalculator: false
+        showCalculator: false,
+        calculatorType: undefined
       },
       forros: {
         heroTitle: 'Sistemas de Forro Profissionais',
         heroSubtitle: 'Acabamento perfeito e isolamento acústico superior',
         primaryColor: 'indigo',
         focusAreas: ['acústica', 'acabamento', 'isolamento'],
-        showCalculator: false
+        showCalculator: false,
+        calculatorType: undefined
       },
       divisorias: {
         heroTitle: 'Divisórias Inteligentes',
         heroSubtitle: 'Otimização de espaços com flexibilidade e design',
         primaryColor: 'orange',
         focusAreas: ['flexibilidade', 'otimização', 'design'],
-        showCalculator: false
+        showCalculator: false,
+        calculatorType: undefined
       },
       ferramentas: {
         heroTitle: 'Ferramentas Profissionais',
         heroSubtitle: 'Equipamentos de alta qualidade para profissionais exigentes',
         primaryColor: 'red',
         focusAreas: ['qualidade', 'durabilidade', 'profissional'],
-        showCalculator: false
+        showCalculator: false,
+        calculatorType: undefined
       }
     };
 
@@ -129,7 +133,8 @@ export class ProposalLayoutService {
       heroSubtitle: 'Qualidade e inovação em cada projeto',
       primaryColor: 'blue',
       focusAreas: ['qualidade', 'inovação', 'personalização'],
-      showCalculator: false
+      showCalculator: false,
+      calculatorType: undefined
     };
   }
 }
