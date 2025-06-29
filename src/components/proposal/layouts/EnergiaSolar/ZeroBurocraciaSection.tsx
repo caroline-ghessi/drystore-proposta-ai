@@ -44,7 +44,7 @@ export const ZeroBurocraciaSection: React.FC = () => {
             Zero Burocracia Para Você
           </h2>
           <p className="text-xl text-drystore-gray-medium mb-8">
-            "Você Aprova, Nós Cuidamos de Tudo!"
+            Você Aprova, Nós Cuidamos de Tudo!
           </p>
         </div>
 
@@ -53,19 +53,6 @@ export const ZeroBurocraciaSection: React.FC = () => {
           {processSteps.map((etapa) => (
             <ProcessStepCard key={etapa.numero} {...etapa} />
           ))}
-        </div>
-
-        {/* Destaque Especial */}
-        <div className="bg-gradient-to-r from-drystore-orange to-drystore-orange-light text-white rounded-2xl p-8 mb-8">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-4">
-              💡 Destaque Especial: "Zero Burocracia Para Você!"
-            </h3>
-            <p className="text-lg leading-relaxed">
-              Com nossa procuração, resolvemos todos os trâmites na concessionária. 
-              Você só precisa assinar o contrato e aguardar o sistema funcionar!
-            </p>
-          </div>
         </div>
 
         {/* Timeline Resumida e Garantias */}
