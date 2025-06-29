@@ -8,6 +8,7 @@ import { ProcessoPostAprovacaoSection } from './ProcessoPostAprovacaoSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
+import { TrustBuilderSection } from '@/components/proposal/TrustBuilderSection';
 
 const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
   proposal,
@@ -56,6 +57,9 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
         
         <ProposalItemsTable items={proposalItems} />
       </div>
+
+      {/* Seção Liderança e Confiança no Mercado */}
+      <TrustBuilderSection />
 
       {/* Investment Section */}
       {canInteract && !isExpired && (
