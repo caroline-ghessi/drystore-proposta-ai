@@ -215,7 +215,7 @@ export const ProcessoPostAprovacaoSection: React.FC = () => {
         </div>
 
         {/* Timeline Compact */}
-        <div className="bg-white rounded-2xl p-8 shadow-lg mb-12">
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
           <h3 className="text-xl font-bold text-center mb-6 text-drystore-gray-dark">
             ⏱️ Cronograma Resumido
           </h3>
@@ -238,19 +238,6 @@ export const ProcessoPostAprovacaoSection: React.FC = () => {
             <div className="text-center">
               <div className="font-bold text-lg text-green-600">Semana 8</div>
               <div className="text-sm text-gray-600">Ativação</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Final Highlight */}
-        <div className="bg-gradient-to-r from-drystore-orange to-orange-600 text-white p-8 rounded-2xl text-center shadow-xl">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="text-4xl">⚡</div>
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Sistema Ativo em Até 45 Dias!</h3>
-              <p className="text-lg opacity-90">
-                Da aprovação até começar a economizar na sua conta de luz
-              </p>
             </div>
           </div>
         </div>
