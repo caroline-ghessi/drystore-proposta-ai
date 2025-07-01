@@ -7,7 +7,7 @@ import { PersonalizedROISection } from './PersonalizedROISection';
 import { ProcessoPostAprovacaoSection } from './ProcessoPostAprovacaoSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
-import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
+
 import { CompanyCredentialsSection } from '@/components/proposal/CompanyCredentialsSection';
 import { ClientTestimonialsSection } from '@/components/proposal/ClientTestimonialsSection';
 import { ProjectGallerySection } from '@/components/proposal/ProjectGallerySection';
@@ -69,25 +69,16 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
       {/* 🏗️ Galeria de Projetos Executados */}
       <ProjectGallerySection />
 
-      {/* Recommended Solutions */}
-      <RecommendedSolutionsSection 
-        onSolutionSelect={onSolutionSelect}
-        selectedSolutions={selectedSolutions}
-        onCloseDeal={onCloseDeal}
-      />
-
-      {/* Investment Section - Movido para o final */}
-      {canInteract && !isExpired && (
-        <div id="investment-section" className="bg-gray-50">
-          <ModernInvestmentSection
-            totalPrice={proposal.finalPrice}
-            discount={proposal.discount}
-            validUntil={proposal.validUntil}
-            onAccept={onAcceptProposal}
-            onReject={onRejectProposal}
-          />
-        </div>
-      )}
+      {/* Investment Section - Sempre visível no final */}
+      <div id="investment-section" className="bg-gray-50">
+        <ModernInvestmentSection
+          totalPrice={proposal.finalPrice}
+          discount={proposal.discount}
+          validUntil={proposal.validUntil}
+          onAccept={canInteract && !isExpired ? onAcceptProposal : undefined}
+          onReject={canInteract && !isExpired ? onRejectProposal : undefined}
+        />
+      </div>
     </>
   );
 };
