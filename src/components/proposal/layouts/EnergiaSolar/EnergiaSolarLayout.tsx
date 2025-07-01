@@ -69,6 +69,13 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
       {/* 🏗️ Galeria de Projetos Executados */}
       <ProjectGallerySection />
 
+      {/* Recommended Solutions */}
+      <RecommendedSolutionsSection 
+        onSolutionSelect={onSolutionSelect}
+        selectedSolutions={selectedSolutions}
+        onCloseDeal={onCloseDeal}
+      />
+
       {/* Investment Section - Movido para o final */}
       {canInteract && !isExpired && (
         <div id="investment-section" className="bg-gray-50">
@@ -81,13 +88,6 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
           />
         </div>
       )}
-
-      {/* Recommended Solutions */}
-      <RecommendedSolutionsSection 
-        onSolutionSelect={onSolutionSelect}
-        selectedSolutions={selectedSolutions}
-        onCloseDeal={onCloseDeal}
-      />
     </>
   );
 };

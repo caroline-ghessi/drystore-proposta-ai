@@ -1,6 +1,5 @@
 import { RecommendedSolutionCard } from './RecommendedSolutionCard';
 import { EconomySummarySection } from './EconomySummarySection';
-import { TrustBuilderSection } from './TrustBuilderSection';
 
 interface RecommendedSolution {
   id: string;
@@ -81,38 +80,33 @@ export const RecommendedSolutionsSection = ({
   };
 
   return (
-    <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            🎯 Soluções Recomendadas Para Você
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Baseado no seu perfil, selecionamos essas soluções que podem completar perfeitamente seu projeto
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {displaySolutions.map((solution) => (
-            <RecommendedSolutionCard
-              key={solution.id}
-              solution={solution}
-              isSelected={isSolutionSelected(solution.id)}
-              onSelect={onSolutionSelect || (() => {})}
-            />
-          ))}
-        </div>
-
-        {/* Economy Summary Section - Similar to reference image */}
-        <EconomySummarySection
-          selectedSolutions={selectedSolutions}
-          displaySolutions={displaySolutions}
-          onCloseDeal={onCloseDeal}
-        />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          🎯 Soluções Recomendadas Para Você
+        </h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Baseado no seu perfil, selecionamos essas soluções que podem completar perfeitamente seu projeto
+        </p>
       </div>
 
-      {/* Trust Builder Section - Replaces ConsultationCallToAction */}
-      <TrustBuilderSection />
-    </>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {displaySolutions.map((solution) => (
+          <RecommendedSolutionCard
+            key={solution.id}
+            solution={solution}
+            isSelected={isSolutionSelected(solution.id)}
+            onSelect={onSolutionSelect || (() => {})}
+          />
+        ))}
+      </div>
+
+      {/* Economy Summary Section - Similar to reference image */}
+      <EconomySummarySection
+        selectedSolutions={selectedSolutions}
+        displaySolutions={displaySolutions}
+        onCloseDeal={onCloseDeal}
+      />
+    </div>
   );
 };
