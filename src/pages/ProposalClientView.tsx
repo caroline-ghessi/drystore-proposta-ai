@@ -10,18 +10,18 @@ import { isProposalExpired } from '@/utils/clientUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { ProductGroup } from '@/types/productGroups';
+import { useNavigate } from 'react-router-dom';
 
 const ProposalClientView = () => {
   const { linkAccess } = useParams<{ linkAccess: string }>();
   const { data: proposalData, isLoading, error } = useClientProposal(linkAccess || '');
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedSolutions, setSelectedSolutions] = useState<Array<{ id: string; price: number }>>([]);
 
   const handleAcceptProposal = () => {
-    toast({
-      title: "Proposta aceita!",
-      description: "Nossa equipe entrará em contato para os próximos passos.",
-    });
+    // Redirecionar para a nova página de agradecimento e ofertas
+    navigate(`/proposal-accepted/${proposalData?.id}`);
   };
 
   const handleRejectProposal = () => {

@@ -32,6 +32,9 @@ const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoi
 const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
 const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLayoutsViewer'));
+const ProposalAcceptedThanks = React.lazy(() => import('@/pages/ProposalAcceptedThanks'));
+const ProposalWithExtrasConfirmation = React.lazy(() => import('@/pages/ProposalWithExtrasConfirmation'));
+const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -212,6 +215,30 @@ const AppContent = () => {
                 <ProposalLayoutsViewer />
               </Suspense>
             </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/proposal-accepted/:proposalId" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ProposalAcceptedThanks />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/proposal-extras-confirmation/:proposalId" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ProposalWithExtrasConfirmation />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/proposal-final-thanks/:proposalId" 
+          element={
+            <Suspense fallback={<AppLoadingFallback type="form" />}>
+              <ProposalFinalThanks />
+            </Suspense>
           } 
         />
       </Routes>

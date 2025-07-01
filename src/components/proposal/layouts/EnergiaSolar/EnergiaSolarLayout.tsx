@@ -8,6 +8,9 @@ import { ProcessoPostAprovacaoSection } from './ProcessoPostAprovacaoSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
+import { CompanyCredentialsSection } from '@/components/proposal/CompanyCredentialsSection';
+import { ClientTestimonialsSection } from '@/components/proposal/ClientTestimonialsSection';
+import { ProjectGallerySection } from '@/components/proposal/ProjectGallerySection';
 
 const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
   proposal,
@@ -57,7 +60,16 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
         <ProposalItemsTable items={proposalItems} />
       </div>
 
-      {/* Investment Section */}
+      {/* 🏆 Liderança e Confiança no Mercado */}
+      <CompanyCredentialsSection />
+
+      {/* 💬 O que nossos clientes dizem */}
+      <ClientTestimonialsSection />
+
+      {/* 🏗️ Galeria de Projetos Executados */}
+      <ProjectGallerySection />
+
+      {/* Investment Section - Movido para o final */}
       {canInteract && !isExpired && (
         <div id="investment-section" className="bg-gray-50">
           <ModernInvestmentSection
