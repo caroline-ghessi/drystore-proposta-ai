@@ -266,39 +266,63 @@ export type Database = {
       }
       clients: {
         Row: {
+          area_disponivel_m2: number | null
+          cidade: string | null
           cnpj: string | null
+          concessionaria: string | null
+          consumo_historico: Json | null
           created_at: string
           email: string
           empresa: string | null
           endereco: string | null
+          estado: string | null
           freshsales_id: string | null
           id: string
           nome: string
+          origem_dados: string | null
+          tarifa_kwh: number | null
           telefone: string | null
+          tipo_telhado: string | null
           updated_at: string
         }
         Insert: {
+          area_disponivel_m2?: number | null
+          cidade?: string | null
           cnpj?: string | null
+          concessionaria?: string | null
+          consumo_historico?: Json | null
           created_at?: string
           email: string
           empresa?: string | null
           endereco?: string | null
+          estado?: string | null
           freshsales_id?: string | null
           id?: string
           nome: string
+          origem_dados?: string | null
+          tarifa_kwh?: number | null
           telefone?: string | null
+          tipo_telhado?: string | null
           updated_at?: string
         }
         Update: {
+          area_disponivel_m2?: number | null
+          cidade?: string | null
           cnpj?: string | null
+          concessionaria?: string | null
+          consumo_historico?: Json | null
           created_at?: string
           email?: string
           empresa?: string | null
           endereco?: string | null
+          estado?: string | null
           freshsales_id?: string | null
           id?: string
           nome?: string
+          origem_dados?: string | null
+          tarifa_kwh?: number | null
           telefone?: string | null
+          tipo_telhado?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -375,6 +399,167 @@ export type Database = {
           product_group?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      energia_bills_uploads: {
+        Row: {
+          client_id: string | null
+          concessionaria_extraida: string | null
+          consumo_extraido: Json | null
+          created_at: string | null
+          extracted_data: Json | null
+          extraction_status: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          tarifa_extraida: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          concessionaria_extraida?: string | null
+          consumo_extraido?: Json | null
+          created_at?: string | null
+          extracted_data?: Json | null
+          extraction_status?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          tarifa_extraida?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          concessionaria_extraida?: string | null
+          consumo_extraido?: Json | null
+          created_at?: string | null
+          extracted_data?: Json | null
+          extraction_status?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          tarifa_extraida?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energia_bills_uploads_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energia_solar_configuracoes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          custo_instalacao_wp: number | null
+          fator_perdas_sistema: number | null
+          fator_seguranca: number | null
+          id: string
+          margem_comercial: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          custo_instalacao_wp?: number | null
+          fator_perdas_sistema?: number | null
+          fator_seguranca?: number | null
+          id?: string
+          margem_comercial?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          custo_instalacao_wp?: number | null
+          fator_perdas_sistema?: number | null
+          fator_seguranca?: number | null
+          id?: string
+          margem_comercial?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      irradiacao_estados: {
+        Row: {
+          created_at: string | null
+          estado: string
+          fator_correcao_regional: number | null
+          id: string
+          irradiacao_media_kwh_m2_dia: number
+        }
+        Insert: {
+          created_at?: string | null
+          estado: string
+          fator_correcao_regional?: number | null
+          id?: string
+          irradiacao_media_kwh_m2_dia: number
+        }
+        Update: {
+          created_at?: string | null
+          estado?: string
+          fator_correcao_regional?: number | null
+          id?: string
+          irradiacao_media_kwh_m2_dia?: number
+        }
+        Relationships: []
+      }
+      paineis_solares: {
+        Row: {
+          altura_m: number
+          ativo: boolean | null
+          created_at: string | null
+          destaque: boolean | null
+          eficiencia: number
+          fabricante: string
+          id: string
+          largura_m: number
+          modelo: string
+          peso_kg: number | null
+          potencia_wp: number
+          preco_unitario: number
+          tipos_telhado_compativeis: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          altura_m: number
+          ativo?: boolean | null
+          created_at?: string | null
+          destaque?: boolean | null
+          eficiencia: number
+          fabricante: string
+          id?: string
+          largura_m: number
+          modelo: string
+          peso_kg?: number | null
+          potencia_wp: number
+          preco_unitario: number
+          tipos_telhado_compativeis?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          altura_m?: number
+          ativo?: boolean | null
+          created_at?: string | null
+          destaque?: boolean | null
+          eficiencia?: number
+          fabricante?: string
+          id?: string
+          largura_m?: number
+          modelo?: string
+          peso_kg?: number | null
+          potencia_wp?: number
+          preco_unitario?: number
+          tipos_telhado_compativeis?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -737,19 +922,27 @@ export type Database = {
       }
       proposals: {
         Row: {
+          area_ocupada_m2: number | null
           client_id: string
           created_at: string
           desconto_percentual: number | null
           discount_percentage: number | null
+          economia_anual_estimada: number | null
+          geracao_estimada_anual_kwh: number | null
           id: string
           include_technical_details: boolean | null
           include_video: boolean | null
           link_acesso: string | null
           observacoes: string | null
+          painel_selecionado_id: string | null
+          payback_simples_anos: number | null
+          potencia_sistema_kwp: number | null
           product_group: string | null
           proposal_number: string | null
+          quantidade_paineis: number | null
           show_detailed_values: boolean | null
           status: Database["public"]["Enums"]["proposal_status"]
+          tipo_sistema: string | null
           updated_at: string
           user_id: string | null
           validade: string
@@ -757,19 +950,27 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          area_ocupada_m2?: number | null
           client_id: string
           created_at?: string
           desconto_percentual?: number | null
           discount_percentage?: number | null
+          economia_anual_estimada?: number | null
+          geracao_estimada_anual_kwh?: number | null
           id?: string
           include_technical_details?: boolean | null
           include_video?: boolean | null
           link_acesso?: string | null
           observacoes?: string | null
+          painel_selecionado_id?: string | null
+          payback_simples_anos?: number | null
+          potencia_sistema_kwp?: number | null
           product_group?: string | null
           proposal_number?: string | null
+          quantidade_paineis?: number | null
           show_detailed_values?: boolean | null
           status?: Database["public"]["Enums"]["proposal_status"]
+          tipo_sistema?: string | null
           updated_at?: string
           user_id?: string | null
           validade?: string
@@ -777,19 +978,27 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          area_ocupada_m2?: number | null
           client_id?: string
           created_at?: string
           desconto_percentual?: number | null
           discount_percentage?: number | null
+          economia_anual_estimada?: number | null
+          geracao_estimada_anual_kwh?: number | null
           id?: string
           include_technical_details?: boolean | null
           include_video?: boolean | null
           link_acesso?: string | null
           observacoes?: string | null
+          painel_selecionado_id?: string | null
+          payback_simples_anos?: number | null
+          potencia_sistema_kwp?: number | null
           product_group?: string | null
           proposal_number?: string | null
+          quantidade_paineis?: number | null
           show_detailed_values?: boolean | null
           status?: Database["public"]["Enums"]["proposal_status"]
+          tipo_sistema?: string | null
           updated_at?: string
           user_id?: string | null
           validade?: string
@@ -802,6 +1011,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_painel_selecionado_id_fkey"
+            columns: ["painel_selecionado_id"]
+            isOneToOne: false
+            referencedRelation: "paineis_solares"
             referencedColumns: ["id"]
           },
         ]
