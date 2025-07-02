@@ -57,15 +57,13 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
       <ShingleSystemSection />
 
       {/* Investment Section - sempre por último */}
-      {canInteract && !isExpired && (
-        <ShingleInvestmentSection
-          totalPrice={proposal.finalPrice}
-          discount={proposal.discount}
-          validUntil={proposal.validUntil}
-          onAccept={onAcceptProposal}
-          onReject={onRejectProposal}
-        />
-      )}
+      <ShingleInvestmentSection
+        totalPrice={proposal.finalPrice}
+        discount={proposal.discount}
+        validUntil={proposal.validUntil}
+        onAccept={canInteract && !isExpired ? onAcceptProposal : undefined}
+        onReject={canInteract && !isExpired ? onRejectProposal : undefined}
+      />
     </>
   );
 };
