@@ -35,6 +35,9 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
       {/* Principais Vantagens */}
       <ShingleAdvantagesSection />
 
+      {/* Sistema Completo de Cobertura */}
+      <ShingleSystemSection />
+
       {/* Especificação da Proposta - penúltima seção */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
@@ -53,8 +56,14 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
         </div>
       </div>
 
-      {/* Sistema Completo de Cobertura - última seção */}
-      <ShingleSystemSection />
+      {/* Investment Section - última seção */}
+      <ShingleInvestmentSection
+        totalPrice={proposal.finalPrice}
+        discount={proposal.discount}
+        validUntil={proposal.validUntil}
+        onAccept={canInteract && !isExpired ? onAcceptProposal : undefined}
+        onReject={canInteract && !isExpired ? onRejectProposal : undefined}
+      />
     </>
   );
 };
