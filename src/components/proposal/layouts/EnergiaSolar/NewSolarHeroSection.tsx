@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Phone } from 'lucide-react';
 
 interface NewSolarHeroSectionProps {
   clientName: string;
@@ -14,12 +12,6 @@ export const NewSolarHeroSection: React.FC<NewSolarHeroSectionProps> = ({
 }) => {
   const firstName = clientName.split(' ')[0];
 
-  const handleViewValues = () => {
-    const investmentSection = document.getElementById('investment-section');
-    if (investmentSection) {
-      investmentSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <div className="bg-gradient-to-br from-drystore-orange to-orange-600 text-white py-20">
@@ -32,8 +24,7 @@ export const NewSolarHeroSection: React.FC<NewSolarHeroSectionProps> = ({
 
           {/* Main Title */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            Reduza <span className="text-yellow-300">95%</span> da Sua<br />
-            Conta de Energia em <span className="text-yellow-300">45 dias</span>
+            Redução de até <span className="text-yellow-300">85%</span> na Sua Conta de Energia
           </h1>
 
           {/* Value Highlight */}
@@ -46,25 +37,6 @@ export const NewSolarHeroSection: React.FC<NewSolarHeroSectionProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
-              className="bg-white text-drystore-orange hover:bg-gray-100 px-8 py-4 text-lg font-semibold"
-              onClick={handleViewValues}
-            >
-              Ver Valores e Condições
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-drystore-orange px-8 py-4 text-lg font-semibold"
-            >
-              <Phone className="w-5 h-5 mr-2" />
-              Falar com Especialista Agora
-            </Button>
-          </div>
 
           {/* Trust Elements */}
           <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-sm opacity-80">
@@ -73,9 +45,6 @@ export const NewSolarHeroSection: React.FC<NewSolarHeroSectionProps> = ({
             </div>
             <div className="flex items-center">
               ✅ 25 anos de garantia
-            </div>
-            <div className="flex items-center">
-              ✅ Financiamento aprovado
             </div>
             <div className="flex items-center">
               ✅ Zero burocracia
