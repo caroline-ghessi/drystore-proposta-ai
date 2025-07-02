@@ -8,7 +8,7 @@ import { ShingleComparisonSection } from './ShingleComparisonSection';
 import { ShingleAdvantagesSection } from './ShingleAdvantagesSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
-import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
+import { ShingleInvestmentSection } from './ShingleInvestmentSection';
 
 const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
   proposal,
@@ -58,15 +58,13 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
 
       {/* Investment Section - sempre por último */}
       {canInteract && !isExpired && (
-        <div id="investment-section" className="bg-gray-50">
-          <ModernInvestmentSection
-            totalPrice={proposal.finalPrice}
-            discount={proposal.discount}
-            validUntil={proposal.validUntil}
-            onAccept={onAcceptProposal}
-            onReject={onRejectProposal}
-          />
-        </div>
+        <ShingleInvestmentSection
+          totalPrice={proposal.finalPrice}
+          discount={proposal.discount}
+          validUntil={proposal.validUntil}
+          onAccept={onAcceptProposal}
+          onReject={onRejectProposal}
+        />
       )}
     </>
   );
