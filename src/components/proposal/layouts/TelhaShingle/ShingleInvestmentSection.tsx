@@ -160,39 +160,43 @@ export const ShingleInvestmentSection = ({
                   }
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <div className="space-y-4 mb-6">
+                  {/* Botão Principal - ACEITAR PROPOSTA */}
                   <Button 
                     onClick={handleAcceptProposal}
                     disabled={!selectedPaymentCondition}
-                    className={`px-8 py-4 text-lg font-bold shadow-lg transform hover:scale-105 transition-all ${
+                    className={`w-full px-8 py-6 text-xl font-bold shadow-xl transform hover:scale-105 transition-all ${
                       selectedPaymentCondition 
                         ? 'bg-green-600 hover:bg-green-700 text-white' 
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed hover:scale-100'
                     }`}
                     size="lg"
                   >
-                    <CheckCircle className="w-6 h-6 mr-2" />
-                    ✅ ACEITAR PROPOSTA
+                    <CheckCircle className="w-7 h-7 mr-3" />
+                    🚀 ACEITAR PROPOSTA
                   </Button>
                   
-                  <Button 
-                    onClick={onReject}
-                    variant="outline"
-                    className="border-red-300 text-red-700 px-8 py-4 text-lg hover:bg-red-50"
-                    size="lg"
-                  >
-                    ❌ RECUSAR PROPOSTA
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    className="border-blue-300 text-blue-700 px-8 py-4 text-lg hover:bg-blue-50"
-                    size="lg"
-                    onClick={() => window.open('https://wa.me/5511999999999?text=Olá, tenho interesse na proposta de Telha Shingle', '_blank')}
-                  >
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    💬 FALAR COM VENDEDOR
-                  </Button>
+                  {/* Botões Secundários */}
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button 
+                      onClick={onReject}
+                      variant="outline"
+                      className="border-red-300 text-red-700 px-6 py-3 text-base hover:bg-red-50 flex-1 sm:flex-none"
+                      size="lg"
+                    >
+                      ❌ RECUSAR PROPOSTA
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      className="border-blue-300 text-blue-700 px-6 py-3 text-base hover:bg-blue-50 flex-1 sm:flex-none"
+                      size="lg"
+                      onClick={() => window.open('https://wa.me/5511999999999?text=Olá, tenho interesse na proposta de Telha Shingle', '_blank')}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      💬 FALAR COM VENDEDOR
+                    </Button>
+                  </div>
                 </div>
                 
                 {!selectedPaymentCondition && (
