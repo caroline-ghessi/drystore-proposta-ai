@@ -3,7 +3,6 @@ import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { ShingleHeroSection } from './ShingleHeroSection';
 import { DurabilitySection } from './DurabilitySection';
-import { CoverageCalculator } from './CoverageCalculator';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
@@ -28,9 +27,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
 
       {/* Seção de Durabilidade e Proteção */}
       <DurabilitySection />
-
-      {/* Calculadora de Cobertura */}
-      <CoverageCalculator />
 
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

@@ -2,7 +2,6 @@
 import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { LightSteelFrameHero } from './LightSteelFrameHero';
-import { ConstructionTimeCalculator } from './ConstructionTimeCalculator';
 import { SustainabilitySection } from './SustainabilitySection';
 import { CasesGallery } from './CasesGallery';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
@@ -26,9 +25,6 @@ const LightSteelFrameLayout: React.FC<ProposalLayoutProps> = ({
     <>
       {/* Hero Section Específico para Light Steel Frame */}
       <LightSteelFrameHero benefits={proposal.benefits} />
-
-      {/* Calculadora de Tempo de Construção */}
-      <ConstructionTimeCalculator />
 
       {/* Seção de Sustentabilidade */}
       <SustainabilitySection />
