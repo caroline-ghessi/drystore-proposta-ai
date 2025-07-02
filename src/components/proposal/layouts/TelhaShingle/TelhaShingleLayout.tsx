@@ -29,7 +29,13 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
       {/* Por que escolher telhas Owens Corning */}
       <OwensCorningSection />
 
-      {/* Detalhamento da Proposta */}
+      {/* Comparativo Técnico */}
+      <ShingleComparisonSection />
+
+      {/* Principais Vantagens */}
+      <ShingleAdvantagesSection />
+
+      {/* Especificação da Proposta - penúltima seção */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -46,21 +52,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
           <TechnicalChatCard />
         </div>
       </div>
-
-      {/* Comparativo Técnico */}
-      <ShingleComparisonSection />
-
-      {/* Principais Vantagens */}
-      <ShingleAdvantagesSection />
-
-      {/* Investment Section - penúltima seção */}
-      <ShingleInvestmentSection
-        totalPrice={proposal.finalPrice}
-        discount={proposal.discount}
-        validUntil={proposal.validUntil}
-        onAccept={canInteract && !isExpired ? onAcceptProposal : undefined}
-        onReject={canInteract && !isExpired ? onRejectProposal : undefined}
-      />
 
       {/* Sistema Completo de Cobertura - última seção */}
       <ShingleSystemSection />
