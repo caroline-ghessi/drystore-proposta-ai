@@ -26,16 +26,33 @@ const EnergiaSolarLayout: React.FC<ProposalLayoutProps> = ({
   console.log('🔥 EnergiaSolarLayout CARREGADO - Layout específico de energia solar atualizado');
   console.log('📊 Dados da proposta:', { clientName: proposal.clientName, totalPrice: proposal.totalPrice });
 
+  // Calcular valores de economia baseados na proposta
+  const calculateEconomyValues = () => {
+    const proposalValue = proposal.totalPrice;
+    // Assumindo payback de 6 anos e economia de 85%
+    const annualEconomy = proposalValue / 6;
+    const monthlyEconomy = Math.round(annualEconomy / 12);
+    const currentMonthlyBill = Math.round(monthlyEconomy / 0.85); // 85% de economia
+    
+    return { monthlyEconomy, currentMonthlyBill };
+  };
+
+  const { monthlyEconomy, currentMonthlyBill } = calculateEconomyValues();
+
   return (
     <>
       {/* Nova Hero Section */}
       <NewSolarHeroSection 
         clientName={proposal.clientName}
-        monthlyEconomy={14400}
+        monthlyEconomy={monthlyEconomy}
       />
 
       {/* Nova Seção "O Que Muda na Sua Empresa" */}
-      <CompanyChangeSection />
+      <CompanyChangeSection 
+        clientType={'Empresa'}
+        currentMonthlyBill={currentMonthlyBill}
+        monthlyEconomy={monthlyEconomy}
+      />
 
       {/* Seção de ROI Personalizada (mantida) */}
       <PersonalizedROISection 

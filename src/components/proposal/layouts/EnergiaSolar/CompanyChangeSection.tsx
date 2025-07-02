@@ -3,14 +3,40 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 
-export const CompanyChangeSection: React.FC = () => {
+interface CompanyChangeSectionProps {
+  clientType: string;
+  currentMonthlyBill: number;
+  monthlyEconomy: number;
+}
+
+const getClientTypeText = (clientType: string): string => {
+  const type = clientType.toLowerCase();
+  if (type.includes('residencial') || type.includes('casa') || type.includes('apartamento')) {
+    return 'Residência';
+  }
+  if (type.includes('indústria') || type.includes('industrial')) {
+    return 'Indústria';
+  }
+  if (type.includes('fazenda') || type.includes('agronegócio') || type.includes('rural')) {
+    return 'Propriedade Rural';
+  }
+  return 'Empresa';
+};
+
+export const CompanyChangeSection: React.FC<CompanyChangeSectionProps> = ({
+  clientType,
+  currentMonthlyBill,
+  monthlyEconomy
+}) => {
+  const typeText = getClientTypeText(clientType);
+  const fiveYearSavings = monthlyEconomy * 12 * 5;
   return (
     <section className="py-16 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-drystore-gray-dark mb-4">
-            O Que Muda na Sua Empresa? 
+            O Que Muda na Sua {typeText}? 
           </h2>
           <p className="text-xl text-drystore-gray-medium">
             Veja a transformação que a energia solar trará para o seu negócio
@@ -28,7 +54,7 @@ export const CompanyChangeSection: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-red-700 mb-2">HOJE</h3>
                 <div className="text-4xl font-bold text-red-600 mb-2">
-                  R$ 15.200
+                  R$ {currentMonthlyBill.toLocaleString('pt-BR')}
                 </div>
                 <p className="text-red-600 font-medium">Gasto mensal com energia</p>
               </div>
@@ -63,7 +89,7 @@ export const CompanyChangeSection: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-bold text-green-700 mb-2">COM SOLAR</h3>
                 <div className="text-4xl font-bold text-green-600 mb-2">
-                  R$ 800
+                  R$ {(currentMonthlyBill - monthlyEconomy).toLocaleString('pt-BR')}
                 </div>
                 <p className="text-green-600 font-medium">Apenas taxa mínima</p>
               </div>
@@ -71,7 +97,7 @@ export const CompanyChangeSection: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center text-green-700">
                   <CheckCircle className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <span>Preço fixo por 25 anos</span>
+                  <span>Maior segurança contra as variações na tarifa</span>
                 </div>
                 <div className="flex items-center text-green-700">
                   <CheckCircle className="w-5 h-5 mr-3 flex-shrink-0" />
@@ -94,10 +120,10 @@ export const CompanyChangeSection: React.FC = () => {
         <div className="mt-12 text-center">
           <div className="bg-gradient-to-r from-green-500 to-green-600 text-white py-6 px-8 rounded-2xl max-w-2xl mx-auto">
             <div className="text-2xl font-bold mb-2">
-              💰 Economia de R$ 14.400 todo mês!
+              💰 Economia de R$ {monthlyEconomy.toLocaleString('pt-BR')} todo mês!
             </div>
             <p className="text-lg opacity-90">
-              Em 5 anos: R$ 864.000 economizados com energia solar
+              Em 5 anos: R$ {fiveYearSavings.toLocaleString('pt-BR')} economizados com energia solar
             </p>
           </div>
         </div>

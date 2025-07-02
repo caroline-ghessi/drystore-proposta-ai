@@ -3,7 +3,7 @@ import React from 'react';
 
 interface NewSolarHeroSectionProps {
   clientName: string;
-  monthlyEconomy?: number;
+  monthlyEconomy: number;
 }
 
 export const NewSolarHeroSection: React.FC<NewSolarHeroSectionProps> = ({
