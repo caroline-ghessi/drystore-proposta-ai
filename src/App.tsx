@@ -28,6 +28,8 @@ const SecurityManagement = React.lazy(() => import('@/pages/admin/SecurityManage
 const ClientLogin = React.lazy(() => import('@/pages/ClientLogin'));
 const ClientPortal = React.lazy(() => import('@/pages/ClientPortal'));
 const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
+const SolarProposalPage = React.lazy(() => import('@/pages/SolarProposalPage'));
+const ProductUploadChoice = React.lazy(() => import('@/pages/ProductUploadChoice'));
 const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
 const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
@@ -153,6 +155,26 @@ const AppContent = () => {
             <ProtectedRoute>
               <Suspense fallback={<AppLoadingFallback type="form" />}>
                 <CreateProposal />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/energia-solar" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <SolarProposalPage />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/upload-choice/:productGroup" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <ProductUploadChoice />
               </Suspense>
             </ProtectedRoute>
           } 
