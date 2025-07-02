@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Upload, FileText, Camera, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const SolarBillUpload = () => {
   const navigate = useNavigate();
@@ -22,41 +23,69 @@ const SolarBillUpload = () => {
     setUploading(true);
     
     try {
-      // TODO: Implementar upload para tabela energia_bills_uploads
       console.log('📄 Uploading energy bill:', file.name, 'Type:', uploadType);
       
-      // Simular processamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Upload do arquivo para o storage
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('energy-bills')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(`Erro no upload: ${uploadError.message}`);
+      }
+
+      console.log('✅ File uploaded to storage:', fileName);
+
+      // Criar registro na tabela energia_bills_uploads
+      const { data: billRecord, error: insertError } = await supabase
+        .from('energia_bills_uploads')
+        .insert({
+          file_name: file.name,
+          file_path: fileName,
+          file_size: file.size,
+          extraction_status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (insertError || !billRecord) {
+        throw new Error(`Erro ao criar registro: ${insertError?.message}`);
+      }
+
+      console.log('✅ Bill record created:', billRecord.id);
+
+      // Processar via edge function
+      const { data: processingResult, error: processingError } = await supabase.functions
+        .invoke('process-energy-bill', {
+          body: { billId: billRecord.id }
+        });
+
+      if (processingError || !processingResult?.success) {
+        throw new Error(`Erro no processamento: ${processingError?.message || 'Processamento falhou'}`);
+      }
+
       toast({
         title: "Upload realizado com sucesso!",
         description: `${isPhoto ? 'Foto' : 'PDF'} processado e dados extraídos`,
       });
 
-      // Redirecionar para validação com dados mockados
+      console.log('✅ Processing completed:', processingResult.extractedData);
+
+      // Redirecionar para validação com dados reais extraídos
       navigate('/create-proposal/energia-solar/validate', {
         state: {
           extractedData: {
-            concessionaria: 'CEMIG',
-            tarifa_kwh: 0.65,
-            consumo_historico: [
-              { mes: 'Janeiro', consumo: 350 },
-              { mes: 'Fevereiro', consumo: 320 },
-              { mes: 'Março', consumo: 380 },
-              { mes: 'Abril', consumo: 340 },
-              { mes: 'Maio', consumo: 360 },
-              { mes: 'Junho', consumo: 290 },
-              { mes: 'Julho', consumo: 310 },
-              { mes: 'Agosto', consumo: 330 },
-              { mes: 'Setembro', consumo: 365 },
-              { mes: 'Outubro', consumo: 385 },
-              { mes: 'Novembro', consumo: 395 },
-              { mes: 'Dezembro', consumo: 410 }
-            ],
-            nome: 'João Silva',
-            email: 'joao@email.com',
-            endereco: 'Rua das Flores, 123 - Belo Horizonte/MG',
-            uploadType
+            concessionaria: processingResult.extractedData.concessionaria,
+            tarifa_kwh: processingResult.extractedData.tarifa_kwh,
+            consumo_historico: processingResult.extractedData.consumo_historico,
+            nome: processingResult.extractedData.nome_cliente,
+            email: processingResult.extractedData.email || '',
+            endereco: processingResult.extractedData.endereco,
+            cidade: processingResult.extractedData.cidade || '',
+            estado: processingResult.extractedData.estado || '',
+            uploadType,
+            billId: billRecord.id
           }
         }
       });
