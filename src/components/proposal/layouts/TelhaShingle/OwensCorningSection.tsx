@@ -39,10 +39,72 @@ export const OwensCorningSection: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
             Por que escolher telhas Owens Corning?
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
             Importadas diretamente dos Estados Unidos, as telhas Owens Corning são reconhecidas pela 
             <span className="font-semibold text-orange-600"> Forbes Home</span> como a segunda melhor marca do mercado.
           </p>
+          
+          {/* Forbes Ranking Box */}
+          <div className="max-w-2xl mx-auto bg-white border-2 border-orange-600 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-orange-600 p-2 rounded-full mr-3">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Ranking Forbes Home 2024</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3">
+                    1º
+                  </div>
+                  <span className="font-semibold text-orange-900">CertainTeed</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-orange-100 rounded-lg border-2 border-orange-400">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3">
+                    2º
+                  </div>
+                  <span className="font-bold text-orange-900">Owens Corning</span>
+                </div>
+                <div className="text-orange-700 font-medium text-sm">⭐ Sua escolha</div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3">
+                    3º
+                  </div>
+                  <span className="font-medium text-gray-700">IKO</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3">
+                    4º
+                  </div>
+                  <span className="font-medium text-gray-700">GAF</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3">
+                    5º
+                  </div>
+                  <span className="font-medium text-gray-700">Atlas</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-center text-sm text-gray-600">
+              Ranking baseado em qualidade, durabilidade e satisfação do cliente
+            </div>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

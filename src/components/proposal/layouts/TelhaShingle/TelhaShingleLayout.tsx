@@ -3,13 +3,11 @@ import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { ShingleHeroSection } from './ShingleHeroSection';
 import { OwensCorningSection } from './OwensCorningSection';
-import { DurabilitySection } from './DurabilitySection';
 import { ShingleSystemSection } from './ShingleSystemSection';
 import { ShingleComparisonSection } from './ShingleComparisonSection';
 import { ShingleAdvantagesSection } from './ShingleAdvantagesSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
-import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
 import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 
@@ -31,9 +29,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
 
       {/* Por que escolher telhas Owens Corning */}
       <OwensCorningSection />
-
-      {/* Seção de Durabilidade e Proteção */}
-      <DurabilitySection />
 
       {/* Sistema Completo de Cobertura */}
       <ShingleSystemSection />
@@ -61,9 +56,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
 
       {/* Principais Vantagens */}
       <ShingleAdvantagesSection />
-
-      {/* Technical Documentation */}
-      <TechnicalDocumentationSection />
 
       {/* Investment Section */}
       {canInteract && !isExpired && (
