@@ -15,9 +15,11 @@ export const useAuthSession = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = async (supabaseUser: SupabaseUser) => {
+  const loadUserProfile = async (supabaseUser: SupabaseUser, retryCount = 0) => {
     try {
-      // Timeout de 5 segundos para carregamento do perfil
+      console.log(`🔍 Carregando perfil do usuário ${supabaseUser.email} (tentativa ${retryCount + 1})`);
+      
+      // Timeout aumentado para 15 segundos
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -25,14 +27,22 @@ export const useAuthSession = () => {
         .single();
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile load timeout')), 5000);
+        setTimeout(() => reject(new Error('Profile load timeout')), 15000);
       });
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error loading profile:', error);
-        // Continuar com dados básicos se profile não carregar
+        console.error('❌ Error loading profile:', error);
+        
+        // Retry até 2 tentativas
+        if (retryCount < 2) {
+          console.log(`🔄 Tentando novamente carregar perfil em ${(retryCount + 1) * 2} segundos...`);
+          setTimeout(() => {
+            loadUserProfile(supabaseUser, retryCount + 1);
+          }, (retryCount + 1) * 2000);
+          return;
+        }
       }
 
       const userData: User = {
@@ -42,6 +52,7 @@ export const useAuthSession = () => {
         role: profile?.role || 'vendedor_interno'
       };
       
+      console.log(`✅ Perfil carregado com sucesso: ${userData.email} - Role: ${userData.role}`);
       setUser(userData);
       
       // Track activity em background (não bloqueia o login)
@@ -50,9 +61,26 @@ export const useAuthSession = () => {
       }, 0);
 
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      console.error('❌ Error loading user profile:', error);
       
-      // Fallback: criar usuário básico mesmo se profile falhar
+      // Retry até 2 tentativas
+      if (retryCount < 2) {
+        console.log(`🔄 Tentando novamente carregar perfil em ${(retryCount + 1) * 2} segundos...`);
+        setTimeout(() => {
+          loadUserProfile(supabaseUser, retryCount + 1);
+        }, (retryCount + 1) * 2000);
+        return;
+      }
+      
+      // Fallback: manter usuário existente se já tiver ou criar básico
+      const currentUser = user;
+      if (currentUser && currentUser.id === supabaseUser.id) {
+        console.log(`⚠️ Mantendo dados do usuário existente: ${currentUser.email} - Role: ${currentUser.role}`);
+        // Não sobrescrever o usuário atual se já temos dados válidos
+        return;
+      }
+      
+      console.log('⚠️ Criando usuário fallback com role vendedor_interno');
       const fallbackUser: User = {
         id: supabaseUser.id,
         name: supabaseUser.email?.split('@')[0] || 'Usuário',
