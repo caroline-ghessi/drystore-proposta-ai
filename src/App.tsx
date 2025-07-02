@@ -28,7 +28,10 @@ const SecurityManagement = React.lazy(() => import('@/pages/admin/SecurityManage
 const ClientLogin = React.lazy(() => import('@/pages/ClientLogin'));
 const ClientPortal = React.lazy(() => import('@/pages/ClientPortal'));
 const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
-const SolarProposalPage = React.lazy(() => import('@/pages/SolarProposalPage'));
+const SolarInputChoice = React.lazy(() => import('@/pages/SolarInputChoice'));
+const SolarBillUpload = React.lazy(() => import('@/pages/SolarBillUpload'));
+const SolarDataValidation = React.lazy(() => import('@/pages/SolarDataValidation'));
+const SolarProposalForm = React.lazy(() => import('@/pages/SolarProposalForm'));
 const ProductUploadChoice = React.lazy(() => import('@/pages/ProductUploadChoice'));
 const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
 const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
@@ -160,11 +163,41 @@ const AppContent = () => {
           } 
         />
         <Route 
-          path="/create-proposal/energia-solar" 
+          path="/create-proposal/energia-solar/input-choice" 
           element={
             <ProtectedRoute>
               <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarProposalPage />
+                <SolarInputChoice />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/upload" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <SolarBillUpload />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/validate" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <SolarDataValidation />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/manual" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <SolarProposalForm />
               </Suspense>
             </ProtectedRoute>
           } 

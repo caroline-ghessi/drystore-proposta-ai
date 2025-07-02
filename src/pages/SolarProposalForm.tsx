@@ -8,7 +8,7 @@ import { SolarCalculationService } from '@/services/solarCalculationService';
 import type { DadosClienteSolar } from '@/types/solarClient';
 import { useToast } from '@/hooks/use-toast';
 
-const SolarProposalPage = () => {
+const SolarProposalForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ const SolarProposalPage = () => {
         <div className="flex items-center mb-8">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/create-proposal')}
+            onClick={() => navigate('/create-proposal/energia-solar/input-choice')}
             className="mr-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -68,11 +68,11 @@ const SolarProposalPage = () => {
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span>Passo 2 de 3</span>
-            <span>66% concluído</span>
+            <span>Passo 3 de 4</span>
+            <span>75% concluído</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: '66%' }}></div>
+            <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: '75%' }}></div>
           </div>
         </div>
 
@@ -85,4 +85,4 @@ const SolarProposalPage = () => {
   );
 };
 
-export default SolarProposalPage;
+export default SolarProposalForm;

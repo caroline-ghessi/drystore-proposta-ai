@@ -11,7 +11,7 @@ const CreateProposal = () => {
 
   const handleProductGroupSelect = (productGroup: ProductGroup) => {
     if (productGroup === 'energia_solar') {
-      navigate('/create-proposal/energia-solar');
+      navigate('/create-proposal/energia-solar/input-choice');
     } else {
       navigate(`/create-proposal/upload-choice/${productGroup}`);
     }
