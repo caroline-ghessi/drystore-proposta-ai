@@ -8,18 +8,18 @@ interface ShingleHeroSectionProps {
 
 export const ShingleHeroSection: React.FC<ShingleHeroSectionProps> = ({ benefits }) => {
   const specificBenefits = [
-    { icon: Shield, text: 'Resistência superior a ventos de até 180 km/h', color: 'text-white' },
-    { icon: Droplets, text: 'Impermeabilização total com dupla proteção', color: 'text-white' },
-    { icon: Palette, text: 'Variedade de cores e texturas exclusivas', color: 'text-white' },
-    { icon: Award, text: 'Garantia de 30 anos contra defeitos', color: 'text-white' }
+    { icon: Shield, text: 'Resistência superior a ventos de até 180 km/h', color: 'text-gray-700' },
+    { icon: Droplets, text: 'Impermeabilização total com dupla proteção', color: 'text-gray-700' },
+    { icon: Palette, text: 'Variedade de cores e texturas exclusivas', color: 'text-gray-700' },
+    { icon: Award, text: 'Garantia de 30 anos contra defeitos', color: 'text-gray-700' }
   ];
 
   return (
-    <section className="relative bg-gray-900 text-white overflow-hidden">
+    <section className="relative bg-gray-50 text-gray-900 overflow-hidden">{" "}
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ff6b35' fill-opacity='0.1'%3E%3Cpath d='M20 20l10-10v20l-10-10zM10 20l10-10v20l-10-10z'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6b35' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
       </div>
 
@@ -32,51 +32,56 @@ export const ShingleHeroSection: React.FC<ShingleHeroSectionProps> = ({ benefits
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Proteção Máxima com
-              <span className="block text-orange-400">Beleza Incomparável</span>
+              Descubra o Telhado
+              <span className="block text-orange-600">dos Seus Sonhos</span>
             </h1>
             
-            <p className="text-xl text-gray-200 mb-8 leading-relaxed">
-              As telhas asfálticas mais avançadas do mercado. Tecnologia americana que combina 
-              alta performance, durabilidade excepcional e design sofisticado.
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed max-w-lg">
+              <span className="font-semibold">Telhas Shingle Owens Corning</span> de alto desempenho em até 12 vezes sem juros. 
+              Qualidade americana com resistência de mais de 50 anos.
             </p>
 
-            {/* Specific Benefits Grid */}
-            <div className="grid sm:grid-cols-2 gap-4 mb-8">
-              {specificBenefits.map((benefit, index) => (
-                <div key={index} className="flex items-start space-x-3 p-4 bg-orange-600/20 rounded-lg backdrop-blur-sm border border-orange-500/30">
-                  <benefit.icon className={`w-6 h-6 text-orange-400 flex-shrink-0 mt-0.5`} />
-                  <span className="text-white text-sm leading-relaxed">{benefit.text}</span>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <button className="px-8 py-4 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors">
+                Solicitar Orçamento
+              </button>
+              <button className="px-8 py-4 border-2 border-orange-600 text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-colors">
+                Ver Catálogo
+              </button>
+            </div>
+
+            {/* Benefits with icons */}
+            <div className="flex flex-col sm:flex-row gap-6 text-sm">
+              <div className="flex items-center">
+                <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-white text-xs">✓</span>
                 </div>
-              ))}
+                <span className="text-gray-700">Garantia de até 30 anos</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-5 h-5 bg-orange-600 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-white text-xs">$</span>
+                </div>
+                <span className="text-gray-700">A partir de 12x R$15,70</span>
+              </div>
             </div>
           </div>
 
           {/* Visual */}
           <div className="relative">
-            <div className="aspect-[4/3] bg-orange-600/20 rounded-2xl overflow-hidden border border-orange-500/30">
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
               <img 
-                src="https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800&q=80" 
-                alt="Casa com Telha Shingle"
+                src="/lovable-uploads/87413d16-a811-4d8d-b6f9-4e704ea00037.png" 
+                alt="Casas com Telhas Shingle"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent" />
               
-              {/* Stats Overlay */}
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-3 bg-white/95 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">30</div>
-                    <div className="text-xs text-gray-700">Anos Garantia</div>
-                  </div>
-                  <div className="text-center p-3 bg-white/95 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">180</div>
-                    <div className="text-xs text-gray-700">km/h Vento</div>
-                  </div>
-                  <div className="text-center p-3 bg-white/95 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">20+</div>
-                    <div className="text-xs text-gray-700">Cores</div>
-                  </div>
+              {/* Badge no canto */}
+              <div className="absolute top-6 right-6">
+                <div className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                  Telhas Shingle
+                  <div className="text-xs opacity-90">Qualidade americana</div>
                 </div>
               </div>
             </div>
