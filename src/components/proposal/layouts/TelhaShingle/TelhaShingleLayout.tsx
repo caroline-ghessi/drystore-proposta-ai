@@ -9,7 +9,6 @@ import { ShingleAdvantagesSection } from './ShingleAdvantagesSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import { ModernInvestmentSection } from '@/components/proposal/ModernInvestmentSection';
-import { RecommendedSolutionsSection } from '@/components/proposal/RecommendedSolutionsSection';
 
 const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
   proposal,
@@ -29,9 +28,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
 
       {/* Por que escolher telhas Owens Corning */}
       <OwensCorningSection />
-
-      {/* Sistema Completo de Cobertura */}
-      <ShingleSystemSection />
 
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -57,7 +53,10 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
       {/* Principais Vantagens */}
       <ShingleAdvantagesSection />
 
-      {/* Investment Section */}
+      {/* Sistema Completo de Cobertura - movido para o final */}
+      <ShingleSystemSection />
+
+      {/* Investment Section - sempre por último */}
       {canInteract && !isExpired && (
         <div id="investment-section" className="bg-gray-50">
           <ModernInvestmentSection
@@ -69,13 +68,6 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
           />
         </div>
       )}
-
-      {/* Recommended Solutions */}
-      <RecommendedSolutionsSection 
-        onSolutionSelect={onSolutionSelect}
-        selectedSolutions={selectedSolutions}
-        onCloseDeal={onCloseDeal}
-      />
     </>
   );
 };
