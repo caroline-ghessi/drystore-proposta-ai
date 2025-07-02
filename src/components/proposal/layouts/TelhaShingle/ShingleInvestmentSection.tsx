@@ -176,21 +176,22 @@ export const ShingleInvestmentSection = ({
                   </Button>
                   
                   <Button 
+                    onClick={onReject}
                     variant="outline"
-                    className="border-orange-300 text-orange-700 px-8 py-4 text-lg hover:bg-orange-50"
+                    className="border-red-300 text-red-700 px-8 py-4 text-lg hover:bg-red-50"
                     size="lg"
                   >
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Quero Mais Informações
+                    ❌ RECUSAR PROPOSTA
                   </Button>
                   
                   <Button 
                     variant="outline"
                     className="border-blue-300 text-blue-700 px-8 py-4 text-lg hover:bg-blue-50"
                     size="lg"
+                    onClick={() => window.open('https://wa.me/5511999999999?text=Olá, tenho interesse na proposta de Telha Shingle', '_blank')}
                   >
-                    <Calendar className="w-5 h-5 mr-2" />
-                    Agendar Visita Técnica
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    💬 FALAR COM VENDEDOR
                   </Button>
                 </div>
                 
