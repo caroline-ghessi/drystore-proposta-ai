@@ -56,8 +56,8 @@ export const DurabilitySection: React.FC = () => {
               key={index}
               className="group p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl hover:shadow-lg transition-all duration-300 border border-gray-200"
             >
-              <div className={`w-12 h-12 bg-${feature.color}-100 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <feature.icon className={`w-6 h-6 text-${feature.color}-600`} />
+          <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <feature.icon className="w-6 h-6 text-orange-600" />
               </div>
               
               <h3 className="font-semibold text-gray-900 mb-2">
@@ -68,7 +68,7 @@ export const DurabilitySection: React.FC = () => {
                 {feature.description}
               </p>
 
-              <div className={`text-xs font-medium text-${feature.color}-700 bg-${feature.color}-50 px-2 py-1 rounded`}>
+              <div className="text-xs font-medium text-orange-700 bg-orange-50 px-2 py-1 rounded">
                 {feature.detail}
               </div>
             </div>

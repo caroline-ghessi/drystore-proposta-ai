@@ -2,7 +2,11 @@
 import React from 'react';
 import { ProposalLayoutProps } from '@/services/proposalLayoutService';
 import { ShingleHeroSection } from './ShingleHeroSection';
+import { OwensCorningSection } from './OwensCorningSection';
 import { DurabilitySection } from './DurabilitySection';
+import { ShingleSystemSection } from './ShingleSystemSection';
+import { ShingleComparisonSection } from './ShingleComparisonSection';
+import { ShingleAdvantagesSection } from './ShingleAdvantagesSection';
 import ProposalItemsTable from '@/components/proposal/ProposalItemsTable';
 import TechnicalChatCard from '@/components/proposal/TechnicalChatCard';
 import { TechnicalDocumentationSection } from '@/components/proposal/TechnicalDocumentationSection';
@@ -25,8 +29,14 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
       {/* Hero Section Específico para Telha Shingle */}
       <ShingleHeroSection benefits={proposal.benefits} />
 
+      {/* Por que escolher telhas Owens Corning */}
+      <OwensCorningSection />
+
       {/* Seção de Durabilidade e Proteção */}
       <DurabilitySection />
+
+      {/* Sistema Completo de Cobertura */}
+      <ShingleSystemSection />
 
       {/* Detalhamento da Proposta */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -45,6 +55,12 @@ const TelhaShingleLayout: React.FC<ProposalLayoutProps> = ({
           <TechnicalChatCard />
         </div>
       </div>
+
+      {/* Comparativo Técnico */}
+      <ShingleComparisonSection />
+
+      {/* Principais Vantagens */}
+      <ShingleAdvantagesSection />
 
       {/* Technical Documentation */}
       <TechnicalDocumentationSection />
