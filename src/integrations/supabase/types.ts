@@ -1320,6 +1320,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calcular_financeiro_solar: {
+        Args: {
+          p_custo_equipamentos: number
+          p_potencia_kwp: number
+          p_geracao_anual_kwh: number
+          p_consumo_anual_kwh: number
+          p_tarifa_kwh: number
+        }
+        Returns: Json
+      }
       can_manage_resources: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1342,6 +1352,10 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
+      }
+      dimensionar_sistema_solar: {
+        Args: { p_consumo_medio_kwh: number; p_estado: string }
+        Returns: Json
       }
       generate_client_access_token: {
         Args: { client_email: string; expires_in_hours?: number }
@@ -1387,6 +1401,10 @@ export type Database = {
           severity?: string
         }
         Returns: undefined
+      }
+      selecionar_paineis_solares: {
+        Args: { p_potencia_kwp: number; p_tipo_telhado?: string }
+        Returns: Json
       }
       test_user_role_enum: {
         Args: Record<PropertyKey, never>
