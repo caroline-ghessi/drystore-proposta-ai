@@ -416,6 +416,7 @@ export type Database = {
           id: string
           tarifa_extraida: number | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           client_id?: string | null
@@ -430,6 +431,7 @@ export type Database = {
           id?: string
           tarifa_extraida?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           client_id?: string | null
@@ -444,6 +446,7 @@ export type Database = {
           id?: string
           tarifa_extraida?: number | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

@@ -38,13 +38,16 @@ const SolarBillUpload = () => {
       console.log('✅ File uploaded to storage:', fileName);
 
       // Criar registro na tabela energia_bills_uploads
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data: billRecord, error: insertError } = await supabase
         .from('energia_bills_uploads')
         .insert({
           file_name: file.name,
           file_path: fileName,
           file_size: file.size,
-          extraction_status: 'pending'
+          extraction_status: 'pending',
+          user_id: user?.id
         })
         .select()
         .single();
