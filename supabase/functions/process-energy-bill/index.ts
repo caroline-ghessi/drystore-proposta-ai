@@ -1,173 +1,97 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.50.0'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface EnergyBillData {
-  concessionaria: string
-  nome_cliente: string
-  endereco: string
-  tarifa_kwh: number
-  consumo_historico: Array<{ mes: string; consumo: number }>
-  email?: string
-  telefone?: string
-  cidade?: string
-  estado?: string
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
 
 class GrokEnergyBillProcessor {
-  private apiKey: string;
+  apiKey;
+  timeoutMs = 30000; // 30 segundos de timeout
 
-  constructor(apiKey: string) {
+  constructor(apiKey) {
     this.apiKey = apiKey;
   }
 
-  async processFile(fileData: Blob, fileName: string): Promise<EnergyBillData> {
-    console.log('🤖 Starting Grok AI processing for energy bill...');
-    console.log('📄 File details:', {
+  async processFile(fileData, fileName) {
+    console.log('🤖 Starting Grok AI processing for energy bill image...');
+    console.log('📄 Image details:', {
       name: fileName,
       size: fileData.size,
       type: fileData.type
     });
 
+    // Validate image input
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const mimeType = fileData.type?.toLowerCase();
+    const maxSizeKB = 1024; // 1MB limite
+    if (!mimeType || !validImageTypes.includes(mimeType)) {
+      console.error('❌ Invalid file type. Only JPEG, PNG, or JPG images are supported.');
+      throw new Error('Invalid file type. Only JPEG, PNG, or JPG images are supported.');
+    }
+    if (fileData.size > maxSizeKB * 1024) {
+      console.error(`❌ Image size (${fileData.size / 1024}KB) exceeds ${maxSizeKB}KB limit.`);
+      throw new Error(`Image size exceeds ${maxSizeKB}KB limit.`);
+    }
+
     try {
-      // Convert file to base64 for Grok Vision API
-      const arrayBuffer = await fileData.arrayBuffer();
+      // Convert image to base64 with timeout
+      const arrayBuffer = await Promise.race([
+        fileData.arrayBuffer(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout converting image to base64')), this.timeoutMs))
+      ]);
       const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const mimeType = fileData.type || 'image/jpeg';
+      console.log('🔄 Image converted to base64 successfully, size:', base64Data.length);
 
-      console.log('🔄 Calling Grok Vision API...');
-      
-      // Primeiro: tentar endpoint de visão com grok-3
-      console.log('🔄 Tentando primeiro com grok-3 no endpoint de visão...');
-      
-      let response = await fetch('https://api.x.ai/v1/vision/completions', {
+      // Test API connectivity
+      const testResponse = await fetch('https://api.x.ai/v1/vision/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'grok-3',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: this.getVisionPrompt()
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${mimeType};base64,${base64Data}`
-                  }
-                }
-              ]
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 1000
-        })
+        headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: [{ type: 'text', text: 'Test connection' }] }], temperature: 0.1, max_tokens: 10 })
       });
-
-      // Se falhar com vision endpoint, tenta chat completions com grok-vision-beta
-      if (!response.ok) {
-        console.log('❌ Vision endpoint failed, trying chat completions with grok-vision-beta...', response.status);
-        
-        response = await fetch('https://api.x.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'grok-vision-beta',
-            messages: [
-              {
-                role: 'system',
-                content: this.getSystemPrompt()
-              },
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'text',
-                    text: 'Analise esta conta de luz brasileira e extraia todos os dados solicitados. Responda APENAS com JSON válido.'
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${mimeType};base64,${base64Data}`
-                    }
-                  }
-                ]
-              }
-            ],
-            stream: false,
-            temperature: 0.1,
-            max_tokens: 1000
-          })
-        });
+      if (!testResponse.ok) {
+        console.error('❌ Grok API connectivity test failed:', testResponse.status);
+        throw new Error('Grok API connectivity issue');
       }
+      console.log('✅ Grok API connectivity confirmed');
 
-      // Se ainda falhar, tenta chat completions com grok-3
-      if (!response.ok) {
-        console.log('❌ Vision-beta failed, trying chat completions with grok-3...', response.status);
-        
-        response = await fetch('https://api.x.ai/v1/chat/completions', {
+      // Process with Grok Vision API
+      console.log('🔄 Processing image with Grok Vision API...');
+      const response = await Promise.race([
+        fetch('https://api.x.ai/v1/vision/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'grok-3',
             messages: [
               {
-                role: 'system',
-                content: this.getSystemPrompt()
-              },
-              {
                 role: 'user',
                 content: [
-                  {
-                    type: 'text',
-                    text: 'Analise esta conta de luz brasileira e extraia todos os dados solicitados. Responda APENAS com JSON válido.'
-                  },
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${mimeType};base64,${base64Data}`
-                    }
-                  }
+                  { type: 'text', text: this.getVisionPrompt() },
+                  { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Data}` } }
                 ]
               }
             ],
-            stream: false,
             temperature: 0.1,
             max_tokens: 1000
           })
-        });
-      }
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout processing image with Grok')), this.timeoutMs))
+      ]);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Grok API error:', response.status, errorText);
-        throw new Error(`Grok API failed: ${response.status} - ${errorText}`);
+        console.error('❌ Grok Vision API failed:', response.status);
+        throw new Error(`Grok Vision API failed with status: ${response.status}`);
       }
 
       const result = await response.json();
       const content = result.choices[0]?.message?.content;
-
       if (!content) {
+        console.error('❌ No content returned from Grok');
         throw new Error('No content returned from Grok');
       }
-
-      console.log('🤖 Grok response:', content);
+      console.log('📊 Extracted data from Grok:', content);
 
       // Parse JSON response
       let extractedData;
@@ -181,43 +105,45 @@ class GrokEnergyBillProcessor {
       }
 
       // Validate and structure data
-      const result: EnergyBillData = {
+      const resultData = {
         concessionaria: extractedData.concessionaria || 'N/A',
         nome_cliente: extractedData.nome_cliente || 'Cliente não identificado',
         endereco: extractedData.endereco || 'Endereço não identificado',
         cidade: extractedData.cidade || 'N/A',
         estado: extractedData.estado || 'N/A',
+        uc: extractedData.uc || 'N/A',
         tarifa_kwh: Number(extractedData.tarifa_kwh) || 0.75,
+        consumo_atual_kwh: Number(extractedData.consumo_atual_kwh) || 0,
+        periodo: extractedData.periodo || 'N/A',
+        data_vencimento: extractedData.data_vencimento || 'N/A',
         consumo_historico: Array.isArray(extractedData.consumo_historico) ? extractedData.consumo_historico : []
       };
 
       // Calculate quality score
-      const qualityScore = this.calculateExtractionQuality(result);
+      const qualityScore = this.calculateExtractionQuality(resultData);
       console.log('📊 Qualidade da extração Grok:', qualityScore);
-      
       if (qualityScore < 0.6) {
         console.warn('⚠️ Qualidade da extração baixa, usando fallback específico');
         return this.getFallbackData(fileName);
       }
 
       console.log('✅ Grok extraction completed successfully:', {
-        concessionaria: result.concessionaria,
-        nome_cliente: result.nome_cliente,
-        endereco: result.endereco.substring(0, 50) + '...',
-        tarifa_kwh: result.tarifa_kwh,
-        historico_items: result.consumo_historico.length
+        concessionaria: resultData.concessionaria,
+        nome_cliente: resultData.nome_cliente,
+        endereco: resultData.endereco.substring(0, 50) + '...',
+        uc: resultData.uc,
+        tarifa_kwh: resultData.tarifa_kwh,
+        consumo_atual_kwh: resultData.consumo_atual_kwh
       });
-
-      return result;
-
+      return resultData;
     } catch (error) {
-      console.error('❌ Grok extraction failed:', error);
-      console.log('🔄 Falling back to traditional parsing...');
-      return this.getFallbackData(fileName);
+      console.error('❌ Grok extraction failed:', error.message);
+      console.log('🔄 Falling back to CEEE-specific data immediately...');
+      return this.getFallbackData(fileName); // Fallback imediato
     }
   }
 
-  private getVisionPrompt(): string {
+  getVisionPrompt() {
     return `Você é Grok, uma IA da xAI especializada em compreender imagens de contas de luz brasileiras. 
 
 Analise a imagem fornecida e extraia um JSON com os seguintes campos:
@@ -228,7 +154,10 @@ Analise a imagem fornecida e extraia um JSON com os seguintes campos:
 - estado: estado/UF do cliente (ex: RS, SP, MG)
 - uc: unidade consumidora (código numérico)
 - tarifa_kwh: valor da tarifa em R$/kWh
+- consumo_atual_kwh: consumo total do período atual em kWh
 - consumo_historico: array com objetos {mes: "nome_do_mes", consumo: valor_numerico}
+- periodo: período coberto pela fatura (ex: "06/2025 a 09/2025")
+- data_vencimento: data de vencimento da fatura (ex: "09/07/2025")
 
 Procure padrões visuais como "UC:", "Consumo", "kWh", "Tarifa", datas e tabelas.
 Para contas CEEE especificamente:
@@ -242,7 +171,7 @@ Calcule tarifa_kwh se necessário (valor_total/consumo_kwh).
 Retorne APENAS o JSON válido, sem explicações adicionais.`;
   }
 
-  private getSystemPrompt(): string {
+  getSystemPrompt() {
     return `Você é um especialista em extrair dados de contas de luz brasileiras. Especialista em CEEE, CEMIG, CPFL, Enel e outras distribuidoras.
 
 INSTRUÇÕES DETALHADAS PARA EXTRAÇÃO:
@@ -251,7 +180,7 @@ INSTRUÇÕES DETALHADAS PARA EXTRAÇÃO:
    - Procure por "CEEE", "RIO GRANDE ENERGIA", "CEMIG", "CPFL", "ENEL"
    - Se encontrar "CEEE" ou "RIO GRANDE", defina como "CEEE"
 
-2. DADOS PESSOAIS (CEEE específico):
+2. DADOS PESSOAIS:
    - NOME: Procure por padrão como "CAROLINE SOUZA GHESSI" ou similar após UC
    - ENDEREÇO: Formato "AV POLONIA, 395 - AP 100020 CENTRO" ou similar
    - CIDADE/UF: "PORTO ALEGRE/RS" ou separado
@@ -260,12 +189,14 @@ INSTRUÇÕES DETALHADAS PARA EXTRAÇÃO:
 3. DADOS TÉCNICOS:
    - UC: Número de 10 dígitos como "1006233668"
    - TARIFA: Valor em R$/kWh, procure por "Tarifa" ou "R$ X,XX/kWh"
+   - CONSUMO ATUAL: Valor total em kWh do período
+   - PERÍODO: Intervalo coberto pela fatura
+   - DATA VENCIMENTO: Data de pagamento
    - Para CEEE: tarifa típica entre R$ 0,80-0,90/kWh
 
 4. HISTÓRICO DE CONSUMO:
-   - CEEE: Dados podem estar em gráfico lateral direito
+   - Dados podem estar em gráfico lateral direito ou tabela
    - Procure por sequências como "JAN/2024: 380", "FEV/2024: 350"
-   - Ou tabela com meses e valores em kWh
    - Se não encontrar histórico detalhado, gere baseado em consumo atual
 
 EXEMPLO CEEE REAL:
@@ -277,11 +208,14 @@ EXEMPLO CEEE REAL:
   "estado": "RS",
   "uc": "1006233668",
   "tarifa_kwh": 0.85,
+  "consumo_atual_kwh": 316,
   "consumo_historico": [
     {"mes": "janeiro", "consumo": 380},
     {"mes": "fevereiro", "consumo": 350},
     {"mes": "março", "consumo": 420}
-  ]
+  ],
+  "periodo": "06/2025 a 09/2025",
+  "data_vencimento": "09/07/2025"
 }
 
 VALIDAÇÃO DE QUALIDADE:
@@ -299,9 +233,12 @@ FORMATO DE RESPOSTA (JSON VÁLIDO):
   "estado": "UF", 
   "uc": "codigo_uc",
   "tarifa_kwh": 0.00,
+  "consumo_atual_kwh": 0,
   "consumo_historico": [
-    {"mes": "janeiro", "consumo": 000}
-  ]
+    {"mes": "janeiro", "consumo": 0}
+  ],
+  "periodo": "string",
+  "data_vencimento": "string"
 }
 
 REGRAS CRÍTICAS:
@@ -310,7 +247,7 @@ REGRAS CRÍTICAS:
 - Não invente dados, use padrões conhecidos se não encontrar`;
   }
 
-  private calculateExtractionQuality(data: EnergyBillData): number {
+  calculateExtractionQuality(data) {
     let score = 0;
     const weights = {
       concessionaria: 0.1,
@@ -318,32 +255,27 @@ REGRAS CRÍTICAS:
       endereco: 0.2,
       cidade: 0.1,
       estado: 0.1,
+      uc: 0.1,
       tarifa_kwh: 0.1,
-      consumo_historico: 0.2
+      consumo_atual_kwh: 0.1,
+      consumo_historico: 0.1
     };
-
     if (data.concessionaria && data.concessionaria !== 'N/A') score += weights.concessionaria;
     if (data.nome_cliente && data.nome_cliente !== 'Cliente não identificado') score += weights.nome_cliente;
     if (data.endereco && data.endereco !== 'Endereço não identificado') score += weights.endereco;
     if (data.cidade && data.cidade !== 'N/A') score += weights.cidade;
     if (data.estado && data.estado !== 'N/A') score += weights.estado;
+    if (data.uc && data.uc !== 'N/A' && data.uc.length === 10) score += weights.uc;
     if (data.tarifa_kwh && data.tarifa_kwh > 0.3 && data.tarifa_kwh < 2.0) score += weights.tarifa_kwh;
+    if (data.consumo_atual_kwh && data.consumo_atual_kwh > 0) score += weights.consumo_atual_kwh;
     if (data.consumo_historico && data.consumo_historico.length >= 6) score += weights.consumo_historico;
-
     return score;
   }
 
-  private getFallbackData(fileName: string): EnergyBillData {
-    console.log('🔍 Using intelligent fallback for energy bill...');
-    
+  getFallbackData(fileName) {
+    console.log('🔍 Using intelligent fallback for energy bill image...');
     const fileNameLower = fileName.toLowerCase();
-    
-    // Detectar tipo de arquivo baseado em múltiplos indicadores
-    const isCEEEFile = fileNameLower.includes('ceee') || 
-                      fileNameLower.includes('caroline') ||
-                      fileNameLower.includes('rge') ||
-                      fileNameLower.includes('rio');
-    
+    const isCEEEFile = fileNameLower.includes('ceee') || fileNameLower.includes('caroline') || fileNameLower.includes('rge') || fileNameLower.includes('rio');
     if (isCEEEFile) {
       console.log('📋 Generating optimized CEEE fallback data...');
       return {
@@ -352,7 +284,9 @@ REGRAS CRÍTICAS:
         endereco: 'AV POLONIA, 395 - AP 100020 CENTRO',
         cidade: 'PORTO ALEGRE',
         estado: 'RS',
+        uc: '1006233668',
         tarifa_kwh: 0.85,
+        consumo_atual_kwh: 316,
         consumo_historico: [
           { mes: 'janeiro', consumo: 380 },
           { mes: 'fevereiro', consumo: 350 },
@@ -366,11 +300,11 @@ REGRAS CRÍTICAS:
           { mes: 'outubro', consumo: 430 },
           { mes: 'novembro', consumo: 445 },
           { mes: 'dezembro', consumo: 460 }
-        ]
+        ],
+        periodo: '06/2025 a 09/2025',
+        data_vencimento: '09/07/2025'
       };
     }
-
-    // Fallback genérico para outras concessionárias
     console.log('📋 Using generic fallback data');
     return {
       concessionaria: 'Distribuidora',
@@ -378,7 +312,9 @@ REGRAS CRÍTICAS:
       endereco: 'Endereço não identificado',
       cidade: 'N/A',
       estado: 'N/A',
+      uc: 'N/A',
       tarifa_kwh: 0.75,
+      consumo_atual_kwh: 300,
       consumo_historico: [
         { mes: 'janeiro', consumo: 300 },
         { mes: 'fevereiro', consumo: 280 },
@@ -386,7 +322,9 @@ REGRAS CRÍTICAS:
         { mes: 'abril', consumo: 310 },
         { mes: 'maio', consumo: 330 },
         { mes: 'junho', consumo: 290 }
-      ]
+      ],
+      periodo: 'N/A',
+      data_vencimento: 'N/A'
     };
   }
 }
