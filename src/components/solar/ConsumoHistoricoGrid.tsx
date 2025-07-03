@@ -28,13 +28,17 @@ export const ConsumoHistoricoGrid: React.FC<ConsumoHistoricoGridProps> = ({
   };
 
   const calcularMedia = () => {
-    const total = consumo.reduce((sum, item) => sum + (item.consumo || 0), 0);
+    // Verificação robusta para array vazio ou undefined
+    if (!consumo || !Array.isArray(consumo) || consumo.length === 0) {
+      return 0;
+    }
+    const total = consumo.reduce((sum, item) => sum + (item?.consumo || 0), 0);
     return total / 12;
   };
 
-  // Garantir que temos 12 meses
+  // Garantir que temos 12 meses - proteção contra array vazio
   const consumoCompleto = MESES.map((mes, index) => {
-    const existente = consumo.find(c => c.mes === mes);
+    const existente = Array.isArray(consumo) ? consumo.find(c => c?.mes === mes) : null;
     return existente || { mes, consumo: 0 };
   });
 
