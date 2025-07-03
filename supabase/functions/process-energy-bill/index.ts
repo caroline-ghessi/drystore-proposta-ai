@@ -41,14 +41,16 @@ class GrokEnergyBillProcessor {
 
       console.log('🔄 Calling Grok Vision API...');
       
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      console.log('🔄 Tentando primeiro com Grok-3-latest...');
+      
+      let response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'grok-vision-beta',
+          model: 'grok-3-latest',
           messages: [
             {
               role: 'system',
@@ -70,10 +72,51 @@ class GrokEnergyBillProcessor {
               ]
             }
           ],
+          stream: false,
           temperature: 0.1,
           max_tokens: 1000
         })
       });
+
+      // Se falhar com grok-3-latest, tenta com grok-vision-beta
+      if (!response.ok) {
+        console.log('❌ Grok-3-latest failed, trying grok-vision-beta...', response.status);
+        
+        response = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'grok-vision-beta',
+            messages: [
+              {
+                role: 'system',
+                content: this.getSystemPrompt()
+              },
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'Analise esta conta de luz brasileira e extraia todos os dados solicitados. Responda APENAS com JSON válido.'
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Data}`
+                    }
+                  }
+                ]
+              }
+            ],
+            stream: false,
+            temperature: 0.1,
+            max_tokens: 1000
+          })
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
