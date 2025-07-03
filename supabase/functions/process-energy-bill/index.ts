@@ -93,8 +93,9 @@ class AdobeEnergyBillClient {
       assetID: assetID,
       elementsToExtract: ['text', 'tables'],
       tableOutputFormat: 'xlsx',
-      getCharBounds: false,
-      includeStyling: false
+      getCharBounds: true,
+      includeStyling: true,
+      locale: 'pt-BR'
     };
 
     console.log('🚀 Starting PDF extraction...');
@@ -197,30 +198,54 @@ const parseEnergyBillWithAI = async (textContent: string): Promise<EnergyBillDat
   }
 
   try {
-    const prompt = `Você é um especialista em extrair dados de contas de luz brasileiras, especialmente da CEEE (Companhia Estadual de Distribuição de Energia Elétrica).
+    const prompt = `Você é um especialista em extrair dados de contas de luz brasileiras. Sua especialidade é analisar faturas de concessionárias como CEEE, CEMIG, CPFL, Enel e outras.
 
-Analise o texto extraído da conta de luz abaixo e extraia EXATAMENTE os seguintes dados no formato JSON:
-
-TEXTO DA CONTA:
+TEXTO EXTRAÍDO DA CONTA DE LUZ:
 ${textContent}
 
-INSTRUÇÕES ESPECÍFICAS:
-1. CONCESSIONÁRIA: Identifique se é CEEE, CEMIG, CPFL, Enel, etc.
-2. NOME DO CLIENTE: Nome completo da pessoa (ex: "CAROLINE SOUZA GHESSI")
-3. ENDEREÇO: Endereço completo incluindo CEP (ex: "AV POLONIA, 395 - AP 100020 CENTRO")
-4. CIDADE/ESTADO: Extrair separadamente
-5. UC (Unidade Consumidora): Código numérico de 10 dígitos
-6. TARIFA kWh: Valor em R$ por kWh (ex: 0.85)
-7. HISTÓRICO DE CONSUMO: Últimos 12 meses em kWh
+INSTRUÇÕES PARA EXTRAÇÃO:
 
-FORMATO DE RESPOSTA (JSON válido):
+1. CONCESSIONÁRIA: Identifique o nome da distribuidora de energia (CEEE, CEMIG, CPFL, Enel, etc.)
+
+2. DADOS PESSOAIS:
+   - Nome completo do cliente titular
+   - Endereço completo (rua, número, complemento, bairro, CEP)
+   - Cidade e estado (UF)
+
+3. DADOS TÉCNICOS:
+   - UC (Unidade Consumidora): código numérico geralmente de 8-12 dígitos
+   - Tarifa por kWh: valor em R$ por quilowatt-hora
+   
+4. HISTÓRICO DE CONSUMO:
+   - Procure por tabelas ou gráficos com dados mensais de consumo em kWh
+   - Extraia os últimos 12 meses disponíveis
+   - Formato: {"mes": "nome_do_mes", "consumo": valor_numerico}
+
+PADRÕES ESPECÍFICOS POR CONCESSIONÁRIA:
+
+CEEE (Rio Grande do Sul):
+- Layout típico: cabeçalho com "CEEE" ou "RIO GRANDE ENERGIA"
+- UC geralmente com 10 dígitos
+- Histórico de consumo pode estar em gráfico lateral
+- Endereços comuns: Porto Alegre, Canoas, etc.
+
+CEMIG (Minas Gerais):
+- Cabeçalho com "CEMIG" ou "COMPANHIA ENERGÉTICA"
+- UC com formato específico
+- Histórico em tabela detalhada
+
+CPFL (São Paulo):
+- Identificação "CPFL" ou "PAULISTA"
+- Layout padronizado com dados organizados
+
+FORMATO DE RESPOSTA (JSON VÁLIDO):
 {
-  "concessionaria": "nome da concessionária",
-  "nome_cliente": "nome completo do cliente",
-  "endereco": "endereço completo",
+  "concessionaria": "nome_da_concessionaria",
+  "nome_cliente": "nome_completo_do_cliente",
+  "endereco": "endereco_completo_com_cep",
   "cidade": "cidade",
   "estado": "UF",
-  "uc": "código UC",
+  "uc": "codigo_uc",
   "tarifa_kwh": 0.00,
   "consumo_historico": [
     {"mes": "janeiro", "consumo": 000},
@@ -228,12 +253,13 @@ FORMATO DE RESPOSTA (JSON válido):
   ]
 }
 
-IMPORTANTE:
-- Se for CEEE, procure especificamente por "CAROLINE SOUZA GHESSI" no nome
-- Para CEEE, o endereço deve incluir "AV POLONIA"
-- UC da CEEE deve ser "1006233668" se for da Caroline
-- Valores realistas: tarifa entre R$ 0,50 e R$ 2,00, consumo entre 100-800 kWh
-- Responda APENAS com o JSON válido, sem explicações adicionais`
+REGRAS IMPORTANTES:
+- Extraia dados EXATOS do texto, não invente informações
+- Se não encontrar algum dado, use valores padrão realistas
+- Tarifa típica: entre R$ 0,50 e R$ 2,00 por kWh
+- Consumo residencial típico: 150-800 kWh/mês
+- Responda APENAS com JSON válido, sem explicações extras
+- Se houver múltiplos endereços, use o do consumidor (não da empresa)`
 
     console.log('🔄 Calling OpenAI API for energy bill analysis...')
     
@@ -487,32 +513,77 @@ serve(async (req) => {
       const resultData = await adobeClient.downloadResult(extractResult.asset.downloadUri)
       console.log('📊 Adobe result data received:', {
         hasElements: !!resultData.elements,
-        elementsCount: resultData.elements?.length || 0
+        elementsCount: resultData.elements?.length || 0,
+        resultDataKeys: Object.keys(resultData || {}),
+        hasExtendedMetadata: !!resultData.extended_metadata
       })
+      
+      // Log completo da estrutura de dados para debug
+      console.log('🔍 Full Adobe result structure:', JSON.stringify(resultData, null, 2).substring(0, 2000))
       
       // Extrair texto dos elementos com debug detalhado
       const elements = resultData.elements || []
       const textElements = elements.filter((el: any) => el.Text)
       
+      console.log('📝 Raw elements count:', elements.length)
       console.log('📝 Text elements found:', textElements.length)
-      console.log('📝 First 5 text elements:', textElements.slice(0, 5).map((el: any) => el.Text))
+      console.log('📝 Sample elements structure:', elements.slice(0, 3).map((el: any) => ({
+        type: typeof el,
+        keys: Object.keys(el || {}),
+        hasText: !!el.Text,
+        hasPath: !!el.Path,
+        hasAttributes: !!el.attributes
+      })))
+      
+      // Log primeiros elementos de texto encontrados
+      if (textElements.length > 0) {
+        console.log('📝 First 10 text elements:', textElements.slice(0, 10).map((el: any) => ({
+          text: el.Text,
+          bounds: el.Bounds,
+          font: el.Font
+        })))
+      } else {
+        console.warn('⚠️ No text elements found in Adobe response')
+        // Tentar extrair texto de outras estruturas possíveis
+        console.log('🔍 Checking alternative text extraction methods...')
+        const allKeys = elements.map((el: any) => Object.keys(el || {})).flat()
+        console.log('🔍 All element keys found:', [...new Set(allKeys)])
+      }
       
       extractedText = textElements
         .map((el: any) => el.Text)
         .join(' ')
       
-      console.log('✅ OCR extraction completed successfully')
+      console.log('✅ OCR extraction completed')
       console.log('📊 Extracted text length:', extractedText.length)
-      console.log('📝 Text sample (first 500 chars):', extractedText.substring(0, 500))
+      console.log('📝 Text sample (first 800 chars):', extractedText.substring(0, 800))
+      console.log('📝 Text sample (last 300 chars):', extractedText.slice(-300))
       
-      // Verificar se o texto realmente contém dados da CEEE
-      if (extractedText.toUpperCase().includes('CEEE') || 
-          extractedText.toUpperCase().includes('CAROLINE') ||
-          extractedText.includes('1006233668')) {
+      // Verificação mais detalhada do conteúdo
+      const upperText = extractedText.toUpperCase()
+      const detectionResults = {
+        containsCEEE: upperText.includes('CEEE'),
+        containsCaroline: upperText.includes('CAROLINE'),
+        containsUC: extractedText.includes('1006233668'),
+        containsRioGrande: upperText.includes('RIO GRANDE'),
+        containsEnergia: upperText.includes('ENERGIA'),
+        containsCompanhia: upperText.includes('COMPANHIA'),
+        containsPolonia: upperText.includes('POLONIA')
+      }
+      
+      console.log('🔍 Content detection results:', detectionResults)
+      
+      if (detectionResults.containsCEEE || detectionResults.containsCaroline || detectionResults.containsUC) {
         console.log('✅ CEEE content detected in extracted text')
       } else {
         console.warn('⚠️ CEEE content NOT detected in extracted text')
-        console.log('📝 Full extracted text for debugging:', extractedText)
+        console.log('📝 Full extracted text for debugging (first 2000 chars):', extractedText.substring(0, 2000))
+        
+        // Verificar se há conteúdo alternativo
+        if (extractedText.length < 50) {
+          console.error('❌ Extracted text is too short, possible OCR failure')
+          throw new Error('Adobe OCR returned insufficient text content')
+        }
       }
       
     } catch (ocrError) {
