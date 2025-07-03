@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, Camera, Sun } from 'lucide-react';
+import { ArrowLeft, Upload, Camera, Sun } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,8 +13,8 @@ const SolarBillUpload = () => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   
-  const uploadType = location.state?.type || 'pdf';
-  const isPhoto = uploadType === 'photo';
+  // Sempre será foto agora (não há mais opção de PDF)
+  const uploadType = 'photo';
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -70,7 +70,7 @@ const SolarBillUpload = () => {
 
       toast({
         title: "Upload realizado com sucesso!",
-        description: `${isPhoto ? 'Foto' : 'PDF'} processado e dados extraídos`,
+        description: "Foto processada e dados extraídos com sucesso",
       });
 
       console.log('✅ Processing completed:', processingResult.extractedData);
@@ -123,10 +123,10 @@ const SolarBillUpload = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {isPhoto ? 'Foto da Conta de Luz' : 'Upload PDF da Conta'}
+                Foto da Conta de Luz
               </h1>
               <p className="text-gray-600 mt-1">
-                Envie sua conta de luz para extração automática dos dados
+                Envie uma foto da sua conta de luz para extração automática dos dados
               </p>
             </div>
           </div>
@@ -147,23 +147,16 @@ const SolarBillUpload = () => {
         <Card className="border-2 border-dashed border-gray-300 hover:border-yellow-500 transition-colors">
           <CardContent className="p-12">
             <div className="text-center">
-              <div className={`${isPhoto ? 'bg-green-100' : 'bg-blue-100'} p-8 rounded-lg mx-auto mb-6 w-fit`}>
-                {isPhoto ? (
-                  <Camera className="w-16 h-16 text-green-600" />
-                ) : (
-                  <FileText className="w-16 h-16 text-blue-600" />
-                )}
+              <div className="bg-green-100 p-8 rounded-lg mx-auto mb-6 w-fit">
+                <Camera className="w-16 h-16 text-green-600" />
               </div>
               
               <h3 className="text-2xl font-semibold mb-4">
-                {isPhoto ? 'Enviar Foto da Conta' : 'Fazer Upload do PDF'}
+                Enviar Foto da Conta de Luz
               </h3>
               
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                {isPhoto 
-                  ? 'Tire uma foto clara da sua conta de luz. Nossa IA irá extrair automaticamente todos os dados necessários.'
-                  : 'Selecione o arquivo PDF da sua conta de luz. Nossa IA irá extrair automaticamente o histórico de consumo e tarifas.'
-                }
+                Tire uma foto clara da sua conta de luz. Nossa IA irá extrair automaticamente todos os dados necessários como consumo histórico, tarifas e informações da concessionária.
               </p>
 
               <div className="space-y-4 mb-8">
@@ -180,7 +173,7 @@ const SolarBillUpload = () => {
                 <input
                   type="file"
                   id="bill-upload"
-                  accept={isPhoto ? "image/*" : ".pdf"}
+                  accept="image/*"
                   onChange={handleFileUpload}
                   className="hidden"
                   disabled={uploading}
@@ -190,26 +183,23 @@ const SolarBillUpload = () => {
                   onClick={() => document.getElementById('bill-upload')?.click()}
                   disabled={uploading}
                   size="lg"
-                  className={`${isPhoto ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white px-8`}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8"
                 >
                   {uploading ? (
                     <>
                       <div className="animate-spin w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-                      Processando...
+                      Processando foto...
                     </>
                   ) : (
                     <>
                       <Upload className="w-5 h-5 mr-2" />
-                      {isPhoto ? 'Enviar Foto' : 'Fazer Upload'}
+                      Enviar Foto
                     </>
                   )}
                 </Button>
 
                 <p className="text-xs text-gray-500">
-                  {isPhoto 
-                    ? 'Formatos aceitos: JPG, PNG, HEIC • Máximo 10MB'
-                    : 'Formato aceito: PDF • Máximo 10MB'
-                  }
+                  Formatos aceitos: JPG, PNG, HEIC • Máximo 10MB
                 </p>
               </div>
             </div>

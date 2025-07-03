@@ -3,14 +3,13 @@ import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, FileText, Camera, PenTool, Sun } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, PenTool, Sun } from 'lucide-react';
 
 const SolarInputChoice = () => {
   const navigate = useNavigate();
 
-  const handleOptionSelect = (option: 'pdf' | 'photo' | 'manual') => {
+  const handleOptionSelect = (option: 'photo' | 'manual') => {
     switch (option) {
-      case 'pdf':
       case 'photo':
         navigate('/create-proposal/energia-solar/upload', { state: { type: option } });
         break;
@@ -56,36 +55,7 @@ const SolarInputChoice = () => {
         </div>
 
         {/* Opções de Input */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-yellow-500"
-            onClick={() => handleOptionSelect('pdf')}
-          >
-            <CardContent className="p-8">
-              <div className="text-center">
-                <div className="bg-blue-100 p-6 rounded-lg mx-auto mb-6 w-fit">
-                  <FileText className="w-12 h-12 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold mb-4">PDF da Conta de Luz</h3>
-                <p className="text-gray-600 mb-6">
-                  IA extrai automaticamente consumo histórico, tarifa e dados da concessionária
-                </p>
-                <div className="space-y-2 text-sm text-gray-500 mb-6">
-                  <p>• Extração automática de dados</p>
-                  <p>• Histórico de 12 meses</p>
-                  <p>• Processamento inteligente</p>
-                </div>
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                >
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  Upload PDF
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-green-500"
             onClick={() => handleOptionSelect('photo')}
@@ -95,14 +65,15 @@ const SolarInputChoice = () => {
                 <div className="bg-green-100 p-6 rounded-lg mx-auto mb-6 w-fit">
                   <Camera className="w-12 h-12 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold mb-4">Foto da Conta</h3>
+                <h3 className="text-xl font-semibold mb-4">Foto da Conta de Luz</h3>
                 <p className="text-gray-600 mb-6">
                   Tire uma foto da conta de luz e nossa IA extrairá os dados automaticamente
                 </p>
                 <div className="space-y-2 text-sm text-gray-500 mb-6">
                   <p>• Reconhecimento de imagem</p>
-                  <p>• Prático e rápido</p>
-                  <p>• Validação inteligente</p>
+                  <p>• Extração automática de dados</p>
+                  <p>• Processamento inteligente</p>
+                  <p>• Histórico de consumo</p>
                 </div>
                 <Button 
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -132,6 +103,7 @@ const SolarInputChoice = () => {
                   <p>• Controle total dos dados</p>
                   <p>• Flexibilidade máxima</p>
                   <p>• Ideal para casos específicos</p>
+                  <p>• Personalização completa</p>
                 </div>
                 <Button 
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
@@ -146,7 +118,7 @@ const SolarInputChoice = () => {
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>💡 <strong>PDF/Foto</strong>: Extração automática mais rápida | <strong>Manual</strong>: Controle total dos dados</p>
+          <p>💡 <strong>Foto</strong>: Extração automática mais rápida | <strong>Manual</strong>: Controle total dos dados</p>
         </div>
       </div>
     </Layout>
