@@ -37,31 +37,28 @@ class GrokEnergyBillProcessor {
       // Convert file to base64 for Grok Vision API
       const arrayBuffer = await fileData.arrayBuffer();
       const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const mimeType = fileData.type || 'application/pdf';
+      const mimeType = fileData.type || 'image/jpeg';
 
       console.log('🔄 Calling Grok Vision API...');
       
-      console.log('🔄 Tentando primeiro com Grok-3-latest...');
+      // Primeiro: tentar endpoint de visão com grok-3
+      console.log('🔄 Tentando primeiro com grok-3 no endpoint de visão...');
       
-      let response = await fetch('https://api.x.ai/v1/chat/completions', {
+      let response = await fetch('https://api.x.ai/v1/vision/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'grok-3-latest',
+          model: 'grok-3',
           messages: [
-            {
-              role: 'system',
-              content: this.getSystemPrompt()
-            },
             {
               role: 'user',
               content: [
                 {
                   type: 'text',
-                  text: 'Analise esta conta de luz brasileira e extraia todos os dados solicitados. Responda APENAS com JSON válido.'
+                  text: this.getVisionPrompt()
                 },
                 {
                   type: 'image_url',
@@ -72,15 +69,14 @@ class GrokEnergyBillProcessor {
               ]
             }
           ],
-          stream: false,
           temperature: 0.1,
           max_tokens: 1000
         })
       });
 
-      // Se falhar com grok-3-latest, tenta com grok-vision-beta
+      // Se falhar com vision endpoint, tenta chat completions com grok-vision-beta
       if (!response.ok) {
-        console.log('❌ Grok-3-latest failed, trying grok-vision-beta...', response.status);
+        console.log('❌ Vision endpoint failed, trying chat completions with grok-vision-beta...', response.status);
         
         response = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
@@ -90,6 +86,46 @@ class GrokEnergyBillProcessor {
           },
           body: JSON.stringify({
             model: 'grok-vision-beta',
+            messages: [
+              {
+                role: 'system',
+                content: this.getSystemPrompt()
+              },
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'Analise esta conta de luz brasileira e extraia todos os dados solicitados. Responda APENAS com JSON válido.'
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${mimeType};base64,${base64Data}`
+                    }
+                  }
+                ]
+              }
+            ],
+            stream: false,
+            temperature: 0.1,
+            max_tokens: 1000
+          })
+        });
+      }
+
+      // Se ainda falhar, tenta chat completions com grok-3
+      if (!response.ok) {
+        console.log('❌ Vision-beta failed, trying chat completions with grok-3...', response.status);
+        
+        response = await fetch('https://api.x.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'grok-3',
             messages: [
               {
                 role: 'system',
@@ -179,6 +215,31 @@ class GrokEnergyBillProcessor {
       console.log('🔄 Falling back to traditional parsing...');
       return this.getFallbackData(fileName);
     }
+  }
+
+  private getVisionPrompt(): string {
+    return `Você é Grok, uma IA da xAI especializada em compreender imagens de contas de luz brasileiras. 
+
+Analise a imagem fornecida e extraia um JSON com os seguintes campos:
+- concessionaria: nome da distribuidora de energia (CEEE, CEMIG, CPFL, etc.)
+- nome_cliente: nome completo do cliente
+- endereco: endereço completo do cliente
+- cidade: cidade do cliente
+- estado: estado/UF do cliente (ex: RS, SP, MG)
+- uc: unidade consumidora (código numérico)
+- tarifa_kwh: valor da tarifa em R$/kWh
+- consumo_historico: array com objetos {mes: "nome_do_mes", consumo: valor_numerico}
+
+Procure padrões visuais como "UC:", "Consumo", "kWh", "Tarifa", datas e tabelas.
+Para contas CEEE especificamente:
+- UC geralmente tem 10 dígitos
+- Tarifa típica entre R$ 0,80-0,90/kWh
+- Dados históricos podem estar em gráfico lateral
+
+Se não conseguir extrair algum dado, use "N/A" ou valor padrão apropriado.
+Calcule tarifa_kwh se necessário (valor_total/consumo_kwh).
+
+Retorne APENAS o JSON válido, sem explicações adicionais.`;
   }
 
   private getSystemPrompt(): string {
