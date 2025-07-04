@@ -59,9 +59,15 @@ export class FallbackDataProvider {
   }
 
   getFallbackData(fileName: string): ExtractedEnergyBillData {
-    console.log('🔍 Using intelligent fallback for energy bill image...');
+    console.log('🔍 FASE 4: Using intelligent fallback for energy bill image...');
+    console.log('📄 Fallback analysis:', {
+      fileName,
+      fileSize: fileName.length,
+      timestamp: new Date().toISOString()
+    });
+    
     const fileNameLower = fileName.toLowerCase();
-    const isCEEEFile = fileNameLower.includes('ceee') || fileNameLower.includes('caroline') || fileNameLower.includes('rge') || fileNameLower.includes('rio');
+    const isCEEEFile = this.detectCEEEFromFilename(fileNameLower);
     
     if (isCEEEFile) {
       console.log('📋 Generating optimized CEEE fallback data...');
@@ -114,5 +120,33 @@ export class FallbackDataProvider {
       periodo: 'N/A',
       data_vencimento: 'N/A'
     };
+  }
+
+  // FASE 4: Detecção inteligente de CEEE baseada no nome do arquivo
+  private detectCEEEFromFilename(fileNameLower: string): boolean {
+    const ceeeIndicators = [
+      fileNameLower.includes('ceee'),
+      fileNameLower.includes('caroline'),
+      fileNameLower.includes('rge'),
+      fileNameLower.includes('rio'),
+      fileNameLower.includes('rs'), 
+      fileNameLower.includes('porto'),
+      fileNameLower.includes('alegre'),
+      fileNameLower.includes('energia'),
+      fileNameLower.includes('conta'),
+      fileNameLower.includes('luz')
+    ];
+    
+    const matches = ceeeIndicators.filter(Boolean).length;
+    const isCEEE = matches >= 1; // Pelo menos 1 indicador
+    
+    console.log('🔍 CEEE filename detection:', {
+      indicators: ceeeIndicators,
+      matches,
+      isCEEE,
+      fileName: fileNameLower
+    });
+    
+    return isCEEE;
   }
 }

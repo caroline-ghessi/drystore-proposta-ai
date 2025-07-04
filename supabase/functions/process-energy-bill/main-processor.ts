@@ -49,17 +49,21 @@ export class GoogleVisionEnergyBillProcessor {
     // Validate image input
     await this.imageProcessor.validateImage(fileData, fileName);
 
-    // Verificar credenciais Google Cloud
-    console.log('🔑 Google Cloud credentials check:');
-    console.log('📊 Credentials status:', { 
+    // FASE 3: Robustez da API - verificar credenciais Google Cloud
+    console.log('🔑 Google Cloud credentials validation:');
+    
+    const credentialsValid = this.validateGoogleCredentials();
+    console.log('📊 Credentials validation:', { 
       hasCredentials: !!this.credentials,
       hasProjectId: !!this.projectId,
       projectId: this.projectId,
+      credentialsValid,
+      credentialsLength: this.credentials?.length || 0,
       timestamp: new Date().toISOString()
     });
     
-    if (!this.credentials || !this.projectId) {
-      console.log('⚠️ Google Cloud credentials missing - using intelligent fallback');
+    if (!credentialsValid) {
+      console.log('⚠️ Google Cloud credentials invalid - using intelligent fallback');
       return this.fallbackProvider.getFallbackData(fileName);
     }
 
@@ -137,6 +141,34 @@ export class GoogleVisionEnergyBillProcessor {
     if (data.consumo_historico && data.consumo_historico.length >= 1) score += weights.consumo_historico;
 
     return score;
+  }
+
+  // FASE 3: Validação robusta de credenciais Google Cloud
+  private validateGoogleCredentials(): boolean {
+    try {
+      if (!this.credentials || !this.projectId) {
+        console.log('❌ Missing credentials or projectId');
+        return false;
+      }
+      
+      // Tentar parsear as credenciais JSON
+      const parsedCredentials = JSON.parse(this.credentials);
+      const hasClientEmail = !!parsedCredentials.client_email;
+      const hasPrivateKey = !!parsedCredentials.private_key;
+      const hasValidStructure = hasClientEmail && hasPrivateKey;
+      
+      console.log('🔍 Credentials structure validation:', {
+        hasClientEmail,
+        hasPrivateKey,
+        hasValidStructure,
+        clientEmailDomain: parsedCredentials.client_email?.split('@')[1] || 'none'
+      });
+      
+      return hasValidStructure;
+    } catch (error) {
+      console.error('❌ Error validating Google credentials:', error.message);
+      return false;
+    }
   }
 
   // Public method for fallback access

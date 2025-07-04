@@ -66,22 +66,67 @@ export class GoogleVisionClient {
         }
 
         const result = await response.json();
-        console.log('🔍 Google Vision API Response received successfully');
         
-        const textAnnotations = result.responses?.[0]?.textAnnotations;
+        // FASE 1 & 2: Validação defensiva + diagnóstico detalhado
+        console.log('🔍 Google Vision API Raw Response:', {
+          hasResult: !!result,
+          hasResponses: !!result?.responses,
+          responsesType: Array.isArray(result?.responses) ? 'array' : typeof result?.responses,
+          responsesLength: Array.isArray(result?.responses) ? result.responses.length : 'not array',
+          firstResponse: result?.responses?.[0] ? 'exists' : 'null/undefined',
+          hasTextAnnotations: !!result?.responses?.[0]?.textAnnotations,
+          textAnnotationsType: Array.isArray(result?.responses?.[0]?.textAnnotations) ? 'array' : typeof result?.responses?.[0]?.textAnnotations,
+          textAnnotationsLength: Array.isArray(result?.responses?.[0]?.textAnnotations) ? result.responses[0].textAnnotations.length : 'not array'
+        });
         
-        if (!textAnnotations || textAnnotations.length === 0) {
-          console.warn('⚠️ No text detected by Google Vision API');
+        // Validação defensiva robusta
+        if (!result) {
+          console.error('❌ Google Vision API returned null/undefined result');
+          throw new Error('Google Vision API returned empty result');
+        }
+        
+        if (!result.responses || !Array.isArray(result.responses)) {
+          console.error('❌ Google Vision API: responses is not an array:', typeof result.responses);
+          throw new Error('Google Vision API: invalid responses structure');
+        }
+        
+        if (result.responses.length === 0) {
+          console.error('❌ Google Vision API: responses array is empty');
+          throw new Error('Google Vision API: no responses returned');
+        }
+        
+        const firstResponse = result.responses[0];
+        if (!firstResponse) {
+          console.error('❌ Google Vision API: first response is null/undefined');
+          throw new Error('Google Vision API: first response is empty');
+        }
+        
+        const textAnnotations = firstResponse.textAnnotations;
+        if (!textAnnotations || !Array.isArray(textAnnotations)) {
+          console.error('❌ Google Vision API: textAnnotations is not an array:', typeof textAnnotations);
+          throw new Error('Google Vision API: textAnnotations is invalid or empty');
+        }
+        
+        if (textAnnotations.length === 0) {
+          console.warn('⚠️ Google Vision API: textAnnotations array is empty');
           throw new Error('No text detected by Google Vision API');
         }
+        
+        const firstAnnotation = textAnnotations[0];
+        if (!firstAnnotation || !firstAnnotation.description) {
+          console.error('❌ Google Vision API: first annotation has no description:', firstAnnotation);
+          throw new Error('Google Vision API: first annotation is invalid');
+        }
 
-        const fullText = textAnnotations[0].description;
+        const fullText = firstAnnotation.description;
         
         console.log('📊 OCR Text Extraction Metrics:', {
           totalCharacters: fullText.length,
           totalLines: fullText.split('\n').length,
-          confidence: result.responses?.[0]?.textAnnotations?.[0]?.confidence || 'not provided',
-          processingTime: Date.now() - startProcess + 'ms'
+          confidence: firstAnnotation.confidence || 'not provided',
+          processingTime: Date.now() - startProcess + 'ms',
+          totalAnnotations: textAnnotations.length,
+          annotationSample: fullText.substring(0, 100) + '...'
         });
 
         return fullText;
