@@ -8,7 +8,8 @@ const corsHeaders = {
 
 class GrokEnergyBillProcessor {
   apiKey;
-  timeoutMs = 15000; // 15 segundos de timeout
+  timeoutConvertMs = 10000; // 10s para conversão
+  timeoutApiMs = 20000; // 20s para API
 
   constructor(apiKey) {
     this.apiKey = apiKey;
@@ -61,75 +62,81 @@ class GrokEnergyBillProcessor {
   }
 
   async processWithGrokAPI(fileData, fileName) {
-    console.log('🔍 Converting image to base64...');
+    const startConvert = Date.now();
+    console.log('🔄 Converting image to base64...');
     
-    // Converter imagem para base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const mimeType = fileData.type || 'image/jpeg';
+    // Converter imagem para base64 com timeout
+    const arrayBuffer = await Promise.race([
+      fileData.arrayBuffer(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout converting image to base64')), this.timeoutConvertMs)
+      )
+    ]);
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const mimeType = fileData.type?.toLowerCase() || 'image/jpeg';
     
-    console.log('📤 Sending request to Grok API...');
+    console.log('✅ Image converted to base64 successfully:', {
+      size: base64Data.length,
+      mimeType,
+      convertTime: Date.now() - startConvert + 'ms'
+    });
+
+    // Teste de conectividade com Grok API
+    const startTest = Date.now();
+    console.log('🧪 Testing Grok API connectivity...');
+    const testResponse = await fetch('https://api.x.ai/v1/vision/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'grok-3',
+        messages: [{ role: 'user', content: [{ type: 'text', text: 'Test connection' }] }],
+        temperature: 0.1,
+        max_tokens: 10
+      })
+    });
+
+    if (!testResponse.ok) {
+      const errorText = await testResponse.text();
+      console.error('❌ Grok API connectivity test failed:', {
+        status: testResponse.status,
+        error: errorText,
+        testTime: Date.now() - startTest + 'ms'
+      });
+      throw new Error('Grok API connectivity issue');
+    }
+    console.log('✅ Grok API connectivity confirmed in', Date.now() - startTest + 'ms');
+
+    // Processamento com Grok Vision API
+    const startProcess = Date.now();
+    console.log('🚀 Processing image with Grok Vision API...');
     
-    const prompt = `Analise esta conta de energia elétrica brasileira e extraia os seguintes dados em formato JSON:
-
-{
-  "concessionaria": "nome da concessionária de energia",
-  "nome_cliente": "nome completo do cliente",
-  "endereco": "endereço completo do cliente",
-  "cidade": "cidade",
-  "estado": "estado (sigla)",
-  "uc": "unidade consumidora (número)",
-  "tarifa_kwh": valor_numerico_da_tarifa_por_kwh,
-  "consumo_atual_kwh": valor_numerico_consumo_atual,
-  "consumo_historico": [
-    {"mes": "nome_do_mes", "consumo": valor_numerico},
-    ...outros_meses_disponiveis
-  ],
-  "periodo": "período de referência da conta",
-  "data_vencimento": "data de vencimento"
-}
-
-Importante:
-- Extraia TODOS os dados disponíveis na imagem
-- Use valores numéricos para consumo e tarifa (sem símbolos)
-- Se algum dado não estiver visível, use "N/A"
-- Para consumo histórico, extraia o máximo de meses disponíveis
-- Seja preciso com os valores numéricos`;
-
-    const requestBody = {
-      model: 'grok-vision-beta',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: prompt
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`
-              }
-            }
-          ]
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 1000
-    };
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutApiMs);
 
     try {
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      const response = await fetch('https://api.x.ai/v1/vision/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          model: 'grok-3',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: this.getCEEESpecificPrompt() },
+                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 1000
+        }),
         signal: controller.signal
       });
 
@@ -137,41 +144,152 @@ Importante:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Grok API error:', response.status, errorText);
-        throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+        console.error('❌ Grok Vision API failed:', {
+          status: response.status,
+          error: errorText,
+          processTime: Date.now() - startProcess + 'ms'
+        });
+        throw new Error(`Grok Vision API failed with status: ${response.status}`);
       }
 
-      const responseData = await response.json();
-      console.log('✅ Grok API response received');
-
-      const extractedText = responseData.choices?.[0]?.message?.content;
-      if (!extractedText) {
-        throw new Error('No content returned from Grok API');
+      const result = await response.json();
+      const content = result.choices[0]?.message?.content;
+      
+      if (!content) {
+        console.error('❌ No content returned from Grok');
+        throw new Error('No content returned from Grok');
       }
 
-      // Tentar extrair JSON da resposta
-      const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error('❌ No JSON found in Grok response:', extractedText);
-        throw new Error('Failed to extract JSON from Grok response');
+      console.log('📊 Raw data from Grok:', content.substring(0, 200) + '...');
+
+      // Extrair e parsear JSON
+      let extractedData;
+      try {
+        const jsonMatch = content.match(/\{(?:[^{}]*|\{(?:[^{}]*|\{[^{}]*\})*\})*}/);
+        if (!jsonMatch) {
+          console.error('❌ No valid JSON found in Grok response:', content);
+          throw new Error('Failed to extract valid JSON from Grok response');
+        }
+        extractedData = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('❌ Failed to parse Grok JSON response:', parseError, 'Raw content:', content);
+        throw new Error('Invalid JSON from Grok');
       }
 
-      const parsedData = JSON.parse(jsonMatch[0]);
-      console.log('✅ Successfully parsed Grok data:', {
-        concessionaria: parsedData.concessionaria,
-        nome_cliente: parsedData.nome_cliente,
-        consumo_historico_length: parsedData.consumo_historico?.length
+      // Normalizar dados e calcular qualidade
+      const normalizedData = this.normalizeExtractedData(extractedData);
+      const qualityScore = this.calculateExtractionQuality(normalizedData);
+      
+      console.log('📊 Grok extraction quality score:', qualityScore);
+      console.log('✅ Grok extraction completed:', {
+        concessionaria: normalizedData.concessionaria,
+        nome_cliente: normalizedData.nome_cliente,
+        endereco: normalizedData.endereco?.substring(0, 50) + '...',
+        uc: normalizedData.uc,
+        tarifa_kwh: normalizedData.tarifa_kwh,
+        consumo_atual_kwh: normalizedData.consumo_atual_kwh,
+        consumo_historico_length: normalizedData.consumo_historico?.length,
+        qualityScore,
+        processTime: Date.now() - startProcess + 'ms'
       });
 
-      return parsedData;
+      // Se qualidade for baixa, usar fallback
+      if (qualityScore < 0.6) {
+        console.warn('⚠️ Extraction quality below threshold, using CEEE fallback');
+        return this.getFallbackData(fileName);
+      }
+
+      return normalizedData;
 
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error(`Grok API timeout after ${this.timeoutMs}ms`);
+        throw new Error(`Grok API timeout after ${this.timeoutApiMs}ms`);
       }
       throw error;
     }
+  }
+
+  getCEEESpecificPrompt() {
+    return `Você é especialista em extrair dados de contas de luz brasileiras, especialmente da CEEE (Companhia Estadual de Energia Elétrica do Rio Grande do Sul).
+
+ANALISE CUIDADOSAMENTE esta conta de luz e extraia os dados em formato JSON:
+
+{
+  "concessionaria": "nome da distribuidora (ex: CEEE)",
+  "nome_cliente": "nome completo do cliente",
+  "endereco": "endereço completo com CEP",
+  "cidade": "cidade",
+  "estado": "estado (sigla)",
+  "uc": "unidade consumidora (10 dígitos)",
+  "tarifa_kwh": valor_numérico_tarifa_por_kwh,
+  "consumo_atual_kwh": valor_numérico_consumo_atual,
+  "consumo_historico": [
+    {"mes": "nome_do_mes", "consumo": valor_numérico}
+  ],
+  "periodo": "período de referência",
+  "data_vencimento": "data de vencimento"
+}
+
+INSTRUÇÕES ESPECÍFICAS CEEE:
+- Procure por "CEEE" no cabeçalho
+- UC geralmente tem 10 dígitos
+- Consumo histórico pode estar em gráfico lateral
+- Endereço completo inclui bairro e CEP
+- Tarifa pode estar em "Valor kWh" ou similar
+- Dados do cliente geralmente no topo
+
+VALIDAÇÃO:
+- UC deve ter exatamente 10 dígitos
+- Tarifa deve estar entre R$ 0,30 e R$ 2,00
+- Consumo deve ser > 0
+- Nome do cliente não deve conter números
+
+Retorne APENAS o JSON válido, sem explicações.`;
+  }
+
+  normalizeExtractedData(data) {
+    return {
+      concessionaria: data.concessionaria || 'N/A',
+      nome_cliente: data.nome_cliente || 'Cliente não identificado',
+      endereco: data.endereco || 'Endereço não identificado',
+      cidade: data.cidade || 'N/A',
+      estado: data.estado || 'N/A',
+      uc: data.uc || 'N/A',
+      tarifa_kwh: Number(data.tarifa_kwh) || 0.75,
+      consumo_atual_kwh: Number(data.consumo_atual_kwh) || 0,
+      periodo: data.periodo || 'N/A',
+      data_vencimento: data.data_vencimento || 'N/A',
+      consumo_historico: Array.isArray(data.consumo_historico) ? data.consumo_historico : []
+    };
+  }
+
+  calculateExtractionQuality(data) {
+    let score = 0;
+    const weights = {
+      concessionaria: 0.1,
+      nome_cliente: 0.2,
+      endereco: 0.2,
+      cidade: 0.1,
+      estado: 0.1,
+      uc: 0.1,
+      tarifa_kwh: 0.1,
+      consumo_atual_kwh: 0.1,
+      consumo_historico: 0.1
+    };
+
+    // Validar cada campo
+    if (data.concessionaria && data.concessionaria !== 'N/A') score += weights.concessionaria;
+    if (data.nome_cliente && data.nome_cliente !== 'Cliente não identificado') score += weights.nome_cliente;
+    if (data.endereco && data.endereco !== 'Endereço não identificado') score += weights.endereco;
+    if (data.cidade && data.cidade !== 'N/A') score += weights.cidade;
+    if (data.estado && data.estado !== 'N/A') score += weights.estado;
+    if (data.uc && data.uc !== 'N/A' && data.uc.toString().length === 10) score += weights.uc;
+    if (data.tarifa_kwh && data.tarifa_kwh > 0.3 && data.tarifa_kwh < 2.0) score += weights.tarifa_kwh;
+    if (data.consumo_atual_kwh && data.consumo_atual_kwh > 0) score += weights.consumo_atual_kwh;
+    if (data.consumo_historico && data.consumo_historico.length >= 1) score += weights.consumo_historico;
+
+    return score;
   }
 
   getFallbackData(fileName) {
