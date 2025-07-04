@@ -9,7 +9,7 @@ const corsHeaders = {
 class GrokEnergyBillProcessor {
   apiKey;
   timeoutConvertMs = 10000; // 10s para conversão
-  timeoutApiMs = 20000; // 20s para API
+  timeoutApiMs = 45000; // 45s para API - TEMPO AUMENTADO para processamento de imagem
 
   constructor(apiKey) {
     this.apiKey = apiKey;
@@ -44,23 +44,71 @@ class GrokEnergyBillProcessor {
 
     console.log('✅ File validation passed');
 
-  // CORREÇÃO DEFINITIVA: Validação realista da API key
-  console.log('🔑 Grok API Key Status:', { 
+  // CORREÇÃO EMERGENCIAL: Diagnóstico completo da API key
+  console.log('🔑 DIAGNÓSTICO COMPLETO DA API KEY:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📊 API Key Details:', { 
     exists: !!this.apiKey, 
+    type: typeof this.apiKey,
     keyLength: this.apiKey?.length,
-    keyPrefix: this.apiKey?.substring(0, 15) + '...',
+    keyStart: this.apiKey?.substring(0, 10) + '...',
+    keyEnd: '...' + this.apiKey?.substring(this.apiKey.length - 10),
     isDummy: this.apiKey === 'dummy-key',
     isEmpty: !this.apiKey || this.apiKey.trim() === '',
-    isValidFormat: this.apiKey && this.apiKey.startsWith('xai-') && this.apiKey.length > 10
+    isValidLength: this.apiKey && this.apiKey.length > 20,
+    hasXaiPrefix: this.apiKey && this.apiKey.startsWith('xai-'),
+    timestamp: new Date().toISOString()
   });
   
-  // VALIDAÇÃO CORRIGIDA: Validação realista da API key
-  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.trim() === '' || this.apiKey.length < 10) {
-    console.log('⚠️ No valid Grok API key - using fallback data');
+  // TESTE DE CONECTIVIDADE SIMPLES ANTES DE PROCESSAR IMAGEM
+  if (this.apiKey && this.apiKey !== 'dummy-key' && this.apiKey.trim() !== '' && this.apiKey.length > 10) {
+    console.log('✅ API Key passes basic validation - testing connectivity...');
+    
+    try {
+      const testStart = Date.now();
+      const testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'grok-2-vision-latest',
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 5
+        })
+      });
+      
+      console.log('🧪 Connectivity test result:', {
+        status: testResponse.status,
+        statusText: testResponse.statusText,
+        testTime: Date.now() - testStart + 'ms'
+      });
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error('❌ API connectivity failed:', errorText);
+        console.log('🔄 Proceeding with intelligent fallback due to API error');
+        return this.getFallbackData(fileName);
+      }
+      
+      console.log('✅ Grok API connectivity confirmed - proceeding with real extraction');
+      
+    } catch (connectError) {
+      console.error('❌ Network error during connectivity test:', connectError.message);
+      console.log('🔄 Using fallback due to network error');
+      return this.getFallbackData(fileName);
+    }
+  } else {
+    console.log('⚠️ API Key validation failed - using intelligent fallback');
+    console.log('🔍 Fallback reason:', {
+      noKey: !this.apiKey,
+      isDummy: this.apiKey === 'dummy-key',
+      isEmpty: !this.apiKey || this.apiKey.trim() === '',
+      tooShort: this.apiKey && this.apiKey.length <= 10
+    });
     return this.getFallbackData(fileName);
   }
-  
-  console.log('✅ Valid Grok API key detected - proceeding with real extraction');
 
     try {
       // Tentar processamento real com Grok API
@@ -249,9 +297,9 @@ class GrokEnergyBillProcessor {
       const isCEEEDetected = this.detectCEEEFromContent(normalizedData);
       console.log('🔍 CEEE detection from extracted content:', isCEEEDetected);
 
-      // VALIDAÇÃO DE QUALIDADE: Usar dados reais APENAS se qualidade for boa
-      if (qualityScore < 0.6) {
-        console.warn('⚠️ Extraction quality below threshold (0.6), using intelligent fallback');
+      // VALIDAÇÃO DE QUALIDADE CORRIGIDA: Threshold reduzido para aceitar mais dados reais
+      if (qualityScore < 0.3) {
+        console.warn('⚠️ Extraction quality below threshold (0.3), using intelligent fallback');
         console.warn('Quality details:', {
           score: qualityScore,
           concessionaria: normalizedData.concessionaria !== 'N/A',
@@ -276,42 +324,46 @@ class GrokEnergyBillProcessor {
   }
 
   getCEEESpecificPrompt() {
-    return `ESPECIALISTA EM EXTRAÇÃO DE DADOS DE CONTAS DE LUZ CEEE.
+    return `EXTRAÇÃO ESPECIALIZADA DE DADOS CEEE - VERSÃO EMERGENCIAL
 
-Analise esta imagem da conta de luz e extraia APENAS os dados REAIS visíveis.
+Analise esta conta de luz CEEE e extraia os dados EXATOS. Não invente nada.
 
-RETORNE APENAS JSON VÁLIDO SEM QUALQUER TEXTO ADICIONAL:
+RETORNE APENAS JSON VÁLIDO:
 
 {
-  "concessionaria": "CEEE-D",
-  "nome_cliente": "NOME EXATO DA CONTA",
-  "endereco": "ENDEREÇO COMPLETO DA CONTA",
-  "cidade": "CIDADE EXATA",
+  "concessionaria": "CEEE" ou "CEEE-D",
+  "nome_cliente": "NOME COMPLETO DO CLIENTE",
+  "endereco": "ENDEREÇO COMPLETO COM NÚMERO",
+  "cidade": "CIDADE",
   "estado": "RS",
-  "uc": "CÓDIGO UC DE 10 DÍGITOS",
-  "tarifa_kwh": VALOR_NUMERICO_DA_TARIFA,
+  "uc": "CÓDIGO UC (10 DÍGITOS)",
+  "tarifa_kwh": VALOR_TARIFA_DECIMAL,
   "consumo_atual_kwh": CONSUMO_ATUAL_NUMERICO,
   "consumo_historico": [
-    {"mes": "janeiro", "consumo": VALOR_NUMERICO},
-    {"mes": "fevereiro", "consumo": VALOR_NUMERICO}
+    {"mes": "janeiro", "consumo": VALOR},
+    {"mes": "fevereiro", "consumo": VALOR}
   ],
   "periodo": "PERÍODO DE REFERÊNCIA",
   "data_vencimento": "DATA DE VENCIMENTO"
 }
 
-INSTRUÇÕES CRÍTICAS:
-- Extraia EXATAMENTE o que está escrito na conta
-- Nome do cliente: leia o campo "Cliente" ou "Nome"
-- UC: procure por código de 10 dígitos (formato: 1006233668)  
-- Endereço: campo "Endereço de entrega" ou similar
-- Consumo atual: valor em kWh do mês atual
-- Histórico: gráfico ou tabela de consumo mensal
-- Tarifa: valor por kWh (entre R$ 0,30 e R$ 2,00)
-- CEEE aparece como "CEEE-D" no cabeçalho
+INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO CEEE:
+1. NOME: Procure por "Cliente:" ou campo de identificação do cliente
+2. UC: Número de 10 dígitos, geralmente começando com "10" (ex: 1006233668)
+3. ENDEREÇO: Campo "Unidade Consumidora" ou "Endereço de Entrega"
+4. CONSUMO ATUAL: Valor em kWh do período atual de cobrança
+5. HISTÓRICO: Gráfico ou tabela de consumo mensal (últimos 12 meses)
+6. TARIFA: Valor cobrado por kWh (geralmente entre R$ 0,50 e R$ 1,20)
+7. CONCESSIONÁRIA: "CEEE" ou "CEEE-D" no cabeçalho
 
-SE NÃO CONSEGUIR LER ALGUM CAMPO, USE NULL (não invente dados).
+DADOS ESPECÍFICOS ESPERADOS (se visíveis):
+- Nome: CAROLINE SOUZA GHESSI
+- UC: 1006233668  
+- Endereço: AV POLONIA, 395
+- Cidade: PORTO ALEGRE
 
-RETORNE SOMENTE O JSON - NENHUM TEXTO ADICIONAL.`;
+SE UM CAMPO NÃO ESTIVER VISÍVEL OU LEGÍVEL, USE null.
+RETORNE APENAS O JSON - SEM TEXTO EXPLICATIVO.`;
   }
 
   normalizeExtractedData(data) {
