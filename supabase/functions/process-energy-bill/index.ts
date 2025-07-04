@@ -81,7 +81,17 @@ class GrokEnergyBillProcessor {
       convertTime: Date.now() - startConvert + 'ms'
     });
 
-    // Teste de conectividade com Grok API (Chat endpoint para teste simples)
+    // VALIDAÇÃO CRÍTICA: Verificar se API key é válida
+    if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 10) {
+      console.error('❌ Invalid Grok API key detected:', { 
+        hasKey: !!this.apiKey, 
+        keyLength: this.apiKey?.length,
+        isDummy: this.apiKey === 'dummy-key'
+      });
+      throw new Error('Invalid Grok API key - cannot proceed with real extraction');
+    }
+
+    // Teste de conectividade com Grok API (Chat endpoint)
     const startTest = Date.now();
     console.log('🧪 Testing Grok API connectivity...');
     const testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -94,10 +104,11 @@ class GrokEnergyBillProcessor {
         model: 'grok-3-latest',
         messages: [
           { role: 'system', content: 'You are a test assistant.' },
-          { role: 'user', content: 'Testing. Just say hi and hello world and nothing else.' }
+          { role: 'user', content: 'Testing. Just say "OK" and nothing else.' }
         ],
         temperature: 0,
-        stream: false
+        stream: false,
+        max_tokens: 10
       })
     });
 
@@ -105,97 +116,147 @@ class GrokEnergyBillProcessor {
       const errorText = await testResponse.text();
       console.error('❌ Grok API connectivity test failed:', {
         status: testResponse.status,
+        statusText: testResponse.statusText,
         error: errorText,
         testTime: Date.now() - startTest + 'ms'
       });
-      throw new Error('Grok API connectivity issue');
+      throw new Error(`Grok API connectivity issue: ${testResponse.status} - ${errorText}`);
     }
-    console.log('✅ Grok API connectivity confirmed in', Date.now() - startTest + 'ms');
+    
+    const testResult = await testResponse.json();
+    console.log('✅ Grok API connectivity confirmed in', Date.now() - startTest + 'ms', 'Response:', testResult.choices[0]?.message?.content);
 
-    // PROCESSAMENTO COM GROK VISION API (ENDPOINT CORRETO PARA IMAGENS)
+    // PROCESSAMENTO COM GROK CHAT API - ESTRUTURA CORRETA PARA IMAGENS
     const startProcess = Date.now();
-    console.log('🚀 Processing image with Grok Vision API...');
+    console.log('🚀 Processing image with Grok Chat API (correct endpoint)...');
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutApiMs);
 
     try {
-      // ENDPOINT CORRETO: /v1/vision/completions com modelo grok-3
-      const response = await fetch('https://api.x.ai/v1/vision/completions', {
+      // ENDPOINT CORRETO: /v1/chat/completions com estrutura para imagem
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-3', // Modelo correto para visão
+          model: 'grok-3-latest', // Modelo correto mais recente
           messages: [
             {
               role: 'user',
               content: [
-                { type: 'text', text: this.getCEEESpecificPrompt() },
-                { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+                { 
+                  type: 'text', 
+                  text: this.getCEEESpecificPrompt() 
+                },
+                { 
+                  type: 'image_url', 
+                  image_url: { 
+                    url: `data:${mimeType};base64,${base64Data}`,
+                    detail: 'high' // Alta resolução para melhor extração
+                  } 
+                }
               ]
             }
           ],
           temperature: 0.1,
-          max_tokens: 500 // Reduzido para evitar overflow
+          max_tokens: 800, // Aumentado para capturar mais dados
+          stream: false
         }),
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
 
+      console.log('📡 Grok API Response Status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Grok Vision API failed:', {
+        console.error('❌ Grok Chat API failed:', {
           status: response.status,
-          error: errorText,
+          statusText: response.statusText,
+          error: errorText.substring(0, 500),
           processTime: Date.now() - startProcess + 'ms'
         });
-        throw new Error(`Grok Vision API failed with status: ${response.status}`);
+        throw new Error(`Grok Chat API failed with status: ${response.status} - ${errorText.substring(0, 200)}`);
       }
 
       const result = await response.json();
-      console.log('🔍 Full Grok API Response:', JSON.stringify(result, null, 2));
+      console.log('🔍 Full Grok API Response Structure:', {
+        hasChoices: !!result.choices,
+        choicesLength: result.choices?.length,
+        firstChoiceKeys: result.choices?.[0] ? Object.keys(result.choices[0]) : 'none'
+      });
       
-      const content = result.choices[0]?.message?.content;
+      const content = result.choices?.[0]?.message?.content;
       
       if (!content) {
-        console.error('❌ No content returned from Grok');
-        throw new Error('No content returned from Grok');
+        console.error('❌ No content returned from Grok. Full response:', JSON.stringify(result, null, 2));
+        throw new Error('No content returned from Grok API');
       }
 
-      console.log('📊 Raw data from Grok (FULL RESPONSE):', content);
-      console.log('📊 Raw data preview:', content.substring(0, 200) + '...');
+      console.log('📊 Raw data from Grok (FULL RESPONSE):');
+      console.log('='.repeat(50));
+      console.log(content);
+      console.log('='.repeat(50));
+      console.log('📊 Raw data preview (first 300 chars):', content.substring(0, 300) + '...');
 
-      // PARSING ROBUSTO COM LIMPEZA DE MARKDOWN
+      // PARSING ROBUSTO COM LIMPEZA AVANÇADA DE MARKDOWN
       let extractedData;
       let cleanContent = content.trim();
 
-      // Remover marcações de markdown se presentes
+      console.log('🧹 Starting content cleanup...');
+      console.log('Original content length:', cleanContent.length);
+      console.log('Starts with:', cleanContent.substring(0, 20));
+      console.log('Ends with:', cleanContent.substring(cleanContent.length - 20));
+
+      // Remover marcações de markdown variadas
       if (cleanContent.startsWith('```json')) {
         cleanContent = cleanContent.slice(7);
+        console.log('✂️ Removed ```json prefix');
       } else if (cleanContent.startsWith('```')) {
         cleanContent = cleanContent.slice(3);
+        console.log('✂️ Removed ``` prefix');
       }
+      
       if (cleanContent.endsWith('```')) {
         cleanContent = cleanContent.slice(0, -3);
+        console.log('✂️ Removed ``` suffix');
       }
+      
       cleanContent = cleanContent.trim();
+      
+      // Remover texto explicativo antes do JSON
+      const jsonStartIndex = cleanContent.indexOf('{');
+      const jsonEndIndex = cleanContent.lastIndexOf('}');
+      
+      if (jsonStartIndex !== -1 && jsonEndIndex !== -1 && jsonEndIndex > jsonStartIndex) {
+        cleanContent = cleanContent.substring(jsonStartIndex, jsonEndIndex + 1);
+        console.log('✂️ Extracted JSON portion from', jsonStartIndex, 'to', jsonEndIndex + 1);
+      }
+
+      console.log('🧹 Cleaned content length:', cleanContent.length);
+      console.log('🧹 Cleaned content preview:', cleanContent.substring(0, 100) + '...');
 
       // Validar se é JSON válido
       if (!cleanContent.startsWith('{') || !cleanContent.endsWith('}')) {
-        console.error('❌ Content does not appear to be valid JSON:', cleanContent.substring(0, 200));
-        throw new Error('Invalid JSON format from Grok - no braces found');
+        console.error('❌ Content does not appear to be valid JSON after cleaning:');
+        console.error('First 200 chars:', cleanContent.substring(0, 200));
+        console.error('Last 200 chars:', cleanContent.substring(Math.max(0, cleanContent.length - 200)));
+        throw new Error('Invalid JSON format from Grok - no valid JSON braces found');
       }
 
       try {
+        console.log('🔄 Attempting JSON.parse...');
         extractedData = JSON.parse(cleanContent);
         console.log('✅ JSON parsed successfully after cleaning');
+        console.log('📋 Extracted data keys:', Object.keys(extractedData));
       } catch (parseError) {
         console.error('❌ Failed to parse Grok JSON response:', parseError.message);
-        console.error('Cleaned content (first 500 chars):', cleanContent.substring(0, 500));
+        console.error('Full cleaned content (first 1000 chars):');
+        console.error(cleanContent.substring(0, 1000));
         throw new Error(`Invalid JSON from Grok - parsing failed: ${parseError.message}`);
       }
 
@@ -204,7 +265,7 @@ class GrokEnergyBillProcessor {
       const qualityScore = this.calculateExtractionQuality(normalizedData);
       
       console.log('📊 Grok extraction quality score:', qualityScore);
-      console.log('✅ Grok extraction completed:', {
+      console.log('✅ Grok extraction completed successfully:', {
         concessionaria: normalizedData.concessionaria,
         nome_cliente: normalizedData.nome_cliente,
         endereco: normalizedData.endereco?.substring(0, 50) + '...',
@@ -216,23 +277,32 @@ class GrokEnergyBillProcessor {
         processTime: Date.now() - startProcess + 'ms'
       });
 
-      // DETECÇÃO INTELIGENTE DE CEEE - baseada no conteúdo extraído, não no nome do arquivo
+      // DETECÇÃO INTELIGENTE DE CEEE - baseada no conteúdo extraído
       const isCEEEDetected = this.detectCEEEFromContent(normalizedData);
-      console.log('🔍 CEEE detection from content:', isCEEEDetected);
+      console.log('🔍 CEEE detection from extracted content:', isCEEEDetected);
 
-      // Se qualidade for baixa OU não for detectada como CEEE, usar fallback apropriado
-      if (qualityScore < 0.7) {
-        console.warn('⚠️ Extraction quality below threshold (0.7), using fallback');
+      // VALIDAÇÃO DE QUALIDADE: Usar dados reais APENAS se qualidade for boa
+      if (qualityScore < 0.6) {
+        console.warn('⚠️ Extraction quality below threshold (0.6), using intelligent fallback');
+        console.warn('Quality details:', {
+          score: qualityScore,
+          concessionaria: normalizedData.concessionaria !== 'N/A',
+          nome_cliente: normalizedData.nome_cliente !== 'Cliente não identificado',
+          uc: normalizedData.uc !== 'N/A',
+          historico: normalizedData.consumo_historico?.length > 0
+        });
         return isCEEEDetected ? this.getCEEEFallbackData() : this.getGenericFallbackData();
       }
 
+      console.log('🎉 Using REAL extracted data from Grok (quality score:', qualityScore, ')');
       return normalizedData;
 
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error(`Grok Vision API timeout after ${this.timeoutApiMs}ms`);
+        throw new Error(`Grok Chat API timeout after ${this.timeoutApiMs}ms`);
       }
+      console.error('❌ Error in Grok processing:', error);
       throw error;
     }
   }
