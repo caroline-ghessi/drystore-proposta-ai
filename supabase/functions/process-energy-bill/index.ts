@@ -97,26 +97,111 @@ class GoogleVisionEnergyBillProcessor {
 
   async optimizeImage(fileData) {
     try {
-      // Converter para base64 com timeout
+      console.log('🔄 Starting image optimization, original size:', fileData.size);
+      
+      // Converter para arrayBuffer com timeout
       const arrayBuffer = await Promise.race([
         fileData.arrayBuffer(),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout converting image')), this.timeoutConvertMs)
         )
       ]);
-      
-      // Para imagens muito grandes, podemos implementar redimensionamento aqui
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      // Verificar se a imagem é muito grande e reduzir qualidade se necessário
-      if (base64Data.length > 4 * 1024 * 1024) { // > 4MB em base64
-        console.log('⚠️ Large image detected, Google Vision API may be slower');
+
+      console.log('✅ ArrayBuffer created, size:', arrayBuffer.byteLength);
+
+      // Verificar se precisa redimensionar (> 2MB)
+      let finalArrayBuffer = arrayBuffer;
+      if (arrayBuffer.byteLength > 2 * 1024 * 1024) {
+        console.log('📐 Large image detected, attempting resize...');
+        finalArrayBuffer = await this.resizeImageIfNeeded(arrayBuffer, fileData.type);
       }
+
+      // Converter para base64 usando método seguro (por chunks)
+      const base64Data = this.arrayBufferToBase64(finalArrayBuffer);
+      
+      console.log('✅ Image optimization completed:', {
+        originalSize: fileData.size,
+        finalSize: finalArrayBuffer.byteLength,
+        base64Length: base64Data.length,
+        reduction: ((fileData.size - finalArrayBuffer.byteLength) / fileData.size * 100).toFixed(1) + '%'
+      });
       
       return base64Data;
     } catch (error) {
       console.error('❌ Error optimizing image:', error);
-      throw new Error('Failed to optimize image for processing');
+      throw new Error('Failed to optimize image for processing: ' + error.message);
+    }
+  }
+
+  // Conversão base64 segura por chunks (evita call stack overflow)
+  arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 8192; // 8KB chunks para evitar overflow
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    
+    return btoa(binary);
+  }
+
+  // Redimensionar imagem se necessário
+  async resizeImageIfNeeded(arrayBuffer, mimeType) {
+    try {
+      // Para imagens muito grandes, reduzir para dimensões máximas
+      const maxWidth = 1920;
+      const maxHeight = 1080;
+      
+      // Criar blob da imagem original
+      const imageBlob = new Blob([arrayBuffer], { type: mimeType });
+      const imageUrl = URL.createObjectURL(imageBlob);
+      
+      // Criar canvas para redimensionamento
+      const canvas = new OffscreenCanvas(maxWidth, maxHeight);
+      const ctx = canvas.getContext('2d');
+      
+      // Carregar imagem
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+      
+      // Calcular dimensões proporcionais
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width *= ratio;
+        height *= ratio;
+      }
+      
+      // Redimensionar canvas e desenhar imagem
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Converter para blob e depois arrayBuffer
+      const resizedBlob = await canvas.convertToBlob({ 
+        type: 'image/jpeg', 
+        quality: 0.85 // Boa qualidade para OCR
+      });
+      
+      URL.revokeObjectURL(imageUrl);
+      console.log('✅ Image resized successfully:', { 
+        originalDimensions: `${img.width}x${img.height}`,
+        newDimensions: `${width}x${height}`,
+        originalSize: arrayBuffer.byteLength,
+        newSize: resizedBlob.size
+      });
+      
+      return await resizedBlob.arrayBuffer();
+      
+    } catch (error) {
+      console.warn('⚠️ Image resize failed, using original:', error.message);
+      return arrayBuffer; // Fallback para imagem original
     }
   }
 
