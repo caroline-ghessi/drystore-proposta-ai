@@ -162,18 +162,24 @@ class GrokEnergyBillProcessor {
 
       console.log('📊 Raw data from Grok:', content.substring(0, 200) + '...');
 
-      // Extrair e parsear JSON
+      // Parsing direto do JSON (sem regex complexo)
       let extractedData;
       try {
-        const jsonMatch = content.match(/\{(?:[^{}]*|\{(?:[^{}]*|\{[^{}]*\})*\})*}/);
-        if (!jsonMatch) {
-          console.error('❌ No valid JSON found in Grok response:', content);
-          throw new Error('Failed to extract valid JSON from Grok response');
+        // Tentar parsing direto primeiro
+        extractedData = JSON.parse(content.trim());
+        console.log('✅ JSON parsed successfully via direct parsing');
+      } catch (directParseError) {
+        console.log('⚠️ Direct JSON parse failed, trying to clean content...');
+        try {
+          // Limpar conteúdo e tentar novamente
+          const cleanContent = content.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          extractedData = JSON.parse(cleanContent);
+          console.log('✅ JSON parsed successfully after cleaning');
+        } catch (cleanParseError) {
+          console.error('❌ Failed to parse Grok JSON response:', cleanParseError);
+          console.error('Raw content:', content.substring(0, 500));
+          throw new Error('Invalid JSON from Grok - cannot parse response');
         }
-        extractedData = JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error('❌ Failed to parse Grok JSON response:', parseError, 'Raw content:', content);
-        throw new Error('Invalid JSON from Grok');
       }
 
       // Normalizar dados e calcular qualidade
@@ -211,41 +217,36 @@ class GrokEnergyBillProcessor {
   }
 
   getCEEESpecificPrompt() {
-    return `Você é especialista em extrair dados de contas de luz brasileiras, especialmente da CEEE (Companhia Estadual de Energia Elétrica do Rio Grande do Sul).
+    return `Você é especialista em extrair dados de contas de luz brasileiras, especialmente da CEEE.
 
-ANALISE CUIDADOSAMENTE esta conta de luz e extraia os dados em formato JSON:
+ANALISE esta conta de luz e extraia os dados. RESPONDA APENAS COM JSON VÁLIDO, SEM TEXTO ADICIONAL.
 
+Formato de resposta obrigatório:
 {
-  "concessionaria": "nome da distribuidora (ex: CEEE)",
+  "concessionaria": "nome da distribuidora",
   "nome_cliente": "nome completo do cliente",
   "endereco": "endereço completo com CEP",
   "cidade": "cidade",
-  "estado": "estado (sigla)",
-  "uc": "unidade consumidora (10 dígitos)",
-  "tarifa_kwh": valor_numérico_tarifa_por_kwh,
-  "consumo_atual_kwh": valor_numérico_consumo_atual,
+  "estado": "sigla do estado",
+  "uc": "código de 10 dígitos",
+  "tarifa_kwh": 0.85,
+  "consumo_atual_kwh": 316,
   "consumo_historico": [
-    {"mes": "nome_do_mes", "consumo": valor_numérico}
+    {"mes": "janeiro", "consumo": 380},
+    {"mes": "fevereiro", "consumo": 350}
   ],
   "periodo": "período de referência",
   "data_vencimento": "data de vencimento"
 }
 
-INSTRUÇÕES ESPECÍFICAS CEEE:
-- Procure por "CEEE" no cabeçalho
-- UC geralmente tem 10 dígitos
-- Consumo histórico pode estar em gráfico lateral
-- Endereço completo inclui bairro e CEP
-- Tarifa pode estar em "Valor kWh" ou similar
-- Dados do cliente geralmente no topo
+INSTRUÇÕES:
+- Procure CEEE no cabeçalho
+- UC tem 10 dígitos exatos
+- Extraia histórico do gráfico se disponível
+- Valores numéricos sem aspas
+- Tarifa entre 0.30 e 2.00
 
-VALIDAÇÃO:
-- UC deve ter exatamente 10 dígitos
-- Tarifa deve estar entre R$ 0,30 e R$ 2,00
-- Consumo deve ser > 0
-- Nome do cliente não deve conter números
-
-Retorne APENAS o JSON válido, sem explicações.`;
+IMPORTANTE: Retorne SOMENTE o JSON, sem explicações, sem markdown, sem texto adicional.`;
   }
 
   normalizeExtractedData(data) {
