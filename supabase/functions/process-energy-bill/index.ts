@@ -44,17 +44,18 @@ class GrokEnergyBillProcessor {
 
     console.log('✅ File validation passed');
 
-  // CORREÇÃO DEFINITIVA: Validação flexível da API key
+  // CORREÇÃO DEFINITIVA: Validação realista da API key
   console.log('🔑 Grok API Key Status:', { 
     exists: !!this.apiKey, 
     keyLength: this.apiKey?.length,
     keyPrefix: this.apiKey?.substring(0, 15) + '...',
     isDummy: this.apiKey === 'dummy-key',
-    isEmpty: !this.apiKey || this.apiKey.trim() === ''
+    isEmpty: !this.apiKey || this.apiKey.trim() === '',
+    isValidFormat: this.apiKey && this.apiKey.startsWith('xai-') && this.apiKey.length > 10
   });
   
-  // VALIDAÇÃO CORRIGIDA: Apenas verificar se não é dummy ou vazio
-  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.trim() === '') {
+  // VALIDAÇÃO CORRIGIDA: Validação realista da API key
+  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.trim() === '' || this.apiKey.length < 10) {
     console.log('⚠️ No valid Grok API key - using fallback data');
     return this.getFallbackData(fileName);
   }
@@ -92,60 +93,7 @@ class GrokEnergyBillProcessor {
       convertTime: Date.now() - startConvert + 'ms'
     });
 
-    // VALIDAÇÃO FINAL: Confirmar que a API key é válida antes de prosseguir
-    console.log('🔑 Final API key validation before processing:', { 
-      hasKey: !!this.apiKey, 
-      keyLength: this.apiKey?.length,
-      keyType: typeof this.apiKey,
-      isDummy: this.apiKey === 'dummy-key'
-    });
-    
-    // Não bloquear por tamanho - Grok pode ter keys de tamanhos diferentes
-    if (!this.apiKey || this.apiKey === 'dummy-key') {
-      console.error('❌ Invalid Grok API key detected - will not proceed with API call');
-      throw new Error('Invalid Grok API key - cannot proceed with real extraction');
-    }
-    
-    console.log('✅ Final API key validation passed - proceeding with Grok API');
-
-    // TESTE SIMPLIFICADO DE CONECTIVIDADE
-    const startTest = Date.now();
-    console.log('🧪 Testing Grok API connectivity with simple request...');
-    
-    let testResponse;
-    try {
-      testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'grok-beta',
-          messages: [
-            { role: 'user', content: 'Test' }
-          ],
-          max_tokens: 5
-        })
-      });
-    } catch (testError) {
-      console.error('❌ Network error during connectivity test:', testError.message);
-      throw new Error(`Network connectivity issue: ${testError.message}`);
-    }
-
-    if (!testResponse.ok) {
-      const errorText = await testResponse.text();
-      console.error('❌ Grok API connectivity test failed:', {
-        status: testResponse.status,
-        statusText: testResponse.statusText,
-        error: errorText,
-        testTime: Date.now() - startTest + 'ms'
-      });
-      throw new Error(`Grok API connectivity issue: ${testResponse.status} - ${errorText}`);
-    }
-    
-    const testResult = await testResponse.json();
-    console.log('✅ Grok API connectivity confirmed in', Date.now() - startTest + 'ms', 'Response:', testResult.choices[0]?.message?.content);
+    console.log('🔑 Final validation passed, proceeding with Grok Vision API...');
 
     // PROCESSAMENTO COM GROK CHAT API - ESTRUTURA CORRETA PARA IMAGENS
     const startProcess = Date.now();
@@ -163,7 +111,7 @@ class GrokEnergyBillProcessor {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-beta', // Modelo disponível para beta
+          model: 'grok-2-vision-latest', // MODELO CORRETO para visão
           messages: [
             {
               role: 'user',
@@ -183,8 +131,7 @@ class GrokEnergyBillProcessor {
             }
           ],
           temperature: 0.1,
-          max_tokens: 1000,
-          stream: false
+          max_tokens: 1000
         }),
         signal: controller.signal
       });
