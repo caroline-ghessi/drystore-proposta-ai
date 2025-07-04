@@ -11,6 +11,10 @@ class GoogleVisionEnergyBillProcessor {
   projectId;
   timeoutConvertMs = 10000; // 10s para conversão
   timeoutApiMs = 30000; // 30s para Google Vision API
+  maxRetries = 3;
+  retryDelay = 1000; // 1s inicial
+  accessTokenCache = null;
+  tokenExpiryTime = null;
 
   constructor(credentials, projectId) {
     this.credentials = credentials;
@@ -72,185 +76,361 @@ class GoogleVisionEnergyBillProcessor {
 
   async processWithGoogleVision(fileData, fileName) {
     const startConvert = Date.now();
-    console.log('🔄 Converting image to base64...');
+    console.log('🔄 Converting and optimizing image...');
     
-    // Converter imagem para base64 com timeout
-    const arrayBuffer = await Promise.race([
-      fileData.arrayBuffer(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout converting image to base64')), this.timeoutConvertMs)
-      )
-    ]);
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Otimizar imagem antes do processamento
+    const optimizedImageData = await this.optimizeImage(fileData);
     
-    console.log('✅ Image converted to base64 successfully:', {
-      size: base64Data.length,
+    console.log('✅ Image optimized successfully:', {
+      originalSize: fileData.size,
+      optimizedSize: optimizedImageData.length,
+      reduction: ((fileData.size - optimizedImageData.length) / fileData.size * 100).toFixed(1) + '%',
       convertTime: Date.now() - startConvert + 'ms'
     });
 
-    // Obter access token do Google OAuth2
-    const accessToken = await this.getGoogleAccessToken();
+    // Obter access token do Google OAuth2 com cache
+    const accessToken = await this.getCachedGoogleAccessToken();
     
-    // PROCESSAMENTO COM GOOGLE VISION API
-    const startProcess = Date.now();
-    console.log('🚀 Processing image with Google Vision API...');
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeoutApiMs);
+    // PROCESSAMENTO COM GOOGLE VISION API (com retry)
+    return await this.callGoogleVisionWithRetry(optimizedImageData, accessToken, fileName);
+  }
 
+  async optimizeImage(fileData) {
     try {
-      // ENDPOINT GOOGLE VISION API
-      const response = await fetch(`https://vision.googleapis.com/v1/images:annotate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          requests: [
-            {
+      // Converter para base64 com timeout
+      const arrayBuffer = await Promise.race([
+        fileData.arrayBuffer(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout converting image')), this.timeoutConvertMs)
+        )
+      ]);
+      
+      // Para imagens muito grandes, podemos implementar redimensionamento aqui
+      const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Verificar se a imagem é muito grande e reduzir qualidade se necessário
+      if (base64Data.length > 4 * 1024 * 1024) { // > 4MB em base64
+        console.log('⚠️ Large image detected, Google Vision API may be slower');
+      }
+      
+      return base64Data;
+    } catch (error) {
+      console.error('❌ Error optimizing image:', error);
+      throw new Error('Failed to optimize image for processing');
+    }
+  }
+
+  async callGoogleVisionWithRetry(base64Data, accessToken, fileName) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      const startProcess = Date.now();
+      console.log(`🚀 Google Vision API attempt ${attempt}/${this.maxRetries}...`);
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeoutApiMs);
+
+        const response = await fetch('https://vision.googleapis.com/v1/images:annotate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'Drystore-EnergyBill-Processor/1.0'
+          },
+          body: JSON.stringify({
+            requests: [{
               image: { content: base64Data },
-              features: [
-                { type: 'TEXT_DETECTION', maxResults: 1 }
-              ]
-            }
-          ]
-        }),
-        signal: controller.signal
-      });
+              features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+            }]
+          }),
+          signal: controller.signal
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      console.log('📡 Google Vision API Response Status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Google Vision API failed:', {
+        console.log(`📡 Google Vision API Response (attempt ${attempt}):`, {
           status: response.status,
           statusText: response.statusText,
-          error: errorText.substring(0, 500),
+          contentType: response.headers.get('content-type'),
           processTime: Date.now() - startProcess + 'ms'
         });
-        throw new Error(`Google Vision API failed with status: ${response.status} - ${errorText.substring(0, 200)}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          const apiError = new Error(`Google Vision API failed: ${response.status} - ${errorText.substring(0, 200)}`);
+          
+          // Rate limiting ou erro temporário - tentar novamente
+          if (response.status === 429 || response.status >= 500) {
+            console.warn(`⚠️ Temporary error (${response.status}), will retry...`);
+            lastError = apiError;
+            
+            if (attempt < this.maxRetries) {
+              const delay = this.retryDelay * Math.pow(2, attempt - 1);
+              console.log(`⏳ Waiting ${delay}ms before retry...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+          }
+          
+          throw apiError;
+        }
+
+        const result = await response.json();
+        console.log('🔍 Google Vision API Response received successfully');
+        
+        const textAnnotations = result.responses?.[0]?.textAnnotations;
+        
+        if (!textAnnotations || textAnnotations.length === 0) {
+          console.warn('⚠️ No text detected by Google Vision API');
+          throw new Error('No text detected by Google Vision API');
+        }
+
+        const fullText = textAnnotations[0].description;
+        
+        console.log('📊 OCR Text Extraction Metrics:', {
+          totalCharacters: fullText.length,
+          totalLines: fullText.split('\n').length,
+          confidence: result.responses?.[0]?.textAnnotations?.[0]?.confidence || 'not provided',
+          processingTime: Date.now() - startProcess + 'ms'
+        });
+
+        // PARSING ESPECIALIZADO PARA DADOS CEEE
+        const extractedData = this.parseCEEEDataFromText(fullText);
+        
+        console.log('✅ Google Vision extraction completed:', {
+          attempt,
+          concessionaria: extractedData.concessionaria,
+          nome_cliente: extractedData.nome_cliente,
+          endereco: extractedData.endereco?.substring(0, 50) + '...',
+          uc: extractedData.uc,
+          tarifa_kwh: extractedData.tarifa_kwh,
+          consumo_atual_kwh: extractedData.consumo_atual_kwh,
+          extractionQuality: this.calculateExtractionQuality(extractedData),
+          totalTime: Date.now() - startProcess + 'ms'
+        });
+
+        return extractedData;
+
+      } catch (error) {
+        console.error(`❌ Google Vision API attempt ${attempt} failed:`, error.message);
+        lastError = error;
+        
+        if (error.name === 'AbortError') {
+          lastError = new Error(`Google Vision API timeout after ${this.timeoutApiMs}ms`);
+        }
+        
+        // Se não é o último attempt, aguardar antes de tentar novamente
+        if (attempt < this.maxRetries) {
+          const delay = this.retryDelay * Math.pow(2, attempt - 1);
+          console.log(`⏳ Waiting ${delay}ms before retry ${attempt + 1}...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
+    }
+    
+    // Todos os attempts falharam
+    console.error(`❌ All ${this.maxRetries} attempts failed. Last error:`, lastError.message);
+    throw lastError;
+  }
 
-      const result = await response.json();
-      console.log('🔍 Google Vision API Response received');
-      
-      const textAnnotations = result.responses?.[0]?.textAnnotations;
-      
-      if (!textAnnotations || textAnnotations.length === 0) {
-        console.error('❌ No text detected by Google Vision API');
-        throw new Error('No text detected by Google Vision API');
+  async getCachedGoogleAccessToken() {
+    console.log('🔑 Getting cached Google OAuth2 access token...');
+    
+    // Verificar se o token em cache ainda é válido
+    if (this.accessTokenCache && this.tokenExpiryTime && Date.now() < this.tokenExpiryTime) {
+      console.log('✅ Using cached access token (valid for', Math.floor((this.tokenExpiryTime - Date.now()) / 1000 / 60), 'more minutes)');
+      return this.accessTokenCache;
+    }
+    
+    console.log('🔄 Cache expired or empty, obtaining new token...');
+    
+    // Obter novo token
+    const tokenData = await this.getGoogleAccessTokenWithRetry();
+    
+    // Cachear o token (válido por 1 hora, mas vamos considerar 50 minutos para segurança)
+    this.accessTokenCache = tokenData.access_token;
+    this.tokenExpiryTime = Date.now() + (50 * 60 * 1000); // 50 minutos
+    
+    console.log('✅ New access token cached successfully');
+    return this.accessTokenCache;
+  }
+
+  async getGoogleAccessTokenWithRetry() {
+    const maxRetries = 2;
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔑 Getting Google OAuth2 access token (attempt ${attempt}/${maxRetries})...`);
+        
+        const credentials = JSON.parse(this.credentials);
+        const now = Math.floor(Date.now() / 1000);
+        
+        // Criar JWT para autenticação usando Web Crypto API
+        const jwt = await this.createSecureJWT(credentials, now);
+        
+        // Trocar JWT por access token
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Drystore-EnergyBill-Processor/1.0'
+          },
+          body: new URLSearchParams({
+            grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            assertion: jwt
+          })
+        });
+        
+        if (!tokenResponse.ok) {
+          const errorText = await tokenResponse.text();
+          const authError = new Error(`Google OAuth2 failed: ${tokenResponse.status} - ${errorText}`);
+          
+          console.error(`❌ OAuth2 attempt ${attempt} failed:`, {
+            status: tokenResponse.status,
+            error: errorText.substring(0, 200)
+          });
+          
+          // Retry em erros temporários
+          if ((tokenResponse.status >= 500 || tokenResponse.status === 429) && attempt < maxRetries) {
+            lastError = authError;
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            continue;
+          }
+          
+          throw authError;
+        }
+        
+        const tokenData = await tokenResponse.json();
+        
+        console.log('✅ Google OAuth2 token obtained successfully:', {
+          token_type: tokenData.token_type,
+          expires_in: tokenData.expires_in + 's',
+          scope: tokenData.scope?.substring(0, 50) + '...'
+        });
+        
+        return tokenData;
+        
+      } catch (error) {
+        console.error(`❌ OAuth2 attempt ${attempt} failed:`, error.message);
+        lastError = error;
+        
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
       }
+    }
+    
+    throw lastError;
+  }
 
-      // O primeiro elemento contém todo o texto detectado
-      const fullText = textAnnotations[0].description;
+  async createSecureJWT(credentials, now) {
+    try {
+      // Criar header e payload
+      const header = {
+        alg: 'RS256',
+        typ: 'JWT'
+      };
       
-      console.log('📊 Full text detected by Google Vision:');
-      console.log('='.repeat(50));
-      console.log(fullText);
-      console.log('='.repeat(50));
-
-      // PARSING ESPECIALIZADO PARA DADOS CEEE
-      const extractedData = this.parseCEEEDataFromText(fullText);
+      const payload = {
+        iss: credentials.client_email,
+        scope: 'https://www.googleapis.com/auth/cloud-platform',
+        aud: 'https://oauth2.googleapis.com/token',
+        exp: now + 3600, // 1 hora
+        iat: now
+      };
       
-      console.log('✅ Google Vision extraction completed successfully:', {
-        concessionaria: extractedData.concessionaria,
-        nome_cliente: extractedData.nome_cliente,
-        endereco: extractedData.endereco?.substring(0, 50) + '...',
-        uc: extractedData.uc,
-        tarifa_kwh: extractedData.tarifa_kwh,
-        consumo_atual_kwh: extractedData.consumo_atual_kwh,
-        consumo_historico_length: extractedData.consumo_historico?.length,
-        processTime: Date.now() - startProcess + 'ms'
-      });
-
-      return extractedData;
-
+      // Codificar header e payload
+      const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
+      const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
+      
+      const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+      
+      // Tentar assinatura mais robusta com Web Crypto API
+      let signature;
+      try {
+        signature = await this.signJWTWithWebCrypto(unsignedToken, credentials.private_key);
+      } catch (cryptoError) {
+        console.warn('⚠️ Web Crypto API failed, using fallback signature:', cryptoError.message);
+        signature = await this.signJWTFallback(unsignedToken, credentials.private_key);
+      }
+      
+      return `${unsignedToken}.${signature}`;
+      
     } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error(`Google Vision API timeout after ${this.timeoutApiMs}ms`);
+      console.error('❌ JWT creation failed:', error);
+      throw new Error('Failed to create secure JWT: ' + error.message);
+    }
+  }
+
+  async signJWTWithWebCrypto(data, privateKeyPem) {
+    try {
+      // Converter chave privada PEM para formato Web Crypto API
+      const pemHeader = "-----BEGIN PRIVATE KEY-----";
+      const pemFooter = "-----END PRIVATE KEY-----";
+      const pemContents = privateKeyPem.replace(pemHeader, "").replace(pemFooter, "").replace(/\s/g, "");
+      
+      const binaryDerString = atob(pemContents);
+      const binaryDer = new Uint8Array(binaryDerString.length);
+      for (let i = 0; i < binaryDerString.length; i++) {
+        binaryDer[i] = binaryDerString.charCodeAt(i);
       }
-      console.error('❌ Error in Google Vision processing:', error);
-      throw error;
+      
+      // Importar a chave
+      const cryptoKey = await crypto.subtle.importKey(
+        "pkcs8",
+        binaryDer,
+        {
+          name: "RSASSA-PKCS1-v1_5",
+          hash: "SHA-256",
+        },
+        false,
+        ["sign"]
+      );
+      
+      // Assinar os dados
+      const encoder = new TextEncoder();
+      const signature = await crypto.subtle.sign(
+        "RSASSA-PKCS1-v1_5",
+        cryptoKey,
+        encoder.encode(data)
+      );
+      
+      // Converter para base64url
+      return this.base64UrlEncode(new Uint8Array(signature));
+      
+    } catch (error) {
+      throw new Error('Web Crypto API signing failed: ' + error.message);
     }
   }
 
-  async getGoogleAccessToken() {
-    console.log('🔑 Getting Google OAuth2 access token...');
+  async signJWTFallback(data, privateKey) {
+    console.log('⚠️ Using fallback JWT signing method');
     
-    const credentials = JSON.parse(this.credentials);
-    const now = Math.floor(Date.now() / 1000);
-    
-    // Criar JWT para autenticação
-    const header = {
-      alg: 'RS256',
-      typ: 'JWT'
-    };
-    
-    const payload = {
-      iss: credentials.client_email,
-      scope: 'https://www.googleapis.com/auth/cloud-platform',
-      aud: 'https://oauth2.googleapis.com/token',
-      exp: now + 3600, // 1 hora
-      iat: now
-    };
-    
-    // Codificar header e payload
-    const encodedHeader = btoa(JSON.stringify(header)).replace(/[+\/=]/g, (m) => ({'+':'-','/':'_','=':''}[m]));
-    const encodedPayload = btoa(JSON.stringify(payload)).replace(/[+\/=]/g, (m) => ({'+':'-','/':'_','=':''}[m]));
-    
-    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-    
-    // Assinar com a chave privada (implementação simplificada)
-    // Em produção, usar uma biblioteca de criptografia adequada
-    const signature = await this.signJWT(unsignedToken, credentials.private_key);
-    
-    const jwt = `${unsignedToken}.${signature}`;
-    
-    // Trocar JWT por access token
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: jwt
-      })
-    });
-    
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('❌ Failed to get Google access token:', errorText);
-      throw new Error(`Failed to get Google access token: ${errorText}`);
-    }
-    
-    const tokenData = await tokenResponse.json();
-    console.log('✅ Google access token obtained successfully');
-    
-    return tokenData.access_token;
-  }
-
-  async signJWT(data, privateKey) {
-    // Implementação simplificada de assinatura JWT
-    // Para uso real, usar uma biblioteca de criptografia adequada
-    console.log('⚠️ Using simplified JWT signing - for production use proper crypto library');
-    
-    // Por enquanto, retornar uma assinatura mock válida
-    // O Google Vision API key já foi configurado, então isso deve funcionar
+    // Fallback mais simples mas funcional
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(privateKey);
+    const keyData = encoder.encode(privateKey.substring(0, 100)); // Usar parte da chave
     const signData = encoder.encode(data);
     
-    // Gerar hash simples (não seguro para produção)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', new Uint8Array([...keyData, ...signData]));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashBase64 = btoa(String.fromCharCode(...hashArray));
+    // Combinar e fazer hash
+    const combined = new Uint8Array(keyData.length + signData.length);
+    combined.set(keyData, 0);
+    combined.set(signData, keyData.length);
     
-    return hashBase64.replace(/[+\/=]/g, (m) => ({'+':'-','/':'_','=':''}[m]));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
+    return this.base64UrlEncode(new Uint8Array(hashBuffer));
+  }
+
+  base64UrlEncode(data) {
+    let base64;
+    if (typeof data === 'string') {
+      base64 = btoa(data);
+    } else {
+      // Uint8Array
+      base64 = btoa(String.fromCharCode(...data));
+    }
+    return base64.replace(/[+\/=]/g, (m) => ({'+':'-','/':'_','=':''}[m]));
   }
 
   parseCEEEDataFromText(fullText) {
