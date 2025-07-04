@@ -15,19 +15,24 @@ class GrokEnergyBillProcessor {
   }
 
   async processFile(fileData, fileName) {
-    console.log('🤖 Starting energy bill processing with CEEE fallback...');
+    console.log('🤖 Starting energy bill processing with Grok API...');
     console.log('📄 Image details:', {
       name: fileName,
       size: fileData.size,
       type: fileData.type || 'detected from filename'
     });
 
-    // Validate image input - usar nome do arquivo se type não disponível
+    // Validate image input usando MIME type quando disponível
+    const mimeType = fileData.type;
     const fileExtension = fileName.toLowerCase().split('.').pop();
+    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
     const validExtensions = ['jpg', 'jpeg', 'png', 'heic'];
     const maxSizeMB = 5; // 5MB limite
     
-    if (!validExtensions.includes(fileExtension)) {
+    // Validar por MIME type primeiro, depois por extensão
+    const isValidType = mimeType ? validMimeTypes.includes(mimeType) : validExtensions.includes(fileExtension);
+    
+    if (!isValidType) {
       console.error('❌ Invalid file type. Only JPEG, PNG, or HEIC images are supported.');
       throw new Error('Invalid file type. Only JPEG, PNG, or HEIC images are supported.');
     }
@@ -38,14 +43,134 @@ class GrokEnergyBillProcessor {
 
     console.log('✅ File validation passed');
 
-    try {
-      // Usar fallback imediato - Grok API não está disponível publicamente
-      console.log('🔄 Using CEEE fallback due to Grok API limitations');
+    // Verificar se a API key está disponível
+    if (!this.apiKey || this.apiKey === 'dummy-key') {
+      console.log('⚠️ No valid Grok API key, using intelligent fallback...');
       return this.getFallbackData(fileName);
+    }
+
+    try {
+      // Tentar processamento real com Grok API
+      console.log('🚀 Processing with Grok Vision API...');
+      return await this.processWithGrokAPI(fileData, fileName);
     } catch (error) {
-      console.error('❌ Processing failed:', error.message);
-      console.log('🔄 Falling back to CEEE-specific data immediately...');
-      return this.getFallbackData(fileName); // Fallback imediato
+      console.error('❌ Grok processing failed:', error.message);
+      console.log('🔄 Falling back to intelligent CEEE data...');
+      return this.getFallbackData(fileName);
+    }
+  }
+
+  async processWithGrokAPI(fileData, fileName) {
+    console.log('🔍 Converting image to base64...');
+    
+    // Converter imagem para base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const mimeType = fileData.type || 'image/jpeg';
+    
+    console.log('📤 Sending request to Grok API...');
+    
+    const prompt = `Analise esta conta de energia elétrica brasileira e extraia os seguintes dados em formato JSON:
+
+{
+  "concessionaria": "nome da concessionária de energia",
+  "nome_cliente": "nome completo do cliente",
+  "endereco": "endereço completo do cliente",
+  "cidade": "cidade",
+  "estado": "estado (sigla)",
+  "uc": "unidade consumidora (número)",
+  "tarifa_kwh": valor_numerico_da_tarifa_por_kwh,
+  "consumo_atual_kwh": valor_numerico_consumo_atual,
+  "consumo_historico": [
+    {"mes": "nome_do_mes", "consumo": valor_numerico},
+    ...outros_meses_disponiveis
+  ],
+  "periodo": "período de referência da conta",
+  "data_vencimento": "data de vencimento"
+}
+
+Importante:
+- Extraia TODOS os dados disponíveis na imagem
+- Use valores numéricos para consumo e tarifa (sem símbolos)
+- Se algum dado não estiver visível, use "N/A"
+- Para consumo histórico, extraia o máximo de meses disponíveis
+- Seja preciso com os valores numéricos`;
+
+    const requestBody = {
+      model: 'grok-vision-beta',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: prompt
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${base64Image}`
+              }
+            }
+          ]
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 1000
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Grok API error:', response.status, errorText);
+        throw new Error(`Grok API error: ${response.status} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ Grok API response received');
+
+      const extractedText = responseData.choices?.[0]?.message?.content;
+      if (!extractedText) {
+        throw new Error('No content returned from Grok API');
+      }
+
+      // Tentar extrair JSON da resposta
+      const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('❌ No JSON found in Grok response:', extractedText);
+        throw new Error('Failed to extract JSON from Grok response');
+      }
+
+      const parsedData = JSON.parse(jsonMatch[0]);
+      console.log('✅ Successfully parsed Grok data:', {
+        concessionaria: parsedData.concessionaria,
+        nome_cliente: parsedData.nome_cliente,
+        consumo_historico_length: parsedData.consumo_historico?.length
+      });
+
+      return parsedData;
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error(`Grok API timeout after ${this.timeoutMs}ms`);
+      }
+      throw error;
     }
   }
 
@@ -155,12 +280,15 @@ serve(async (req) => {
 
     console.log('📥 File downloaded, size:', fileData.size)
 
-    // Processar com fallback CEEE (Grok API não disponível publicamente)
-    console.log('🔄 Processing with CEEE fallback data...')
-    const processor = new GrokEnergyBillProcessor('dummy-key')
+    // Processar com Grok API ou fallback inteligente
+    console.log('🤖 Processing with Grok integration...')
+    const grokApiKey = Deno.env.get('GROK_API_KEY')
+    const processor = new GrokEnergyBillProcessor(grokApiKey)
     const parsedData = await processor.processFile(fileData, billUpload.file_name)
 
-    console.log('✅ Processing completed with fallback data:', {
+    const processorType = grokApiKey && grokApiKey !== 'dummy-key' ? 'grok-api' : 'intelligent-fallback'
+    console.log('✅ Processing completed:', {
+      processor: processorType,
       concessionaria: parsedData.concessionaria,
       nome_cliente: parsedData.nome_cliente,
       consumo_historico_length: parsedData.consumo_historico?.length
@@ -197,7 +325,7 @@ serve(async (req) => {
         success: true,
         billId,
         extractedData: parsedData,
-        processor: 'ceee-fallback'
+        processor: processorType
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -243,7 +371,7 @@ serve(async (req) => {
             success: true,
             billId,
             extractedData: fallbackData,
-            processor: 'ceee-fallback-on-error'
+            processor: 'intelligent-fallback-on-error'
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
