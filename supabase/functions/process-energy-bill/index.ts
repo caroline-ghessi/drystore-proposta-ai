@@ -52,7 +52,7 @@ class GrokEnergyBillProcessor {
 
     try {
       // Tentar processamento real com Grok API
-      console.log('🚀 Processing with Grok Vision API...');
+      console.log('🚀 Processing with Grok Chat API...');
       return await this.processWithGrokAPI(fileData, fileName);
     } catch (error) {
       console.error('❌ Grok processing failed:', error.message);
@@ -84,17 +84,20 @@ class GrokEnergyBillProcessor {
     // Teste de conectividade com Grok API
     const startTest = Date.now();
     console.log('🧪 Testing Grok API connectivity...');
-    const testResponse = await fetch('https://api.x.ai/v1/vision/completions', {
+    const testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'grok-3',
-        messages: [{ role: 'user', content: [{ type: 'text', text: 'Test connection' }] }],
-        temperature: 0.1,
-        max_tokens: 10
+        model: 'grok-3-latest',
+        messages: [
+          { role: 'system', content: 'You are a test assistant.' },
+          { role: 'user', content: 'Testing. Just say hi and hello world and nothing else.' }
+        ],
+        temperature: 0,
+        stream: false
       })
     });
 
@@ -109,22 +112,22 @@ class GrokEnergyBillProcessor {
     }
     console.log('✅ Grok API connectivity confirmed in', Date.now() - startTest + 'ms');
 
-    // Processamento com Grok Vision API
+    // Processamento com Grok Chat API para análise de imagem
     const startProcess = Date.now();
-    console.log('🚀 Processing image with Grok Vision API...');
+    console.log('🚀 Processing image with Grok Chat API...');
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutApiMs);
 
     try {
-      const response = await fetch('https://api.x.ai/v1/vision/completions', {
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-3',
+          model: 'grok-3-latest',
           messages: [
             {
               role: 'user',
@@ -135,7 +138,8 @@ class GrokEnergyBillProcessor {
             }
           ],
           temperature: 0.1,
-          max_tokens: 1000
+          max_tokens: 1000,
+          stream: false
         }),
         signal: controller.signal
       });
@@ -144,12 +148,12 @@ class GrokEnergyBillProcessor {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Grok Vision API failed:', {
+        console.error('❌ Grok Chat API failed:', {
           status: response.status,
           error: errorText,
           processTime: Date.now() - startProcess + 'ms'
         });
-        throw new Error(`Grok Vision API failed with status: ${response.status}`);
+        throw new Error(`Grok Chat API failed with status: ${response.status}`);
       }
 
       const result = await response.json();
@@ -160,7 +164,8 @@ class GrokEnergyBillProcessor {
         throw new Error('No content returned from Grok');
       }
 
-      console.log('📊 Raw data from Grok:', content.substring(0, 200) + '...');
+      console.log('📊 Raw data from Grok (FULL RESPONSE):', content);
+      console.log('📊 Raw data preview:', content.substring(0, 200) + '...');
 
       // Parsing direto do JSON (sem regex complexo)
       let extractedData;
