@@ -44,18 +44,22 @@ class GrokEnergyBillProcessor {
 
     console.log('✅ File validation passed');
 
-  // CORREÇÃO CRÍTICA: Verificar se a API key está disponível de forma mais flexível
-  console.log('🔑 Checking Grok API key:', { 
-    hasKey: !!this.apiKey, 
+  // CORREÇÃO DEFINITIVA: Validação flexível da API key
+  console.log('🔑 Grok API Key Status:', { 
+    exists: !!this.apiKey, 
     keyLength: this.apiKey?.length,
-    keyPrefix: this.apiKey?.substring(0, 10) + '...',
-    isDummy: this.apiKey === 'dummy-key' 
+    keyPrefix: this.apiKey?.substring(0, 15) + '...',
+    isDummy: this.apiKey === 'dummy-key',
+    isEmpty: !this.apiKey || this.apiKey.trim() === ''
   });
   
-  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 20) {
-    console.log('⚠️ Invalid Grok API key detected, using intelligent fallback...');
+  // VALIDAÇÃO CORRIGIDA: Apenas verificar se não é dummy ou vazio
+  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.trim() === '') {
+    console.log('⚠️ No valid Grok API key - using fallback data');
     return this.getFallbackData(fileName);
   }
+  
+  console.log('✅ Valid Grok API key detected - proceeding with real extraction');
 
     try {
       // Tentar processamento real com Grok API
@@ -88,20 +92,21 @@ class GrokEnergyBillProcessor {
       convertTime: Date.now() - startConvert + 'ms'
     });
 
-    // VALIDAÇÃO MELHORADA: Verificar se API key é válida
-    console.log('🔑 Final API key validation:', { 
+    // VALIDAÇÃO FINAL: Confirmar que a API key é válida antes de prosseguir
+    console.log('🔑 Final API key validation before processing:', { 
       hasKey: !!this.apiKey, 
       keyLength: this.apiKey?.length,
       keyType: typeof this.apiKey,
       isDummy: this.apiKey === 'dummy-key'
     });
     
-    if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 20) {
+    // Não bloquear por tamanho - Grok pode ter keys de tamanhos diferentes
+    if (!this.apiKey || this.apiKey === 'dummy-key') {
       console.error('❌ Invalid Grok API key detected - will not proceed with API call');
       throw new Error('Invalid Grok API key - cannot proceed with real extraction');
     }
     
-    console.log('✅ API key validation passed - proceeding with Grok API');
+    console.log('✅ Final API key validation passed - proceeding with Grok API');
 
     // TESTE SIMPLIFICADO DE CONECTIVIDADE
     const startTest = Date.now();
@@ -324,38 +329,42 @@ class GrokEnergyBillProcessor {
   }
 
   getCEEESpecificPrompt() {
-    return `Você é especialista em extrair dados de contas de luz brasileiras, especialmente da CEEE.
+    return `ESPECIALISTA EM EXTRAÇÃO DE DADOS DE CONTAS DE LUZ CEEE.
 
-Analise esta conta de luz e retorne APENAS UM JSON VÁLIDO, sem texto adicional, sem explicações, sem marcações como \`\`\`json.
+Analise esta imagem da conta de luz e extraia APENAS os dados REAIS visíveis.
 
-Formato de resposta:
+RETORNE APENAS JSON VÁLIDO SEM QUALQUER TEXTO ADICIONAL:
+
 {
-  "concessionaria": "nome da distribuidora",
-  "nome_cliente": "nome completo do cliente",
-  "endereco": "endereço completo com CEP",
-  "cidade": "cidade",
-  "estado": "sigla do estado",
-  "uc": "código de 10 dígitos",
-  "tarifa_kwh": 0.85,
-  "consumo_atual_kwh": 316,
+  "concessionaria": "CEEE-D",
+  "nome_cliente": "NOME EXATO DA CONTA",
+  "endereco": "ENDEREÇO COMPLETO DA CONTA",
+  "cidade": "CIDADE EXATA",
+  "estado": "RS",
+  "uc": "CÓDIGO UC DE 10 DÍGITOS",
+  "tarifa_kwh": VALOR_NUMERICO_DA_TARIFA,
+  "consumo_atual_kwh": CONSUMO_ATUAL_NUMERICO,
   "consumo_historico": [
-    {"mes": "janeiro", "consumo": 380},
-    {"mes": "fevereiro", "consumo": 350}
+    {"mes": "janeiro", "consumo": VALOR_NUMERICO},
+    {"mes": "fevereiro", "consumo": VALOR_NUMERICO}
   ],
-  "periodo": "período de referência",
-  "data_vencimento": "data de vencimento"
+  "periodo": "PERÍODO DE REFERÊNCIA",
+  "data_vencimento": "DATA DE VENCIMENTO"
 }
 
-Instruções específicas:
-- Identifique a CEEE no cabeçalho da conta
-- UC deve ter exatamente 10 dígitos numéricos
-- Extraia o histórico de consumo do gráfico ou tabela, se disponível
-- Retorne valores numéricos sem aspas (ex.: 0.85, 316)
-- Tarifa deve estar entre 0.30 e 2.00
-- Para consumo histórico, extraia pelo menos os últimos 6 meses se disponível
-- Se não conseguir extrair algum campo, use null
+INSTRUÇÕES CRÍTICAS:
+- Extraia EXATAMENTE o que está escrito na conta
+- Nome do cliente: leia o campo "Cliente" ou "Nome"
+- UC: procure por código de 10 dígitos (formato: 1006233668)  
+- Endereço: campo "Endereço de entrega" ou similar
+- Consumo atual: valor em kWh do mês atual
+- Histórico: gráfico ou tabela de consumo mensal
+- Tarifa: valor por kWh (entre R$ 0,30 e R$ 2,00)
+- CEEE aparece como "CEEE-D" no cabeçalho
 
-CRÍTICO: NÃO inclua texto explicativo. Retorne SOMENTE o JSON válido.`;
+SE NÃO CONSEGUIR LER ALGUM CAMPO, USE NULL (não invente dados).
+
+RETORNE SOMENTE O JSON - NENHUM TEXTO ADICIONAL.`;
   }
 
   normalizeExtractedData(data) {
