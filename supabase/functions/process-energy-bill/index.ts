@@ -44,11 +44,18 @@ class GrokEnergyBillProcessor {
 
     console.log('✅ File validation passed');
 
-    // Verificar se a API key está disponível
-    if (!this.apiKey || this.apiKey === 'dummy-key') {
-      console.log('⚠️ No valid Grok API key, using intelligent fallback...');
-      return this.getFallbackData(fileName);
-    }
+  // CORREÇÃO CRÍTICA: Verificar se a API key está disponível de forma mais flexível
+  console.log('🔑 Checking Grok API key:', { 
+    hasKey: !!this.apiKey, 
+    keyLength: this.apiKey?.length,
+    keyPrefix: this.apiKey?.substring(0, 10) + '...',
+    isDummy: this.apiKey === 'dummy-key' 
+  });
+  
+  if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 20) {
+    console.log('⚠️ Invalid Grok API key detected, using intelligent fallback...');
+    return this.getFallbackData(fileName);
+  }
 
     try {
       // Tentar processamento real com Grok API
@@ -81,36 +88,45 @@ class GrokEnergyBillProcessor {
       convertTime: Date.now() - startConvert + 'ms'
     });
 
-    // VALIDAÇÃO CRÍTICA: Verificar se API key é válida
-    if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 10) {
-      console.error('❌ Invalid Grok API key detected:', { 
-        hasKey: !!this.apiKey, 
-        keyLength: this.apiKey?.length,
-        isDummy: this.apiKey === 'dummy-key'
-      });
+    // VALIDAÇÃO MELHORADA: Verificar se API key é válida
+    console.log('🔑 Final API key validation:', { 
+      hasKey: !!this.apiKey, 
+      keyLength: this.apiKey?.length,
+      keyType: typeof this.apiKey,
+      isDummy: this.apiKey === 'dummy-key'
+    });
+    
+    if (!this.apiKey || this.apiKey === 'dummy-key' || this.apiKey.length < 20) {
+      console.error('❌ Invalid Grok API key detected - will not proceed with API call');
       throw new Error('Invalid Grok API key - cannot proceed with real extraction');
     }
+    
+    console.log('✅ API key validation passed - proceeding with Grok API');
 
-    // Teste de conectividade com Grok API (Chat endpoint)
+    // TESTE SIMPLIFICADO DE CONECTIVIDADE
     const startTest = Date.now();
-    console.log('🧪 Testing Grok API connectivity...');
-    const testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'grok-3-latest',
-        messages: [
-          { role: 'system', content: 'You are a test assistant.' },
-          { role: 'user', content: 'Testing. Just say "OK" and nothing else.' }
-        ],
-        temperature: 0,
-        stream: false,
-        max_tokens: 10
-      })
-    });
+    console.log('🧪 Testing Grok API connectivity with simple request...');
+    
+    let testResponse;
+    try {
+      testResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'grok-beta',
+          messages: [
+            { role: 'user', content: 'Test' }
+          ],
+          max_tokens: 5
+        })
+      });
+    } catch (testError) {
+      console.error('❌ Network error during connectivity test:', testError.message);
+      throw new Error(`Network connectivity issue: ${testError.message}`);
+    }
 
     if (!testResponse.ok) {
       const errorText = await testResponse.text();
@@ -142,7 +158,7 @@ class GrokEnergyBillProcessor {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-3-latest', // Modelo correto mais recente
+          model: 'grok-beta', // Modelo disponível para beta
           messages: [
             {
               role: 'user',
@@ -155,14 +171,14 @@ class GrokEnergyBillProcessor {
                   type: 'image_url', 
                   image_url: { 
                     url: `data:${mimeType};base64,${base64Data}`,
-                    detail: 'high' // Alta resolução para melhor extração
+                    detail: 'high'
                   } 
                 }
               ]
             }
           ],
           temperature: 0.1,
-          max_tokens: 800, // Aumentado para capturar mais dados
+          max_tokens: 1000,
           stream: false
         }),
         signal: controller.signal
@@ -572,9 +588,15 @@ serve(async (req) => {
 
     console.log('📥 File downloaded, size:', fileData.size)
 
-    // Processar com Grok API ou fallback inteligente
-    console.log('🤖 Processing with Grok integration...')
+    // CORREÇÃO CRÍTICA: Processar com Grok API
+    console.log('🤖 Starting energy bill processing...')
     const grokApiKey = Deno.env.get('GROK_API_KEY')
+    console.log('🔑 Grok API Key status:', { 
+      exists: !!grokApiKey, 
+      length: grokApiKey?.length,
+      type: typeof grokApiKey 
+    });
+    
     const processor = new GrokEnergyBillProcessor(grokApiKey)
     const parsedData = await processor.processFile(fileData, billUpload.file_name)
 
