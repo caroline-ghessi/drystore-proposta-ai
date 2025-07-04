@@ -6,13 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-class GrokEnergyBillProcessor {
-  apiKey;
+class GoogleVisionEnergyBillProcessor {
+  credentials;
+  projectId;
   timeoutConvertMs = 10000; // 10s para conversão
-  timeoutApiMs = 45000; // 45s para API - TEMPO AUMENTADO para processamento de imagem
+  timeoutApiMs = 30000; // 30s para Google Vision API
 
-  constructor(apiKey) {
-    this.apiKey = apiKey;
+  constructor(credentials, projectId) {
+    this.credentials = credentials;
+    this.projectId = projectId;
   }
 
   async processFile(fileData, fileName) {
