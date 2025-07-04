@@ -199,7 +199,7 @@ const SolarBillUpload = () => {
                 </Button>
 
                 <p className="text-xs text-gray-500">
-                  Formatos aceitos: JPG, PNG, HEIC • Máximo 10MB
+                  Formatos aceitos: JPG, PNG, HEIC • Máximo 5MB
                 </p>
               </div>
             </div>
