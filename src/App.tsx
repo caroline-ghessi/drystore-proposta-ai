@@ -48,6 +48,7 @@ const Proposals = React.lazy(() => import('@/pages/Proposals'));
 const Clients = React.lazy(() => import('@/pages/Clients'));
 const CRMDashboard = React.lazy(() => import('@/pages/CRMDashboard'));
 const FollowUpManager = React.lazy(() => import('@/pages/FollowUpManager'));
+const Gamification = React.lazy(() => import('@/pages/Gamification'));
 
 // Proposal Creation Flow
 const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
@@ -208,6 +209,10 @@ const AppContent = () => {
         <Route 
           path="/followup" 
           element={createProtectedRoute({ path: '/followup', element: FollowUpManager, fallbackType: 'dashboard' })} 
+        />
+        <Route 
+          path="/gamification" 
+          element={createProtectedRoute({ path: '/gamification', element: Gamification, fallbackType: 'dashboard' })} 
         />
 
         {/* ============= PROPOSAL CREATION FLOW ============= */}
