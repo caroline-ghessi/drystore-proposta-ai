@@ -4,6 +4,7 @@ import type { ExtractedEnergyBillData, ProcessingConfig, ExtractionQualityWeight
 import { ImageProcessor } from './image-processor.ts';
 import { GoogleAuthManager } from './google-auth.ts';
 import { GoogleVisionClient } from './google-vision.ts';
+import { AIEnergyBillParser } from './ai-parser.ts';
 import { CEEEDataParser } from './ceee-parser.ts';
 import { FallbackDataProvider } from './fallback-data.ts';
 
@@ -14,6 +15,7 @@ export class GoogleVisionEnergyBillProcessor {
   private imageProcessor: ImageProcessor;
   private authManager: GoogleAuthManager;
   private visionClient: GoogleVisionClient;
+  private aiParser: AIEnergyBillParser;
   private ceeeParser: CEEEDataParser;
   private fallbackProvider: FallbackDataProvider;
 
@@ -34,6 +36,12 @@ export class GoogleVisionEnergyBillProcessor {
     this.imageProcessor = new ImageProcessor(this.config);
     this.authManager = new GoogleAuthManager(this.credentials);
     this.visionClient = new GoogleVisionClient(this.config);
+    
+    // Configurar AI parser com Grok API key
+    const grokApiKey = Deno.env.get('GROK_API_KEY') || '';
+    this.aiParser = new AIEnergyBillParser(grokApiKey);
+    
+    // Manter CEEE parser como fallback
     this.ceeeParser = new CEEEDataParser();
     this.fallbackProvider = new FallbackDataProvider();
   }
@@ -98,10 +106,21 @@ export class GoogleVisionEnergyBillProcessor {
     // PROCESSAMENTO COM GOOGLE VISION API (com retry)
     const fullText = await this.visionClient.callGoogleVisionWithRetry(optimizedImageData, accessToken, fileName);
     
-    // PARSING ESPECIALIZADO PARA DADOS CEEE
-    const extractedData = this.ceeeParser.parseCEEEDataFromText(fullText);
+    // PARSING COM IA (Grok API) - método principal
+    let extractedData: ExtractedEnergyBillData;
+    try {
+      console.log('🧠 Attempting AI-powered parsing with Grok...');
+      extractedData = await this.aiParser.parseEnergyBillWithAI(fullText, fileName);
+      console.log('✅ AI parsing successful');
+    } catch (aiError) {
+      console.warn('⚠️ AI parsing failed, falling back to regex parser:', aiError.message);
+      console.log('🔄 Using CEEE regex parser as fallback...');
+      extractedData = this.ceeeParser.parseCEEEDataFromText(fullText);
+    }
     
-    console.log('✅ Google Vision extraction completed:', {
+    const processingMethod = extractedData.nome_cliente !== 'Cliente não identificado' ? 'ai-powered' : 'regex-fallback';
+    console.log('✅ Energy bill processing completed:', {
+      method: processingMethod,
       concessionaria: extractedData.concessionaria,
       nome_cliente: extractedData.nome_cliente,
       endereco: extractedData.endereco?.substring(0, 50) + '...',
