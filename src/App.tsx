@@ -31,6 +31,7 @@ const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
 const SolarInputChoice = React.lazy(() => import('@/pages/SolarInputChoice'));
 const SolarBillUpload = React.lazy(() => import('@/pages/SolarBillUpload'));
 const SolarDataValidation = React.lazy(() => import('@/pages/SolarDataValidation'));
+const SolarSystemValidation = React.lazy(() => import('@/pages/SolarSystemValidation'));
 const SolarProposalForm = React.lazy(() => import('@/pages/SolarProposalForm'));
 const ProductUploadChoice = React.lazy(() => import('@/pages/ProductUploadChoice'));
 const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
@@ -188,6 +189,16 @@ const AppContent = () => {
             <ProtectedRoute>
               <Suspense fallback={<AppLoadingFallback type="form" />}>
                 <SolarDataValidation />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/technical-validation" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <SolarSystemValidation />
               </Suspense>
             </ProtectedRoute>
           } 

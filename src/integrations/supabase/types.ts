@@ -462,31 +462,94 @@ export type Database = {
         Row: {
           ativo: boolean | null
           created_at: string | null
+          custo_eletrico_wp: number | null
+          custo_estrutura_wp: number | null
           custo_instalacao_wp: number | null
+          custo_inversor_wp: number | null
+          custo_mao_obra_wp: number | null
           fator_perdas_sistema: number | null
           fator_seguranca: number | null
           id: string
+          margem_adicional_equipamentos: number | null
           margem_comercial: number | null
           updated_at: string | null
         }
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
+          custo_eletrico_wp?: number | null
+          custo_estrutura_wp?: number | null
           custo_instalacao_wp?: number | null
+          custo_inversor_wp?: number | null
+          custo_mao_obra_wp?: number | null
           fator_perdas_sistema?: number | null
           fator_seguranca?: number | null
           id?: string
+          margem_adicional_equipamentos?: number | null
           margem_comercial?: number | null
           updated_at?: string | null
         }
         Update: {
           ativo?: boolean | null
           created_at?: string | null
+          custo_eletrico_wp?: number | null
+          custo_estrutura_wp?: number | null
           custo_instalacao_wp?: number | null
+          custo_inversor_wp?: number | null
+          custo_mao_obra_wp?: number | null
           fator_perdas_sistema?: number | null
           fator_seguranca?: number | null
           id?: string
+          margem_adicional_equipamentos?: number | null
           margem_comercial?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      inversores_solares: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          destaque: boolean | null
+          eficiencia: number
+          fabricante: string
+          faixa_potencia_max_kwp: number | null
+          faixa_potencia_min_kwp: number | null
+          id: string
+          modelo: string
+          potencia_kw: number
+          preco_unitario: number
+          tipos_instalacao: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          destaque?: boolean | null
+          eficiencia?: number
+          fabricante: string
+          faixa_potencia_max_kwp?: number | null
+          faixa_potencia_min_kwp?: number | null
+          id?: string
+          modelo: string
+          potencia_kw: number
+          preco_unitario?: number
+          tipos_instalacao?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          destaque?: boolean | null
+          eficiencia?: number
+          fabricante?: string
+          faixa_potencia_max_kwp?: number | null
+          faixa_potencia_min_kwp?: number | null
+          id?: string
+          modelo?: string
+          potencia_kw?: number
+          preco_unitario?: number
+          tipos_instalacao?: Json | null
           updated_at?: string | null
         }
         Relationships: []

@@ -366,6 +366,99 @@ export class SolarCalculationService {
   }
 
   /**
+   * Calcula custos detalhados do sistema solar
+   */
+  static async calcularCustosDetalhados(
+    painel: any, 
+    inversor: any, 
+    quantidade: number, 
+    potenciaKwp: number
+  ): Promise<any> {
+    console.log('💰 Calculando custos detalhados:', { painel: painel.modelo, inversor: inversor.modelo, quantidade, potenciaKwp });
+    
+    try {
+      // Buscar configurações de custos
+      const { data: config } = await supabase
+        .from('energia_solar_configuracoes')
+        .select('*')
+        .eq('ativo', true)
+        .single();
+
+      if (!config) throw new Error('Configurações solares não encontradas');
+
+      // Calcular custos por componente
+      const custoPaineis = quantidade * painel.preco_unitario;
+      const custoInversor = inversor.preco_unitario;
+      const custoEstrutura = potenciaKwp * 1000 * (config.custo_estrutura_wp || 0.45);
+      const custoEletrico = potenciaKwp * 1000 * (config.custo_eletrico_wp || 0.35);
+      const custoMaoObra = potenciaKwp * 1000 * (config.custo_mao_obra_wp || 0.80);
+      
+      const subtotal = custoPaineis + custoInversor + custoEstrutura + custoEletrico + custoMaoObra;
+      const margemComercial = subtotal * (config.margem_comercial || 0.25);
+      const total = subtotal + margemComercial;
+
+      // Calcular geração estimada
+      const { data: irradiacao } = await supabase
+        .from('irradiacao_estados')
+        .select('irradiacao_media_kwh_m2_dia')
+        .eq('estado', 'RS')
+        .single();
+
+      const geracaoAnualKwh = potenciaKwp * (irradiacao?.irradiacao_media_kwh_m2_dia || 4.5) * 365 * (config.fator_perdas_sistema || 0.8);
+
+      return {
+        paineis: custoPaineis,
+        inversor: custoInversor,
+        estrutura: custoEstrutura,
+        eletrico: custoEletrico,
+        mao_obra: custoMaoObra,
+        margem_comercial: margemComercial,
+        total: total,
+        geracao_anual_kwh: geracaoAnualKwh
+      };
+    } catch (error) {
+      console.error('❌ Erro ao calcular custos:', error);
+      throw new Error('Falha no cálculo de custos detalhados');
+    }
+  }
+
+  /**
+   * Calcula financeiro simplificado para validação técnica
+   */
+  static async calcularFinanceiroSimplificado(
+    custoTotal: number,
+    potenciaKwp: number,
+    geracaoAnualKwh: number,
+    consumoAnualKwh: number,
+    tarifaKwh: number
+  ): Promise<any> {
+    console.log('📊 Calculando financeiro simplificado:', { custoTotal, potenciaKwp, geracaoAnualKwh, consumoAnualKwh, tarifaKwh });
+    
+    try {
+      const { data, error } = await supabase.rpc('calcular_financeiro_solar', {
+        p_custo_equipamentos: custoTotal * 0.7, // Aproximação de 70% para equipamentos
+        p_potencia_kwp: potenciaKwp,
+        p_geracao_anual_kwh: geracaoAnualKwh,
+        p_consumo_anual_kwh: consumoAnualKwh,
+        p_tarifa_kwh: tarifaKwh
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      return {
+        geracao_anual_kwh: geracaoAnualKwh,
+        economia_anual: result.economia_anual,
+        payback_anos: result.payback_anos,
+        economia_25_anos: result.economia_25_anos
+      };
+    } catch (error) {
+      console.error('❌ Erro ao calcular financeiro:', error);
+      throw new Error('Falha no cálculo financeiro');
+    }
+  }
+
+  /**
    * Limpa o cache (útil para testes ou atualizações)
    */
   static limparCache(): void {

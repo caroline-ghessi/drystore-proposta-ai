@@ -38,21 +38,22 @@ const SolarDataValidation = () => {
     setLoading(true);
     
     try {
-      console.log('🌞 Iniciando cálculo do sistema solar com dados validados');
-      
-      const propostaSolar = await SolarCalculationService.gerarPropostaCompleta(dados);
+      console.log('🌞 Prosseguindo para validação técnica com dados validados');
       
       toast({
-        title: "Sistema solar calculado com sucesso!",
-        description: `Proposta gerada para ${dados.nome} com sistema de ${propostaSolar.dimensionamento.potencia_necessaria_kwp}kWp`,
+        title: "Dados validados com sucesso!",
+        description: `Prosseguindo para configuração técnica do sistema solar`,
       });
 
-      navigate(`/proposal-view/${propostaSolar.proposal.id}`);
+      // Redirecionar para validação técnica
+      navigate('/create-proposal/energia-solar/technical-validation', {
+        state: { extractedData: dados }
+      });
     } catch (error) {
-      console.error('❌ Erro ao calcular sistema solar:', error);
+      console.error('❌ Erro ao processar dados:', error);
       
       toast({
-        title: "Erro ao calcular sistema",
+        title: "Erro ao processar dados",
         description: error instanceof Error ? error.message : "Erro inesperado ao processar dados solares",
         variant: "destructive",
       });
@@ -95,11 +96,11 @@ const SolarDataValidation = () => {
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-            <span>Passo 4 de 4</span>
-            <span>100% concluído</span>
+            <span>Passo 3 de 5</span>
+            <span>60% concluído</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: '100%' }}></div>
+            <div className="bg-yellow-500 h-2 rounded-full transition-all duration-300" style={{ width: '60%' }}></div>
           </div>
         </div>
 
@@ -234,7 +235,7 @@ const SolarDataValidation = () => {
             ) : (
               <>
                 <Sun className="w-5 h-5 mr-2" />
-                Calcular Sistema Fotovoltaico
+                Prosseguir para Validação Técnica
               </>
             )}
           </Button>
