@@ -46,6 +46,7 @@ const PaymentOptions = React.lazy(() => import('@/pages/PaymentOptions'));
 const PaymentManagement = React.lazy(() => import('@/pages/admin/PaymentManagement'));
 const Proposals = React.lazy(() => import('@/pages/Proposals'));
 const Clients = React.lazy(() => import('@/pages/Clients'));
+const CRMDashboard = React.lazy(() => import('@/pages/CRMDashboard'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -179,6 +180,16 @@ const AppContent = () => {
           } 
         />
         <Route 
+          path="/crm" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
+                <CRMDashboard />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route
           path="/create-proposal" 
           element={
             <ProtectedRoute>
