@@ -106,6 +106,12 @@ export class GoogleVisionEnergyBillProcessor {
     // PROCESSAMENTO COM GOOGLE VISION API (com retry)
     const fullText = await this.visionClient.callGoogleVisionWithRetry(optimizedImageData, accessToken, fileName);
     
+    // FASE 1: Log do texto completo para análise (temporário)
+    console.log('📄 FULL TEXT EXTRACTED BY GOOGLE VISION:');
+    console.log('=' .repeat(80));
+    console.log(fullText);
+    console.log('=' .repeat(80));
+    
     // PARSING COM IA (Grok API) - método principal
     let extractedData: ExtractedEnergyBillData;
     try {

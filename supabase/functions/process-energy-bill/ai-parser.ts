@@ -85,12 +85,28 @@ IMPORTANTE: Analise este texto de uma conta de energia elétrica e extraia APENA
 TEXTO DA CONTA:
 ${fullText}
 
-INSTRUÇÕES CRÍTICAS:
+INSTRUÇÕES CRÍTICAS PARA IDENTIFICAÇÃO DO CLIENTE:
 1. IGNORE completamente dados da empresa CEEE/distribuidora (endereços empresariais, nomes de empresas)
-2. Procure dados do CLIENTE RESIDENCIAL/COMERCIAL que recebe a conta
-3. O UC (Unidade Consumidora) geralmente marca onde começam os dados do cliente
-4. Endereços da empresa geralmente contêm: "CLOVIS PAIM GRIVOT", "CENTRO EMPRESARIAL", "SEDE"
-5. Procure por nomes de PESSOAS (não empresas) e endereços RESIDENCIAIS
+2. O UC (Unidade Consumidora) geralmente marca onde começam os dados do cliente - procure por números de 10 dígitos
+3. Dados do cliente aparecem APÓS o UC e geralmente incluem:
+   - Nome da pessoa física ou jurídica (não "CEEE" ou "ENERGIA ELÉTRICA")
+   - Endereço residencial/comercial (não sede empresarial)
+4. Endereços da empresa geralmente contêm: "CLOVIS PAIM GRIVOT", "CENTRO EMPRESARIAL", "SEDE", "FARROUPILHA"
+5. Procure por nomes de PESSOAS reais (ex: "CAROLINE SOUZA GHESSI") não nomes de empresas
+
+INSTRUÇÕES ESPECÍFICAS PARA HISTÓRICO DE CONSUMO:
+1. Procure por gráficos ou tabelas de consumo mensal
+2. Busque padrões como: "JAN/24 189", "FEV/24 254", "MAR/24 420"
+3. Também procure por: "janeiro 2024: 189 kWh", "fevereiro: 254", etc.
+4. Valores de consumo geralmente estão entre 50-2000 kWh
+5. Se encontrar apenas médias calculadas, use-as
+6. Priorize dados reais sobre estimativas
+
+ESTRUTURA TÍPICA DA CONTA CEEE:
+- Cabeçalho com logo e dados da CEEE (IGNORAR)
+- UC (10 dígitos) seguido dos dados do cliente
+- Dados de consumo e histórico
+- Valores e vencimento
 
 EXTRAIA e retorne APENAS um JSON válido com esta estrutura:
 {
@@ -105,10 +121,16 @@ EXTRAIA e retorne APENAS um JSON válido com esta estrutura:
   "periodo": "Período de referência da conta",
   "data_vencimento": "Data de vencimento",
   "consumo_historico": [
-    {"mes": "janeiro", "consumo": 300},
-    {"mes": "fevereiro", "consumo": 280}
+    {"mes": "janeiro", "consumo": 300, "ano": "2024"},
+    {"mes": "fevereiro", "consumo": 280, "ano": "2024"}
   ]
 }
+
+VALIDAÇÃO FINAL:
+- Nome do cliente deve ser uma PESSOA, não empresa
+- Endereço deve ser residencial/comercial, não sede da CEEE
+- Histórico de consumo deve ter valores > 0
+- UC deve ter exatamente 10 dígitos
 
 Se não conseguir identificar algum campo, use:
 - "N/A" para textos
@@ -205,9 +227,10 @@ RETORNE APENAS O JSON, sem explicações adicionais.
 
   private validateExtractedData(data: ExtractedEnergyBillData): void {
     const issues: string[] = [];
+    const warnings: string[] = [];
 
     // Validar se não confundiu dados da empresa com cliente
-    const businessKeywords = ['ceee', 'energia', 'elétrica', 'distribuidora', 'clovis paim grivot'];
+    const businessKeywords = ['ceee', 'energia', 'elétrica', 'distribuidora', 'clovis paim grivot', 'farroupilha'];
     const nameAndAddress = `${data.nome_cliente} ${data.endereco}`.toLowerCase();
     
     for (const keyword of businessKeywords) {
@@ -217,26 +240,106 @@ RETORNE APENAS O JSON, sem explicações adicionais.
     }
 
     // Validar UC
-    if (data.uc !== 'N/A' && (data.uc.length < 8 || data.uc.length > 12)) {
-      issues.push('UC com formato suspeito');
+    if (data.uc !== 'N/A') {
+      if (data.uc.length !== 10) {
+        issues.push(`UC deve ter 10 dígitos, encontrado: ${data.uc.length}`);
+      }
+      if (!/^\d+$/.test(data.uc)) {
+        issues.push('UC deve conter apenas números');
+      }
     }
 
     // Validar tarifa
     if (data.tarifa_kwh < 0.3 || data.tarifa_kwh > 3.0) {
-      issues.push('Tarifa fora da faixa esperada (0.3-3.0)');
+      warnings.push(`Tarifa ${data.tarifa_kwh} fora da faixa esperada (0.3-3.0)`);
     }
+
+    // Validar histórico de consumo
+    if (data.consumo_historico.length === 0) {
+      warnings.push('Nenhum histórico de consumo encontrado');
+    } else {
+      const zeroConsumption = data.consumo_historico.filter(item => item.consumo === 0).length;
+      if (zeroConsumption > 0) {
+        warnings.push(`${zeroConsumption} meses com consumo zero no histórico`);
+      }
+    }
+
+    // Validar consumo atual
+    if (data.consumo_atual_kwh <= 0) {
+      warnings.push('Consumo atual não identificado');
+    }
+
+    // Calcular score de qualidade
+    const qualityScore = this.calculateDataQualityScore(data);
 
     if (issues.length > 0) {
-      console.warn('⚠️ Validation issues detected:', issues);
+      console.error('❌ Critical validation issues:', issues);
+    }
+    
+    if (warnings.length > 0) {
+      console.warn('⚠️ Validation warnings:', warnings);
     }
 
-    console.log('📊 Data quality metrics:', {
+    console.log('📊 Enhanced data quality metrics:', {
+      qualityScore: `${(qualityScore * 100).toFixed(1)}%`,
       hasClientName: data.nome_cliente !== 'Cliente não identificado',
       hasAddress: data.endereco !== 'Endereço não identificado',
       hasUC: data.uc !== 'N/A',
       hasConsumption: data.consumo_atual_kwh > 0,
       hasHistory: data.consumo_historico.length > 0,
-      validationIssues: issues.length
+      historyMonths: data.consumo_historico.length,
+      avgMonthlyConsumption: data.consumo_historico.length > 0 
+        ? Math.round(data.consumo_historico.reduce((sum, item) => sum + item.consumo, 0) / data.consumo_historico.length)
+        : 0,
+      criticalIssues: issues.length,
+      warnings: warnings.length
     });
+  }
+
+  private calculateDataQualityScore(data: ExtractedEnergyBillData): number {
+    let score = 0;
+    const maxScore = 10;
+
+    // Nome do cliente (peso 2)
+    if (data.nome_cliente !== 'Cliente não identificado' && data.nome_cliente !== 'N/A') {
+      score += 2;
+    }
+
+    // Endereço (peso 2)
+    if (data.endereco !== 'Endereço não identificado' && data.endereco !== 'N/A') {
+      score += 2;
+    }
+
+    // UC (peso 1)
+    if (data.uc !== 'N/A' && data.uc.length === 10) {
+      score += 1;
+    }
+
+    // Consumo atual (peso 1)
+    if (data.consumo_atual_kwh > 0) {
+      score += 1;
+    }
+
+    // Histórico de consumo (peso 2)
+    if (data.consumo_historico.length > 0) {
+      score += 1;
+      // Bonus se tem histórico com valores reais
+      const realValues = data.consumo_historico.filter(item => item.consumo > 0).length;
+      if (realValues >= data.consumo_historico.length * 0.8) { // 80% dos valores são reais
+        score += 1;
+      }
+    }
+
+    // Tarifa (peso 1)
+    if (data.tarifa_kwh > 0.3 && data.tarifa_kwh < 3.0) {
+      score += 1;
+    }
+
+    // Dados básicos (peso 1)
+    if (data.concessionaria !== 'N/A' && data.cidade !== 'N/A') {
+      score += 1;
+    }
+
+    return score / maxScore;
   }
 }
