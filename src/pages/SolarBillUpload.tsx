@@ -76,30 +76,42 @@ const SolarBillUpload = () => {
       console.log('✅ Processing completed:', processingResult.extractedData);
 
       // Processar histórico de consumo para estrutura esperada
+      const mesesCorretos = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      
       const mesesMap: { [key: string]: number } = {
         'janeiro': 0, 'fevereiro': 1, 'março': 2, 'abril': 3,
         'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
         'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11
       };
 
-      const consumoHistoricoProcessado = Array(12).fill(0).map((_, index) => ({
-        mes: Object.keys(mesesMap)[index],
+      // Inicializar array com 12 meses corretos
+      const consumoHistoricoProcessado = mesesCorretos.map((mes) => ({
+        mes,
         consumo: 0
       }));
 
       // Mapear dados extraídos para os meses corretos
       if (processingResult.extractedData.consumo_historico && Array.isArray(processingResult.extractedData.consumo_historico)) {
+        console.log('🔍 Dados de consumo recebidos:', processingResult.extractedData.consumo_historico);
+        
         processingResult.extractedData.consumo_historico.forEach((item: any) => {
           const mesNormalizado = item.mes?.toLowerCase();
           const mesIndex = mesesMap[mesNormalizado];
+          console.log('🔍 Processando mês:', item.mes, '-> normalizado:', mesNormalizado, '-> index:', mesIndex, '-> consumo:', item.consumo);
+          
           if (mesIndex !== undefined && item.consumo > 0) {
             consumoHistoricoProcessado[mesIndex] = {
-              mes: Object.keys(mesesMap)[mesIndex],
+              mes: mesesCorretos[mesIndex],
               consumo: item.consumo
             };
           }
         });
       }
+      
+      console.log('✅ Histórico processado final:', consumoHistoricoProcessado);
 
       // Redirecionar para validação com dados reais extraídos
       navigate('/create-proposal/energia-solar/validate', {
