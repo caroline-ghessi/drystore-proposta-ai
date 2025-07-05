@@ -1,52 +1,112 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// UI Components
 import { Toaster } from '@/components/ui/toaster';
+import { AppLoadingFallback } from '@/components/loading/AppLoadingFallback';
+import SessionTimeoutWarning from '@/components/security/SessionTimeoutWarning';
+
+// Context Providers
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { useSecurityHeaders } from '@/hooks/useSecurityHeaders';
-import { useSessionTimeout } from '@/hooks/useSessionTimeout';
-import SessionTimeoutWarning from '@/components/security/SessionTimeoutWarning';
 import { useAuth } from '@/contexts/AuthContext';
-import { AppLoadingFallback } from '@/components/loading/AppLoadingFallback';
+
+// Route Guards
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminRoute from '@/components/AdminRoute';
 
-// Lazy load all route components for better performance
+// Hooks
+import { useSecurityHeaders } from '@/hooks/useSecurityHeaders';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+
+// ============= LAZY LOADED COMPONENTS =============
+
+// Public Pages
 const Index = React.lazy(() => import('@/pages/Index'));
 const Login = React.lazy(() => import('@/pages/Login'));
 const Register = React.lazy(() => import('@/pages/Register'));
 const ForgotPassword = React.lazy(() => import('@/pages/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('@/pages/ResetPassword'));
-const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-const UserRegistration = React.lazy(() => import('@/pages/UserRegistration'));
-const ClientPortalBySlug = React.lazy(() => import('@/pages/ClientPortalBySlug'));
-const SecureClientPortalBySlug = React.lazy(() => import('@/pages/SecureClientPortalBySlug'));
-const ProposalDetails = React.lazy(() => import('@/pages/ProposalDetails'));
-const ProposalView = React.lazy(() => import('@/pages/ProposalView'));
-const SecurityManagement = React.lazy(() => import('@/pages/admin/SecurityManagement'));
+
+// Client Pages
 const ClientLogin = React.lazy(() => import('@/pages/ClientLogin'));
 const ClientPortal = React.lazy(() => import('@/pages/ClientPortal'));
+const ClientPortalBySlug = React.lazy(() => import('@/pages/ClientPortalBySlug'));
+const SecureClientPortalBySlug = React.lazy(() => import('@/pages/SecureClientPortalBySlug'));
+
+// Proposal Pages
+const ProposalDetails = React.lazy(() => import('@/pages/ProposalDetails'));
+const ProposalView = React.lazy(() => import('@/pages/ProposalView'));
+const ProposalAcceptedThanks = React.lazy(() => import('@/pages/ProposalAcceptedThanks'));
+const ProposalWithExtrasConfirmation = React.lazy(() => import('@/pages/ProposalWithExtrasConfirmation'));
+const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks'));
+
+// Protected Main Pages
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const Proposals = React.lazy(() => import('@/pages/Proposals'));
+const Clients = React.lazy(() => import('@/pages/Clients'));
+const CRMDashboard = React.lazy(() => import('@/pages/CRMDashboard'));
+
+// Proposal Creation Flow
 const CreateProposal = React.lazy(() => import('@/pages/CreateProposal'));
+const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
+const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
+const ProductUploadChoice = React.lazy(() => import('@/pages/ProductUploadChoice'));
+
+// Solar Energy Flow
 const SolarInputChoice = React.lazy(() => import('@/pages/SolarInputChoice'));
 const SolarBillUpload = React.lazy(() => import('@/pages/SolarBillUpload'));
 const SolarDataValidation = React.lazy(() => import('@/pages/SolarDataValidation'));
 const SolarSystemValidation = React.lazy(() => import('@/pages/SolarSystemValidation'));
 const SolarProposalForm = React.lazy(() => import('@/pages/SolarProposalForm'));
-const ProductUploadChoice = React.lazy(() => import('@/pages/ProductUploadChoice'));
-const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoice'));
-const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
+
+// Admin Pages
+const UserRegistration = React.lazy(() => import('@/pages/UserRegistration'));
+const SecurityManagement = React.lazy(() => import('@/pages/admin/SecurityManagement'));
+const PaymentManagement = React.lazy(() => import('@/pages/admin/PaymentManagement'));
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
 const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLayoutsViewer'));
 const SolarProductsManagement = React.lazy(() => import('@/pages/admin/SolarProductsManagement'));
-const ProposalAcceptedThanks = React.lazy(() => import('@/pages/ProposalAcceptedThanks'));
-const ProposalWithExtrasConfirmation = React.lazy(() => import('@/pages/ProposalWithExtrasConfirmation'));
-const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks'));
+
+// Payment Pages
 const PaymentOptions = React.lazy(() => import('@/pages/PaymentOptions'));
-const PaymentManagement = React.lazy(() => import('@/pages/admin/PaymentManagement'));
-const Proposals = React.lazy(() => import('@/pages/Proposals'));
-const Clients = React.lazy(() => import('@/pages/Clients'));
-const CRMDashboard = React.lazy(() => import('@/pages/CRMDashboard'));
+
+// ============= ROUTE COMPONENTS =============
+
+interface RouteConfig {
+  path: string;
+  element: React.ComponentType;
+  fallbackType?: 'spinner' | 'form' | 'table' | 'dashboard' | 'proposal';
+  fallbackMessage?: string;
+}
+
+const createSuspenseRoute = (config: RouteConfig) => (
+  <Suspense 
+    fallback={
+      <AppLoadingFallback 
+        type={config.fallbackType || 'spinner'} 
+        message={config.fallbackMessage}
+      />
+    }
+  >
+    <config.element />
+  </Suspense>
+);
+
+const createProtectedRoute = (config: RouteConfig) => (
+  <ProtectedRoute>
+    {createSuspenseRoute(config)}
+  </ProtectedRoute>
+);
+
+const createAdminRoute = (config: RouteConfig) => (
+  <AdminRoute>
+    {createSuspenseRoute(config)}
+  </AdminRoute>
+);
+
+// ============= MAIN APP CONTENT =============
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -60,311 +120,161 @@ const AppContent = () => {
   return (
     <>
       <Routes>
+        {/* ============= PUBLIC ROUTES ============= */}
         <Route 
           path="/" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="spinner" message="Carregando página inicial..." />}>
-              <Index />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ 
+            path: '/', 
+            element: Index, 
+            fallbackType: 'spinner', 
+            fallbackMessage: 'Carregando página inicial...' 
+          })} 
         />
         <Route 
           path="/login" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <Login />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/login', element: Login, fallbackType: 'form' })} 
         />
         <Route 
           path="/register" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <Register />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/register', element: Register, fallbackType: 'form' })} 
         />
         <Route 
           path="/forgot-password" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ForgotPassword />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/forgot-password', element: ForgotPassword, fallbackType: 'form' })} 
         />
         <Route 
           path="/reset-password/:token" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ResetPassword />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/reset-password/:token', element: ResetPassword, fallbackType: 'form' })} 
         />
+
+        {/* ============= CLIENT ROUTES ============= */}
         <Route 
           path="/client-login" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ClientLogin />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/client-login', element: ClientLogin, fallbackType: 'form' })} 
         />
         <Route 
           path="/client-portal" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
-              <ClientPortal />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/client-portal', element: ClientPortal, fallbackType: 'dashboard' })} 
         />
         <Route 
           path="/client/:clientSlug" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
-              <ClientPortalBySlug />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/client/:clientSlug', element: ClientPortalBySlug, fallbackType: 'dashboard' })} 
         />
         <Route 
           path="/secure/client/:clientSlug" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
-              <SecureClientPortalBySlug />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/secure/client/:clientSlug', element: SecureClientPortalBySlug, fallbackType: 'dashboard' })} 
         />
+
+        {/* ============= PROPOSAL PUBLIC ROUTES ============= */}
         <Route 
           path="/proposal/:linkAccess" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="proposal" />}>
-              <ProposalDetails />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/proposal/:linkAccess', element: ProposalDetails, fallbackType: 'proposal' })} 
         />
         <Route 
           path="/proposal-view/:id" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="proposal" />}>
-              <ProposalView />
-            </Suspense>
-          } 
-        />
-
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
-                <Dashboard />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/proposals" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <Proposals />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/clients" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <Clients />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/crm" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="dashboard" />}>
-                <CRMDashboard />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route
-          path="/create-proposal" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <CreateProposal />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/energia-solar/input-choice" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarInputChoice />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/energia-solar/upload" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarBillUpload />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/energia-solar/validate" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarDataValidation />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/energia-solar/technical-validation" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarSystemValidation />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/energia-solar/manual" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <SolarProposalForm />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/create-proposal/upload-choice/:productGroup" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <ProductUploadChoice />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/proposal-upload-choice" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <ProposalUploadChoice />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/proposal-builder" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <ProposalBuilder />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/payments" 
-          element={
-            <AdminRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <PaymentManagement />
-              </Suspense>
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/register-user" 
-          element={
-            <AdminRoute>
-              <Suspense fallback={<AppLoadingFallback type="form" />}>
-                <UserRegistration />
-              </Suspense>
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/security-management" 
-          element={
-            <AdminRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <SecurityManagement />
-              </Suspense>
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/content-management" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <ContentManagement />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/proposal-layouts" 
-          element={
-            <AdminRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <ProposalLayoutsViewer />
-              </Suspense>
-            </AdminRoute>
-          } 
-        />
-        <Route 
-          path="/admin/solar-products" 
-          element={
-            <AdminRoute>
-              <Suspense fallback={<AppLoadingFallback type="table" />}>
-                <SolarProductsManagement />
-              </Suspense>
-            </AdminRoute>
-          } 
+          element={createSuspenseRoute({ path: '/proposal-view/:id', element: ProposalView, fallbackType: 'proposal' })} 
         />
         <Route 
           path="/proposal-accepted/:proposalId" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ProposalAcceptedThanks />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/proposal-accepted/:proposalId', element: ProposalAcceptedThanks, fallbackType: 'form' })} 
         />
         <Route 
           path="/proposal-extras-confirmation/:proposalId" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ProposalWithExtrasConfirmation />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/proposal-extras-confirmation/:proposalId', element: ProposalWithExtrasConfirmation, fallbackType: 'form' })} 
         />
         <Route 
           path="/proposal-final-thanks/:proposalId" 
-          element={
-            <Suspense fallback={<AppLoadingFallback type="form" />}>
-              <ProposalFinalThanks />
-            </Suspense>
-          } 
+          element={createSuspenseRoute({ path: '/proposal-final-thanks/:proposalId', element: ProposalFinalThanks, fallbackType: 'form' })} 
+        />
+
+        {/* ============= PROTECTED MAIN ROUTES ============= */}
+        <Route 
+          path="/dashboard" 
+          element={createProtectedRoute({ path: '/dashboard', element: Dashboard, fallbackType: 'dashboard' })} 
+        />
+        <Route 
+          path="/proposals" 
+          element={createProtectedRoute({ path: '/proposals', element: Proposals, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/clients" 
+          element={createProtectedRoute({ path: '/clients', element: Clients, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/crm" 
+          element={createProtectedRoute({ path: '/crm', element: CRMDashboard, fallbackType: 'dashboard' })} 
+        />
+
+        {/* ============= PROPOSAL CREATION FLOW ============= */}
+        <Route 
+          path="/create-proposal" 
+          element={createProtectedRoute({ path: '/create-proposal', element: CreateProposal, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/proposal-builder" 
+          element={createProtectedRoute({ path: '/proposal-builder', element: ProposalBuilder, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/proposal-upload-choice" 
+          element={createProtectedRoute({ path: '/proposal-upload-choice', element: ProposalUploadChoice, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/create-proposal/upload-choice/:productGroup" 
+          element={createProtectedRoute({ path: '/create-proposal/upload-choice/:productGroup', element: ProductUploadChoice, fallbackType: 'form' })} 
+        />
+
+        {/* ============= SOLAR ENERGY FLOW ============= */}
+        <Route 
+          path="/create-proposal/energia-solar/input-choice" 
+          element={createProtectedRoute({ path: '/create-proposal/energia-solar/input-choice', element: SolarInputChoice, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/upload" 
+          element={createProtectedRoute({ path: '/create-proposal/energia-solar/upload', element: SolarBillUpload, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/validate" 
+          element={createProtectedRoute({ path: '/create-proposal/energia-solar/validate', element: SolarDataValidation, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/technical-validation" 
+          element={createProtectedRoute({ path: '/create-proposal/energia-solar/technical-validation', element: SolarSystemValidation, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/create-proposal/energia-solar/manual" 
+          element={createProtectedRoute({ path: '/create-proposal/energia-solar/manual', element: SolarProposalForm, fallbackType: 'form' })} 
+        />
+
+        {/* ============= ADMIN ROUTES ============= */}
+        <Route 
+          path="/register-user" 
+          element={createAdminRoute({ path: '/register-user', element: UserRegistration, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/security-management" 
+          element={createAdminRoute({ path: '/security-management', element: SecurityManagement, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/payments" 
+          element={createAdminRoute({ path: '/payments', element: PaymentManagement, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/admin/proposal-layouts" 
+          element={createAdminRoute({ path: '/admin/proposal-layouts', element: ProposalLayoutsViewer, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/admin/solar-products" 
+          element={createAdminRoute({ path: '/admin/solar-products', element: SolarProductsManagement, fallbackType: 'table' })} 
+        />
+
+        {/* ============= PROTECTED ADMIN ROUTES ============= */}
+        <Route 
+          path="/admin/content-management" 
+          element={createProtectedRoute({ path: '/admin/content-management', element: ContentManagement, fallbackType: 'table' })} 
         />
       </Routes>
       
+      {/* ============= SESSION TIMEOUT WARNING ============= */}
       {isAuthenticated && showWarning && (
         <SessionTimeoutWarning 
           timeLeft={timeLeft} 
@@ -372,27 +282,34 @@ const AppContent = () => {
         />
       )}
       
+      {/* ============= TOAST NOTIFICATIONS ============= */}
       <Toaster />
     </>
   );
 };
 
-function App() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: (failureCount, error: any) => {
-          // Don't retry on auth errors
-          if (error?.status === 401 || error?.status === 403) {
-            return false;
-          }
-          return failureCount < 3;
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes - optimized for better caching
-        gcTime: 10 * 60 * 1000, // 10 minutes - keep data in cache longer
+// ============= QUERY CLIENT CONFIGURATION =============
+
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Don't retry on auth errors
+        if (error?.status === 401 || error?.status === 403) {
+          return false;
+        }
+        return failureCount < 3;
       },
+      staleTime: 5 * 60 * 1000, // 5 minutes - optimized for better caching
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep data in cache longer
     },
-  });
+  },
+});
+
+// ============= MAIN APP COMPONENT =============
+
+function App() {
+  const queryClient = createQueryClient();
 
   return (
     <QueryClientProvider client={queryClient}>
