@@ -506,6 +506,132 @@ export type Database = {
         }
         Relationships: []
       }
+      gamification_achievements: {
+        Row: {
+          active: boolean
+          badge_color: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          points_required: number | null
+          proposals_required: number | null
+          sales_value_required: number | null
+          special_condition: string | null
+        }
+        Insert: {
+          active?: boolean
+          badge_color?: string
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          name: string
+          points_required?: number | null
+          proposals_required?: number | null
+          sales_value_required?: number | null
+          special_condition?: string | null
+        }
+        Update: {
+          active?: boolean
+          badge_color?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          points_required?: number | null
+          proposals_required?: number | null
+          sales_value_required?: number | null
+          special_condition?: string | null
+        }
+        Relationships: []
+      }
+      gamification_challenges: {
+        Row: {
+          active: boolean
+          challenge_type: string
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          name: string
+          reward_description: string | null
+          reward_points: number
+          start_date: string
+          target_metric: string
+          target_value: number
+        }
+        Insert: {
+          active?: boolean
+          challenge_type: string
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          name: string
+          reward_description?: string | null
+          reward_points?: number
+          start_date: string
+          target_metric: string
+          target_value: number
+        }
+        Update: {
+          active?: boolean
+          challenge_type?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          name?: string
+          reward_description?: string | null
+          reward_points?: number
+          start_date?: string
+          target_metric?: string
+          target_value?: number
+        }
+        Relationships: []
+      }
+      gamification_points: {
+        Row: {
+          created_at: string
+          current_level: string
+          id: string
+          proposals_accepted: number
+          proposals_created: number
+          proposals_sent: number
+          total_points: number
+          total_sales_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: string
+          id?: string
+          proposals_accepted?: number
+          proposals_created?: number
+          proposals_sent?: number
+          total_points?: number
+          total_sales_value?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: string
+          id?: string
+          proposals_accepted?: number
+          proposals_created?: number
+          proposals_sent?: number
+          total_points?: number
+          total_sales_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inversores_solares: {
         Row: {
           ativo: boolean | null
@@ -1380,6 +1506,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_progress: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_progress?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
