@@ -48,6 +48,7 @@ const Proposals = React.lazy(() => import('@/pages/Proposals'));
 const Clients = React.lazy(() => import('@/pages/Clients'));
 const ProductManagement = React.lazy(() => import('@/pages/ProductManagement'));
 const ApprovalManagement = React.lazy(() => import('@/pages/ApprovalManagement'));
+const DeliveryControl = React.lazy(() => import('@/pages/DeliveryControl'));
 const CRMDashboard = React.lazy(() => import('@/pages/CRMDashboard'));
 const FollowUpManager = React.lazy(() => import('@/pages/FollowUpManager'));
 const Gamification = React.lazy(() => import('@/pages/Gamification'));
@@ -214,6 +215,10 @@ const AppContent = () => {
           element={createProtectedRoute({ path: '/approvals', element: ApprovalManagement, fallbackType: 'table' })} 
         />
         <Route 
+          path="/deliveries" 
+          element={createProtectedRoute({ path: '/deliveries', element: DeliveryControl, fallbackType: 'dashboard' })} 
+        />
+        <Route
           path="/crm" 
           element={createProtectedRoute({ path: '/crm', element: CRMDashboard, fallbackType: 'dashboard' })} 
         />
