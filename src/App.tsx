@@ -38,6 +38,7 @@ const ProposalUploadChoice = React.lazy(() => import('@/pages/ProposalUploadChoi
 const ProposalBuilder = React.lazy(() => import('@/pages/ProposalBuilder'));
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
 const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLayoutsViewer'));
+const SolarProductsManagement = React.lazy(() => import('@/pages/admin/SolarProductsManagement'));
 const ProposalAcceptedThanks = React.lazy(() => import('@/pages/ProposalAcceptedThanks'));
 const ProposalWithExtrasConfirmation = React.lazy(() => import('@/pages/ProposalWithExtrasConfirmation'));
 const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks'));
@@ -279,6 +280,16 @@ const AppContent = () => {
             <AdminRoute>
               <Suspense fallback={<AppLoadingFallback type="table" />}>
                 <ProposalLayoutsViewer />
+              </Suspense>
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/admin/solar-products" 
+          element={
+            <AdminRoute>
+              <Suspense fallback={<AppLoadingFallback type="table" />}>
+                <SolarProductsManagement />
               </Suspense>
             </AdminRoute>
           } 
