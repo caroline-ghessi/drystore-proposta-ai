@@ -2,7 +2,7 @@ import {
   Home, FileText, Users, Target, Settings, User, LogOut,
   BarChart3, PieChart, TrendingUp, Package, CheckCircle, Truck, 
   CreditCard, Brain, Zap, MessageSquare, Calendar, Trophy,
-  Database, Bug, Download, Search, Briefcase, Bell, Shield, UserPlus, Layout
+  Database, Bug, Download, Search, Briefcase, Bell, Shield, UserPlus, Layout, Sun
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -131,6 +131,12 @@ export const getAIItems = (userRole: string): MenuItem[] => [
 
 export const getAdminItems = (userRole: string): MenuItem[] => {
   return [
+    { 
+      label: 'Gestão de Produtos Solares', 
+      icon: Sun, 
+      path: '/admin/solar-products',
+      show: userRole === 'admin'
+    },
     { 
       label: 'Layouts de Propostas', 
       icon: Layout, 
