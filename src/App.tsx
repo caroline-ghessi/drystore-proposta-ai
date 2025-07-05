@@ -45,6 +45,7 @@ const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks
 const PaymentOptions = React.lazy(() => import('@/pages/PaymentOptions'));
 const PaymentManagement = React.lazy(() => import('@/pages/admin/PaymentManagement'));
 const Proposals = React.lazy(() => import('@/pages/Proposals'));
+const Clients = React.lazy(() => import('@/pages/Clients'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -163,6 +164,16 @@ const AppContent = () => {
             <ProtectedRoute>
               <Suspense fallback={<AppLoadingFallback type="table" />}>
                 <Proposals />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/clients" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="table" />}>
+                <Clients />
               </Suspense>
             </ProtectedRoute>
           } 
