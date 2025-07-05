@@ -2,16 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
+import { useSellerRanking } from '@/hooks/useGamification';
 
 export const SellerRanking = () => {
-  const sellers = [
-    { name: 'Carlos Silva', sales: 95000, growth: '+15%', position: 1 },
-    { name: 'Ana Costa', sales: 87000, growth: '+12%', position: 2 },
-    { name: 'João Santos', sales: 79000, growth: '+8%', position: 3 },
-    { name: 'Maria Oliveira', sales: 72000, growth: '+5%', position: 4 },
-    { name: 'Pedro Lima', sales: 68000, growth: '+3%', position: 5 },
-  ];
+  const { data: sellers, isLoading, error } = useSellerRanking();
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -22,6 +17,36 @@ export const SellerRanking = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Ranking de Vendedores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !sellers || sellers.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Ranking de Vendedores</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-gray-500 p-8">
+            {error ? 'Erro ao carregar ranking' : 'Nenhum vendedor encontrado'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -29,24 +54,24 @@ export const SellerRanking = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {sellers.map((seller) => (
-            <div key={seller.position} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          {sellers.slice(0, 5).map((seller) => (
+            <div key={seller.user_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                {getPositionIcon(seller.position)}
+                {getPositionIcon(seller.rank_position)}
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="text-xs">
-                    {seller.name.split(' ').map(n => n[0]).join('')}
+                    {seller.nome.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-sm">{seller.name}</p>
+                  <p className="font-medium text-sm">{seller.nome}</p>
                   <p className="text-xs text-gray-600">
-                    R$ {seller.sales.toLocaleString('pt-BR')}
+                    R$ {seller.total_sales_value.toLocaleString('pt-BR')}
                   </p>
                 </div>
               </div>
               <Badge variant="secondary" className="text-green-600">
-                {seller.growth}
+                {seller.current_level}
               </Badge>
             </div>
           ))}

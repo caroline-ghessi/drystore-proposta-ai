@@ -2,15 +2,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
-
-const data = [
-  { month: 'Jan', vendas: 65000, meta: 80000 },
-  { month: 'Fev', vendas: 78000, meta: 80000 },
-  { month: 'Mar', vendas: 92000, meta: 85000 },
-  { month: 'Abr', vendas: 87000, meta: 85000 },
-  { month: 'Mai', vendas: 105000, meta: 90000 },
-  { month: 'Jun', vendas: 118000, meta: 95000 },
-];
+import { Loader2 } from 'lucide-react';
+import { useCompanySalesData } from '@/hooks/useCompanyAnalytics';
 
 const chartConfig = {
   vendas: {
@@ -24,6 +17,38 @@ const chartConfig = {
 };
 
 export const SalesPerformanceChart = () => {
+  const { data: salesData, isLoading, error } = useCompanySalesData();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance de Vendas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px]">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance de Vendas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px] text-gray-500">
+            Erro ao carregar dados de vendas
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -32,7 +57,7 @@ export const SalesPerformanceChart = () => {
       <CardContent>
         <ChartContainer config={chartConfig}>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
+            <LineChart data={salesData || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />

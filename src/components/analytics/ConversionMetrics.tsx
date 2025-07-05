@@ -1,37 +1,70 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Target, Users, DollarSign } from 'lucide-react';
+import { TrendingUp, Target, Users, DollarSign, Loader2 } from 'lucide-react';
+import { useCompanyAnalytics } from '@/hooks/useCompanyAnalytics';
 
 export const ConversionMetrics = () => {
+  const { data: analytics, isLoading, error } = useCompanyAnalytics();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Métricas de Conversão</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Métricas de Conversão</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-gray-500 p-8">
+            Erro ao carregar métricas
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const metrics = [
     {
       label: 'Taxa de Conversão',
-      value: 67,
+      value: Math.round(analytics.conversion_rate),
       target: 70,
       icon: Target,
       color: 'text-blue-600'
     },
     {
       label: 'Leads Qualificados',
-      value: 245,
-      growth: '+12%',
+      value: analytics.qualified_leads,
+      growth: analytics.qualified_leads > 0 ? '+' + Math.round(analytics.monthly_growth) + '%' : '0%',
       icon: Users,
       color: 'text-green-600'
     },
     {
       label: 'Ticket Médio',
-      value: 'R$ 15.340',
-      growth: '+8%',
+      value: 'R$ ' + analytics.average_ticket.toLocaleString('pt-BR', { maximumFractionDigits: 0 }),
+      growth: analytics.monthly_growth > 0 ? '+' + Math.round(analytics.monthly_growth) + '%' : Math.round(analytics.monthly_growth) + '%',
       icon: DollarSign,
       color: 'text-purple-600'
     },
     {
       label: 'Crescimento Mensal',
-      value: '23%',
-      growth: '+5%',
+      value: Math.round(analytics.monthly_growth) + '%',
+      growth: analytics.monthly_growth > 0 ? 'positivo' : 'negativo',
       icon: TrendingUp,
-      color: 'text-orange-600'
+      color: analytics.monthly_growth > 0 ? 'text-green-600' : 'text-red-600'
     }
   ];
 
