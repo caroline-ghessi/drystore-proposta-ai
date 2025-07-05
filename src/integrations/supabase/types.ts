@@ -1592,6 +1592,10 @@ export type Database = {
         }
         Returns: Json
       }
+      calculate_gamification_points: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       can_manage_resources: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1641,6 +1645,21 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_seller_ranking: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          nome: string
+          role: Database["public"]["Enums"]["user_role"]
+          total_points: number
+          current_level: string
+          proposals_created: number
+          proposals_sent: number
+          proposals_accepted: number
+          total_sales_value: number
+          rank_position: number
+        }[]
       }
       get_user_role: {
         Args: { user_uuid: string }
