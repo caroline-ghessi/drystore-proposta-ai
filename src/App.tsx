@@ -42,6 +42,7 @@ const SolarProductsManagement = React.lazy(() => import('@/pages/admin/SolarProd
 const ProposalAcceptedThanks = React.lazy(() => import('@/pages/ProposalAcceptedThanks'));
 const ProposalWithExtrasConfirmation = React.lazy(() => import('@/pages/ProposalWithExtrasConfirmation'));
 const ProposalFinalThanks = React.lazy(() => import('@/pages/ProposalFinalThanks'));
+const PaymentOptions = React.lazy(() => import('@/pages/PaymentOptions'));
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
@@ -240,6 +241,16 @@ const AppContent = () => {
             <ProtectedRoute>
               <Suspense fallback={<AppLoadingFallback type="form" />}>
                 <ProposalBuilder />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/payments" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<AppLoadingFallback type="form" />}>
+                <PaymentOptions />
               </Suspense>
             </ProtectedRoute>
           } 
