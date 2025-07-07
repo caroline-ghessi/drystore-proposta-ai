@@ -1692,6 +1692,10 @@ export type Database = {
         Args: { p_potencia_kwp: number; p_tipo_telhado?: string }
         Returns: Json
       }
+      send_welcome_email: {
+        Args: { user_email: string; user_name: string; user_role: string }
+        Returns: boolean
+      }
       test_user_role_enum: {
         Args: Record<PropertyKey, never>
         Returns: string
