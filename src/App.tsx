@@ -286,8 +286,8 @@ const AppContent = () => {
           element={createAdminRoute({ path: '/register-user', element: UserRegistration, fallbackType: 'form' })} 
         />
         <Route 
-          path="/security-management" 
-          element={createAdminRoute({ path: '/security-management', element: SecurityManagement, fallbackType: 'table' })} 
+          path="/admin/security-management" 
+          element={createAdminRoute({ path: '/admin/security-management', element: SecurityManagement, fallbackType: 'table' })} 
         />
         <Route 
           path="/payments" 
