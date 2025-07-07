@@ -86,7 +86,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStage('Conectando com Adobe API...');
+    setProcessingStage('Iniciando extração de dados...');
 
     try {
       // Obter token de autenticação do Supabase
@@ -95,50 +95,20 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // FASE 1: Upload via Edge Function
-      setProcessingStage('Enviando PDF para Adobe...');
+      // NOVA IMPLEMENTAÇÃO: Usar Google Vision + IA para extração real
+      setProcessingStage('Convertendo PDF para análise...');
       
-      console.log('📤 Enviando arquivo para Adobe via Edge Function');
+      console.log('📤 Enviando arquivo para processamento com Google Vision + IA');
       console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      const uploadResponse = await fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/pdf',
-            'X-File-Name': file.name,
-            'X-File-Size': file.size.toString()
-          },
-          body: file
-        }
-      );
+      // Converter arquivo para base64
+      const arrayBuffer = await file.arrayBuffer();
+      const base64Buffer = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-      console.log('📨 Upload response status:', uploadResponse.status);
+      setProcessingStage('Extraindo texto com Google Vision...');
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error('❌ Upload error:', errorText);
-        throw new Error(`Falha no upload: ${uploadResponse.status} - ${errorText}`);
-      }
-
-      const uploadResult = await uploadResponse.json();
-      
-      if (!uploadResult.success) {
-        throw new Error(uploadResult.error || 'Falha no upload');
-      }
-
-      const assetID = uploadResult.assetID;
-      const strategy = uploadResult.strategy || 'unknown';
-      
-      console.log('✅ Upload result:', { assetID, strategy });
-
-      // FASE 2: Processamento baseado na estratégia
-      setProcessingStage('Processando dados extraídos...');
-      
       const response = await fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/process-adobe-extraction`,
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
         {
           method: 'POST',
           headers: {
@@ -146,17 +116,19 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            assetID: assetID,
+            pdfBuffer: base64Buffer,
             fileName: file.name,
-            fileSize: file.size,
-            strategy: strategy // Passar estratégia para coordenar processamento
+            fileSize: file.size
           }),
         }
       );
 
+      console.log('📨 ERP extraction response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Erro de conexão' }));
-        throw new Error(errorData.error || 'Falha no processamento');
+        console.error('❌ ERP extraction error:', errorData);
+        throw new Error(errorData.error || 'Falha na extração de dados');
       }
 
       const result = await response.json();
@@ -170,9 +142,9 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       setIsProcessing(false);
 
       // Mostrar tipo de processamento usado
-      const processingType = result.strategy === 'local_fallback' 
-        ? 'localmente (Adobe indisponível)' 
-        : 'via Adobe API';
+      const processingType = result.processor === 'google-vision-api' 
+        ? 'com Google Vision + IA' 
+        : 'com fallback inteligente';
 
       toast({
         title: "PDF processado com sucesso!",

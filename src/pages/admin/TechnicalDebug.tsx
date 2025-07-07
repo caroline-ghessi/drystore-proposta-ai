@@ -24,13 +24,14 @@ import SignUpDebugTab from '@/components/admin/debug/SignUpDebugTab';
 import GoogleVisionDebugTab from '@/components/admin/debug/GoogleVisionDebugTab';
 import GrokDebugTab from '@/components/admin/debug/GrokDebugTab';
 import OpenAIDebugTab from '@/components/admin/debug/OpenAIDebugTab';
+import ERPDebugTab from '@/components/admin/debug/ERPDebugTab';
 import DebugHeader from '@/components/admin/debug/DebugHeader';
 import StatusOverview from '@/components/admin/debug/StatusOverview';
 import QuickActions from '@/components/admin/debug/QuickActions';
 import SystemInfo from '@/components/admin/debug/SystemInfo';
 
 const TechnicalDebug = () => {
-  const [activeTab, setActiveTab] = useState('whapi-config');
+  const [activeTab, setActiveTab] = useState('erp');
   const [systemStatus, setSystemStatus] = useState({
     overall: 'healthy',
     lastCheck: new Date().toISOString()
@@ -74,6 +75,10 @@ const TechnicalDebug = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="space-y-2">
                 <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="erp" className="flex items-center space-x-1">
+                    <FileText className="w-3 h-3" />
+                    <span className="text-xs">ERP Extract</span>
+                  </TabsTrigger>
                   <TabsTrigger value="adobe" className="flex items-center space-x-1">
                     <FileText className="w-3 h-3" />
                     <span className="text-xs">Adobe PDF</span>
@@ -90,12 +95,12 @@ const TechnicalDebug = () => {
                     <Bot className="w-3 h-3" />
                     <span className="text-xs">OpenAI</span>
                   </TabsTrigger>
+                </TabsList>
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="email" className="flex items-center space-x-1">
                     <Mail className="w-3 h-3" />
                     <span className="text-xs">Email</span>
                   </TabsTrigger>
-                </TabsList>
-                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="whapi-config" className="flex items-center space-x-1">
                     <MessageSquare className="w-3 h-3" />
                     <span className="text-xs">Whapi Config</span>
@@ -112,6 +117,8 @@ const TechnicalDebug = () => {
                     <Settings className="w-3 h-3" />
                     <span className="text-xs">Sistema</span>
                   </TabsTrigger>
+                </TabsList>
+                <TabsList className="grid w-full grid-cols-1">
                   <TabsTrigger value="logs" className="flex items-center space-x-1">
                     <Activity className="w-3 h-3" />
                     <span className="text-xs">Logs</span>
@@ -120,6 +127,10 @@ const TechnicalDebug = () => {
               </div>
 
               <div className="mt-6">
+                <TabsContent value="erp" className="space-y-4">
+                  <ERPDebugTab />
+                </TabsContent>
+
                 <TabsContent value="adobe" className="space-y-4">
                   <AdobeDebugTab />
                 </TabsContent>
