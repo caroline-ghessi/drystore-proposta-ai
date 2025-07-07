@@ -1582,6 +1582,162 @@ export type Database = {
           },
         ]
       }
+      whapi_instances: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          instance_id: string
+          is_active: boolean
+          last_heartbeat: string | null
+          phone_number: string | null
+          token: string
+          updated_at: string
+          vendor_id: string
+          vendor_name: string
+          webhook_secret: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id: string
+          is_active?: boolean
+          last_heartbeat?: string | null
+          phone_number?: string | null
+          token: string
+          updated_at?: string
+          vendor_id: string
+          vendor_name: string
+          webhook_secret?: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id?: string
+          is_active?: boolean
+          last_heartbeat?: string | null
+          phone_number?: string | null
+          token?: string
+          updated_at?: string
+          vendor_id?: string
+          vendor_name?: string
+          webhook_secret?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      whapi_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_successfully: boolean
+          raw_payload: Json
+          webhook_event_type: string
+          whapi_instance_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_successfully?: boolean
+          raw_payload: Json
+          webhook_event_type: string
+          whapi_instance_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_successfully?: boolean
+          raw_payload?: Json
+          webhook_event_type?: string
+          whapi_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whapi_webhook_logs_whapi_instance_id_fkey"
+            columns: ["whapi_instance_id"]
+            isOneToOne: false
+            referencedRelation: "whapi_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          client_id: string
+          client_phone: string
+          created_by: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message_content: string
+          proposal_id: string | null
+          sent_at: string
+          status: string
+          vendor_phone: string
+          whapi_instance_id: string
+          whapi_message_id: string | null
+        }
+        Insert: {
+          client_id: string
+          client_phone: string
+          created_by?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content: string
+          proposal_id?: string | null
+          sent_at?: string
+          status?: string
+          vendor_phone: string
+          whapi_instance_id: string
+          whapi_message_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          client_phone?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string
+          proposal_id?: string | null
+          sent_at?: string
+          status?: string
+          vendor_phone?: string
+          whapi_instance_id?: string
+          whapi_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_whapi_instance_id_fkey"
+            columns: ["whapi_instance_id"]
+            isOneToOne: false
+            referencedRelation: "whapi_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1630,6 +1786,10 @@ export type Database = {
       }
       generate_client_access_token: {
         Args: { client_email: string; expires_in_hours?: number }
+        Returns: string
+      }
+      generate_whapi_webhook_url: {
+        Args: { instance_id: string }
         Returns: string
       }
       get_client_proposals_by_token: {

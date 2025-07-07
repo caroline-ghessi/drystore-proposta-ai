@@ -12,11 +12,11 @@ import {
 } from 'lucide-react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AdobeDebugTab from '@/components/admin/debug/AdobeDebugTab';
-import ZAPIDebugTab from '@/components/admin/debug/ZAPIDebugTab';
+import WhapiDebugTab from '@/components/admin/debug/WhapiDebugTab';
 import SystemDebugTab from '@/components/admin/debug/SystemDebugTab';
 import LogsDebugTab from '@/components/admin/debug/LogsDebugTab';
 import EmailDebugTab from '@/components/admin/debug/EmailDebugTab';
-import ZAPIManagementTab from '@/components/admin/debug/ZAPIManagementTab';
+import WhapiManagementTab from '@/components/admin/debug/WhapiManagementTab';
 import SignUpDebugTab from '@/components/admin/debug/SignUpDebugTab';
 import DebugHeader from '@/components/admin/debug/DebugHeader';
 import StatusOverview from '@/components/admin/debug/StatusOverview';
@@ -24,7 +24,7 @@ import QuickActions from '@/components/admin/debug/QuickActions';
 import SystemInfo from '@/components/admin/debug/SystemInfo';
 
 const TechnicalDebug = () => {
-  const [activeTab, setActiveTab] = useState('adobe');
+  const [activeTab, setActiveTab] = useState('whapi-config');
   const [systemStatus, setSystemStatus] = useState({
     overall: 'healthy',
     lastCheck: new Date().toISOString()
@@ -75,13 +75,13 @@ const TechnicalDebug = () => {
                   <Mail className="w-4 h-4" />
                   <span>Email</span>
                 </TabsTrigger>
-                <TabsTrigger value="zapi-config" className="flex items-center space-x-2">
+                <TabsTrigger value="whapi-config" className="flex items-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
-                  <span>Z-API Config</span>
+                  <span>Whapi Config</span>
                 </TabsTrigger>
-                <TabsTrigger value="zapi" className="flex items-center space-x-2">
+                <TabsTrigger value="whapi" className="flex items-center space-x-2">
                   <MessageSquare className="w-4 h-4" />
-                  <span>Z-API Test</span>
+                  <span>Whapi Test</span>
                 </TabsTrigger>
                 <TabsTrigger value="signup" className="flex items-center space-x-2">
                   <UserPlus className="w-4 h-4" />
@@ -106,12 +106,12 @@ const TechnicalDebug = () => {
                   <EmailDebugTab />
                 </TabsContent>
 
-                <TabsContent value="zapi-config" className="space-y-4">
-                  <ZAPIManagementTab />
+                <TabsContent value="whapi-config" className="space-y-4">
+                  <WhapiManagementTab />
                 </TabsContent>
 
-                <TabsContent value="zapi" className="space-y-4">
-                  <ZAPIDebugTab />
+                <TabsContent value="whapi" className="space-y-4">
+                  <WhapiDebugTab />
                 </TabsContent>
 
                 <TabsContent value="signup" className="space-y-4">
