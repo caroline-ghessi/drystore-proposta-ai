@@ -94,54 +94,128 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Extract PDF Data Error:', error);
+    console.error('❌ Adobe PDF Services failed:', error);
     
-    // Provide more specific error handling
-    let errorMessage = error.message;
-    let statusCode = 500;
+    // Tentar fallback local quando Adobe falha
+    console.log('🔄 Tentando fallback local...');
     
-    console.log('🔍 Error analysis:', {
-      message: error.message,
-      stack: error.stack?.substring(0, 200) + '...'
-    });
-    
-    if (error.message.includes('credentials not configured')) {
-      statusCode = 500;
-      errorMessage = 'Sistema não configurado. Entre em contato com o administrador.';
-    } else if (error.message.includes('Adobe credentials are invalid')) {
-      statusCode = 500;
-      errorMessage = 'Credenciais Adobe inválidas. Verifique a configuração do sistema.';
-    } else if (error.message.includes('Client ID appears to be too short')) {
-      statusCode = 500;
-      errorMessage = 'Configuração Adobe incompleta. Entre em contato com o administrador.';
-    } else if (error.message.includes('415')) {
-      statusCode = 400;
-      errorMessage = 'Formato de arquivo inválido. Certifique-se que o PDF não está corrompido.';
-    } else if (error.message.includes('401') || error.message.includes('authentication failed')) {
-      statusCode = 500;
-      errorMessage = 'Erro de autenticação com Adobe. Verifique as credenciais do sistema.';
-    } else if (error.message.includes('413') || error.message.includes('too large')) {
-      statusCode = 400;
-      errorMessage = 'Arquivo muito grande. O tamanho máximo é 10MB.';
-    } else if (error.message.includes('timeout')) {
-      statusCode = 408;
-      errorMessage = 'Timeout no processamento. Tente novamente com um arquivo menor.';
-    }
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMessage,
-        technical_details: error.message,
-        stack: error.stack
-      }),
-      { 
-        status: statusCode,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+    try {
+      // Converter o arquivo para buffer base64 para o fallback
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfBuffer = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Chamar a função de fallback local
+      console.log('📤 Enviando para processamento local...');
+      const fallbackResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/extract-erp-pdf-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        },
+        body: JSON.stringify({
+          pdfBuffer,
+          fileName: file.name,
+          fileSize: file.size
+        })
+      });
+
+      if (fallbackResponse.ok) {
+        const fallbackResult = await fallbackResponse.json();
+        console.log('✅ Fallback local bem-sucedido:', {
+          processor: fallbackResult.processor,
+          itemsExtracted: fallbackResult.data.items?.length || 0,
+          totalValue: fallbackResult.data.total
+        });
+
+        // Salvar dados do fallback no banco
+        const fallbackStructuredData = {
+          client: fallbackResult.data.client || 'Cliente não identificado',
+          vendor: fallbackResult.data.vendor || 'N/A',
+          proposalNumber: fallbackResult.data.proposalNumber || 'N/A',
+          date: fallbackResult.data.date || new Date().toISOString().split('T')[0],
+          items: fallbackResult.data.items || [],
+          subtotal: fallbackResult.data.subtotal || 0,
+          total: fallbackResult.data.total || 0,
+          paymentTerms: fallbackResult.data.paymentTerms || 'N/A',
+          delivery: fallbackResult.data.delivery || 'N/A'
+        };
+
+        const savedData = await dbOps.saveExtractedData(user, file, fallbackResult.data, fallbackStructuredData);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            method: `Processamento Local (${fallbackResult.processor || 'fallback'})`,
+            data: {
+              id: savedData.id,
+              ...fallbackStructuredData
+            }
+          }),
+          { 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      } else {
+        throw new Error('Fallback local também falhou');
       }
-    );
+
+    } catch (fallbackError) {
+      console.error('❌ Fallback local também falhou:', fallbackError);
+      
+      // Se tanto Adobe quanto fallback falharam, retornar erro específico
+      let errorMessage = error.message;
+      let statusCode = 500;
+      
+      console.log('🔍 Error analysis:', {
+        adobeError: error.message,
+        fallbackError: fallbackError.message,
+        stack: error.stack?.substring(0, 200) + '...'
+      });
+      
+      // Determinar tipo de erro baseado no erro do Adobe
+      if (error.message.includes('credentials not configured')) {
+        statusCode = 500;
+        errorMessage = 'Adobe PDF Services não configurado. Processamento local também falhou.';
+      } else if (error.message.includes('Adobe credentials are invalid')) {
+        statusCode = 500;
+        errorMessage = 'Credenciais Adobe inválidas. Processamento local não disponível.';
+      } else if (error.message.includes('Client ID appears to be too short')) {
+        statusCode = 500;
+        errorMessage = 'Configuração Adobe incompleta. Contate o administrador.';
+      } else if (error.message.includes('415')) {
+        statusCode = 400;
+        errorMessage = 'Formato de arquivo inválido. Certifique-se que o PDF não está corrompido.';
+      } else if (error.message.includes('401') || error.message.includes('authentication failed')) {
+        statusCode = 500;
+        errorMessage = 'Erro de autenticação com Adobe. Verificar configuração do sistema.';
+      } else if (error.message.includes('413') || error.message.includes('too large')) {
+        statusCode = 400;
+        errorMessage = 'Arquivo muito grande. O tamanho máximo é 10MB.';
+      } else if (error.message.includes('timeout')) {
+        statusCode = 408;
+        errorMessage = 'Timeout no processamento. Tente novamente com um arquivo menor.';
+      } else {
+        errorMessage = 'Falha na extração de dados. Tanto Adobe quanto processamento local falharam.';
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: errorMessage,
+          technical_details: error.message,
+          fallback_error: fallbackError.message
+        }),
+        { 
+          status: statusCode,
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
   }
 });

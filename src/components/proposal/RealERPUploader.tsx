@@ -141,7 +141,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         if (errorMessage.includes('Adobe') || errorMessage.includes('credentials') || 
             errorMessage.includes('authentication') || errorMessage.includes('401')) {
           console.log('⚠️ Erro de configuração Adobe detectado');
-          throw new Error('Configuração Adobe indisponível. Contate o administrador para configurar as credenciais Adobe PDF Services.');
+          setProcessingStage('Adobe indisponível - Tentando processamento local...');
+          
+          // Dar um tempo para o usuário ver a mensagem
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
         
         throw new Error(errorMessage);
@@ -174,14 +177,22 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       let processingTitle = '';
       let processingMessage = '';
       
-      if (extractionMethod.includes('Adobe')) {
+      if (extractionMethod.includes('Adobe PDF Services')) {
         processingIcon = '🚀';
         processingTitle = 'PDF processado com Adobe PDF Services!';
         processingMessage = `${extractedItems.length} itens extraídos com alta precisão.`;
-      } else if (extractionMethod.includes('local') || extractionMethod.includes('fallback')) {
+      } else if (extractionMethod.includes('Processamento Local')) {
         processingIcon = '⚙️';
         processingTitle = 'PDF processado com método local!';
-        processingMessage = `${extractedItems.length} itens extraídos com processamento local.`;
+        processingMessage = `${extractedItems.length} itens extraídos. Adobe indisponível, usando processamento local.`;
+      } else if (extractionMethod.includes('google-vision')) {
+        processingIcon = '🔍';
+        processingTitle = 'PDF processado com Google Vision!';
+        processingMessage = `${extractedItems.length} itens extraídos via análise inteligente.`;
+      } else if (extractionMethod.includes('fallback') || extractionMethod.includes('intelligent')) {
+        processingIcon = '🧠';
+        processingTitle = 'PDF processado com IA local!';
+        processingMessage = `${extractedItems.length} itens extraídos via processamento inteligente.`;
       } else {
         processingIcon = '✅';
         processingTitle = 'PDF processado com sucesso!';
@@ -200,25 +211,43 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       // Determinar tipo de erro para feedback adequado
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao processar PDF";
       
-      let errorTitle = "Erro no processamento";
-      let errorDescription = errorMessage;
-      
-      if (errorMessage.includes('Adobe') || errorMessage.includes('credentials')) {
-        errorTitle = "Sistema em configuração";
-        errorDescription = "Adobe PDF Services não configurado. Contate o administrador.";
-      } else if (errorMessage.includes('very large') || errorMessage.includes('muito grande')) {
-        errorTitle = "Arquivo muito grande";
-        errorDescription = "Reduza o tamanho do arquivo para menos de 10MB.";
-      } else if (errorMessage.includes('formato')) {
-        errorTitle = "Formato inválido";
-        errorDescription = "Certifique-se que o PDF não está corrompido.";
+      // Se o erro contém "fallback local também falhou", isso significa que ambos os métodos falharam
+      if (errorMessage.includes('fallback local também falhou') || 
+          errorMessage.includes('Tanto Adobe quanto processamento local falharam')) {
+        
+        toast({
+          title: "Falha na extração",
+          description: "Não foi possível extrair dados do PDF. Verifique se o arquivo está correto.",
+          variant: "destructive"
+        });
+        
+      } else if (errorMessage.includes('Adobe indisponível') || 
+                 errorMessage.includes('Adobe PDF Services não configurado')) {
+        
+        // Neste caso, o processamento local pode ter funcionado
+        // Não mostrar erro ainda, vamos aguardar o resultado
+        console.log('⚠️ Adobe indisponível, aguardando fallback local...');
+        return; // Não mostrar erro ainda
+        
+      } else {
+        // Outros tipos de erro
+        let errorTitle = "Erro no processamento";
+        let errorDescription = errorMessage;
+        
+        if (errorMessage.includes('very large') || errorMessage.includes('muito grande')) {
+          errorTitle = "Arquivo muito grande";
+          errorDescription = "Reduza o tamanho do arquivo para menos de 10MB.";
+        } else if (errorMessage.includes('formato')) {
+          errorTitle = "Formato inválido";
+          errorDescription = "Certifique-se que o PDF não está corrompido.";
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorDescription,
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: errorTitle,
-        description: errorDescription,
-        variant: "destructive"
-      });
     }
   };
 
