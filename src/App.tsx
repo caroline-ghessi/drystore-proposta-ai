@@ -283,8 +283,8 @@ const AppContent = () => {
 
         {/* ============= ADMIN ROUTES ============= */}
         <Route 
-          path="/register-user" 
-          element={createAdminRoute({ path: '/register-user', element: UserRegistration, fallbackType: 'form' })} 
+          path="/user-registration" 
+          element={createAdminRoute({ path: '/user-registration', element: UserRegistration, fallbackType: 'form' })} 
         />
         <Route 
           path="/admin/security-management" 
