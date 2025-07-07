@@ -33,17 +33,23 @@ export class FileValidator {
       throw new Error('Adobe PDF Services credentials not configured. Please contact administrator.');
     }
 
-    // Validate credential format
-    if (!adobeClientId.includes('-') || adobeClientId.length < 20) {
-      throw new Error('Invalid Adobe Client ID format');
+    // Basic validation - only check if they exist and have reasonable length
+    if (adobeClientId.length < 10) {
+      throw new Error('Adobe Client ID appears to be too short');
+    }
+
+    if (adobeClientSecret.length < 10) {
+      throw new Error('Adobe Client Secret appears to be too short');
     }
 
     if (!adobeOrgId.includes('@') || !adobeOrgId.includes('AdobeOrg')) {
-      throw new Error('Invalid Adobe Org ID format'); 
+      throw new Error('Adobe Org ID format invalid - should contain @ and AdobeOrg'); 
     }
 
-    console.log('✅ Adobe credentials validated - Client ID:', adobeClientId.substring(0, 8) + '...');
-    console.log('✅ Adobe Org ID validated:', adobeOrgId.substring(0, 15) + '...');
+    console.log('✅ Adobe credentials basic validation passed');
+    console.log('🔍 Client ID length:', adobeClientId.length);
+    console.log('🔍 Client Secret length:', adobeClientSecret.length);
+    console.log('🔍 Org ID format:', adobeOrgId.includes('@') && adobeOrgId.includes('AdobeOrg'));
 
     return {
       clientId: adobeClientId,

@@ -12,7 +12,10 @@ export class AdobeClient {
   }
 
   async getAccessToken(): Promise<string> {
-    console.log('Getting Adobe access token...');
+    console.log('🔄 Getting Adobe access token...');
+    console.log('🔍 Using credentials - Client ID:', this.credentials.clientId.substring(0, 8) + '...');
+    console.log('🔍 Using credentials - Org ID:', this.credentials.orgId.substring(0, 15) + '...');
+    
     const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
       method: 'POST',
       headers: {
@@ -26,14 +29,40 @@ export class AdobeClient {
       }).toString()
     });
 
+    console.log('📨 Adobe token response:', {
+      status: tokenResponse.status,
+      statusText: tokenResponse.statusText,
+      ok: tokenResponse.ok
+    });
+
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('Adobe token error:', errorText);
-      throw new Error(`Failed to authenticate with Adobe API: ${tokenResponse.status} - ${errorText}`);
+      console.error('❌ Adobe token error:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorText
+      });
+      
+      // Provide specific error messages based on status
+      if (tokenResponse.status === 401) {
+        throw new Error('Adobe credentials are invalid. Please verify Client ID and Client Secret are correct.');
+      } else if (tokenResponse.status === 400) {
+        throw new Error('Adobe authentication request is malformed. Please check credential format.');
+      } else {
+        throw new Error(`Adobe authentication failed: ${tokenResponse.status} - ${errorText}`);
+      }
     }
 
-    const { access_token } = await tokenResponse.json();
-    console.log('Adobe access token obtained successfully');
+    const tokenData = await tokenResponse.json();
+    const { access_token } = tokenData;
+    
+    if (!access_token) {
+      console.error('❌ No access token in response:', tokenData);
+      throw new Error('Adobe API returned success but no access token found');
+    }
+    
+    console.log('✅ Adobe access token obtained successfully');
+    console.log('🔍 Token length:', access_token.length);
     return access_token;
   }
 

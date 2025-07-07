@@ -99,15 +99,32 @@ serve(async (req) => {
     let errorMessage = error.message;
     let statusCode = 500;
     
+    console.log('🔍 Error analysis:', {
+      message: error.message,
+      stack: error.stack?.substring(0, 200) + '...'
+    });
+    
     if (error.message.includes('credentials not configured')) {
       statusCode = 500;
       errorMessage = 'Sistema não configurado. Entre em contato com o administrador.';
+    } else if (error.message.includes('Adobe credentials are invalid')) {
+      statusCode = 500;
+      errorMessage = 'Credenciais Adobe inválidas. Verifique a configuração do sistema.';
+    } else if (error.message.includes('Client ID appears to be too short')) {
+      statusCode = 500;
+      errorMessage = 'Configuração Adobe incompleta. Entre em contato com o administrador.';
     } else if (error.message.includes('415')) {
       statusCode = 400;
       errorMessage = 'Formato de arquivo inválido. Certifique-se que o PDF não está corrompido.';
-    } else if (error.message.includes('401')) {
+    } else if (error.message.includes('401') || error.message.includes('authentication failed')) {
       statusCode = 500;
-      errorMessage = 'Erro de autenticação com Adobe. Entre em contato com o administrador.';
+      errorMessage = 'Erro de autenticação com Adobe. Verifique as credenciais do sistema.';
+    } else if (error.message.includes('413') || error.message.includes('too large')) {
+      statusCode = 400;
+      errorMessage = 'Arquivo muito grande. O tamanho máximo é 10MB.';
+    } else if (error.message.includes('timeout')) {
+      statusCode = 408;
+      errorMessage = 'Timeout no processamento. Tente novamente com um arquivo menor.';
     }
     
     return new Response(
