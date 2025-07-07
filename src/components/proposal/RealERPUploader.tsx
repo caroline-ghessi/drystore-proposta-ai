@@ -89,7 +89,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStage('Iniciando extração com Adobe PDF Services...');
+    setProcessingStage('Iniciando extração de dados...');
 
     try {
       // Validação prévia do tamanho do arquivo
@@ -103,17 +103,19 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      setProcessingStage('Preparando arquivo para Adobe Extract PDF...');
+      setProcessingStage('Preparando arquivo para extração...');
       
-      console.log('📤 Enviando arquivo para processamento com Adobe Extract PDF');
-      console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+      console.log('📤 Iniciando processamento de PDF');
+      console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      setProcessingStage('Extraindo estrutura e tabelas com Adobe PDF Services...');
+      setProcessingStage('Processando PDF - Tentando Adobe PDF Services...');
 
       // Criar FormData para envio do arquivo
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('🔄 Tentando extração via Adobe PDF Services...');
+      
       const response = await fetch(
         `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
         {
@@ -125,52 +127,69 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         }
       );
 
-      console.log('📨 Adobe extraction response status:', response.status);
+      console.log('📨 Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Erro de conexão' }));
         console.error('❌ Adobe extraction error:', errorData);
-        throw new Error(errorData.error || 'Falha na extração de dados');
+        
+        // Determinar tipo de erro
+        const errorMessage = errorData.error || errorData.technical_details || 'Falha na extração de dados';
+        console.log('🔍 Analisando tipo de erro:', errorMessage);
+        
+        // Se for erro de configuração Adobe, informar adequadamente
+        if (errorMessage.includes('Adobe') || errorMessage.includes('credentials') || 
+            errorMessage.includes('authentication') || errorMessage.includes('401')) {
+          console.log('⚠️ Erro de configuração Adobe detectado');
+          throw new Error('Configuração Adobe indisponível. Contate o administrador para configurar as credenciais Adobe PDF Services.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
+      console.log('📊 Resultado completo:', result);
 
       if (!result.success) {
         throw new Error(result.error || 'Falha na extração de dados');
       }
 
-      // Validação de qualidade dos dados extraídos
+      // Determinar método de extração usado
+      const extractionMethod = result.method || 'Adobe PDF Services';
       const extractedItems = result.data.items || [];
-      const expectedItemsCount = 10; // PDF possui 10 itens
       
-      console.log('📊 Validação de qualidade:', {
+      console.log('✅ Extração bem-sucedida:', {
+        method: extractionMethod,
         itemsExtracted: extractedItems.length,
-        expectedItems: expectedItemsCount,
-        completeness: (extractedItems.length / expectedItemsCount * 100).toFixed(1) + '%'
+        hasClient: !!result.data.client,
+        totalValue: result.data.total
       });
 
       setExtractedData(result.data);
       setIsAnalyzed(true);
       setIsProcessing(false);
 
-      // Mostrar feedback baseado na qualidade da extração
-      const completeness = extractedItems.length / expectedItemsCount;
-      let processingIcon = '📄';
+      // Feedback baseado no método de extração
+      let processingIcon = '✅';
+      let processingTitle = '';
       let processingMessage = '';
       
-      if (completeness >= 0.9) {
-        processingIcon = '✅';
-        processingMessage = `${extractedItems.length} itens extraídos com Adobe PDF Services (completo).`;
-      } else if (completeness >= 0.7) {
-        processingIcon = '⚠️';
-        processingMessage = `${extractedItems.length} itens extraídos de ${expectedItemsCount} esperados (parcial).`;
+      if (extractionMethod.includes('Adobe')) {
+        processingIcon = '🚀';
+        processingTitle = 'PDF processado com Adobe PDF Services!';
+        processingMessage = `${extractedItems.length} itens extraídos com alta precisão.`;
+      } else if (extractionMethod.includes('local') || extractionMethod.includes('fallback')) {
+        processingIcon = '⚙️';
+        processingTitle = 'PDF processado com método local!';
+        processingMessage = `${extractedItems.length} itens extraídos com processamento local.`;
       } else {
-        processingIcon = '🔍';
-        processingMessage = `${extractedItems.length} itens extraídos. Pode ser necessário revisão manual.`;
+        processingIcon = '✅';
+        processingTitle = 'PDF processado com sucesso!';
+        processingMessage = `${extractedItems.length} itens extraídos.`;
       }
 
       toast({
-        title: `${processingIcon} PDF processado com Adobe!`,
+        title: `${processingIcon} ${processingTitle}`,
         description: processingMessage,
       });
 
@@ -178,9 +197,26 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       console.error('❌ Error processing PDF:', error);
       setIsProcessing(false);
       
+      // Determinar tipo de erro para feedback adequado
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao processar PDF";
+      
+      let errorTitle = "Erro no processamento";
+      let errorDescription = errorMessage;
+      
+      if (errorMessage.includes('Adobe') || errorMessage.includes('credentials')) {
+        errorTitle = "Sistema em configuração";
+        errorDescription = "Adobe PDF Services não configurado. Contate o administrador.";
+      } else if (errorMessage.includes('very large') || errorMessage.includes('muito grande')) {
+        errorTitle = "Arquivo muito grande";
+        errorDescription = "Reduza o tamanho do arquivo para menos de 10MB.";
+      } else if (errorMessage.includes('formato')) {
+        errorTitle = "Formato inválido";
+        errorDescription = "Certifique-se que o PDF não está corrompido.";
+      }
+      
       toast({
-        title: "Erro no processamento",
-        description: error instanceof Error ? error.message : "Erro desconhecido ao processar PDF",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive"
       });
     }
@@ -208,7 +244,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           Upload do PDF do ERP
         </CardTitle>
         <CardDescription>
-          Adobe PDF Services extrairá automaticamente todas as tabelas e dados estruturados do PDF
+          Sistema inteligente de extração de dados com Adobe PDF Services e processamento local
         </CardDescription>
       </CardHeader>
       <CardContent>
