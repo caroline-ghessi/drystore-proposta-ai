@@ -75,6 +75,7 @@ const PaymentManagement = React.lazy(() => import('@/pages/admin/PaymentManageme
 const ContentManagement = React.lazy(() => import('./pages/admin/ContentManagement'));
 const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLayoutsViewer'));
 const SolarProductsManagement = React.lazy(() => import('@/pages/admin/SolarProductsManagement'));
+const SalesTargets = React.lazy(() => import('@/pages/SalesTargets'));
 
 // Payment Pages
 const PaymentOptions = React.lazy(() => import('@/pages/PaymentOptions'));
@@ -300,6 +301,10 @@ const AppContent = () => {
         <Route 
           path="/admin/solar-products" 
           element={createAdminRoute({ path: '/admin/solar-products', element: SolarProductsManagement, fallbackType: 'table' })} 
+        />
+        <Route 
+          path="/sales-targets" 
+          element={createAdminRoute({ path: '/sales-targets', element: SalesTargets, fallbackType: 'dashboard' })} 
         />
 
         {/* ============= PROTECTED ADMIN ROUTES ============= */}
