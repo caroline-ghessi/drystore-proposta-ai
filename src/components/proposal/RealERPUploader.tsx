@@ -84,26 +84,50 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     await processWithAdobeAPI(file);
   };
 
+  // Função para converter arquivo em base64 de forma segura (evita stack overflow)
+  const convertFileToBase64 = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Remover o prefixo "data:application/pdf;base64," se existir
+          const base64 = reader.result.includes(',') 
+            ? reader.result.split(',')[1] 
+            : reader.result;
+          resolve(base64);
+        } else {
+          reject(new Error('Erro na conversão para base64'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler o arquivo'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
     setProcessingStage('Iniciando extração de dados...');
 
     try {
+      // Validação prévia do tamanho do arquivo
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        throw new Error('Arquivo muito grande. O tamanho máximo é 10MB.');
+      }
+
       // Obter token de autenticação do Supabase
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Usuário não autenticado');
       }
 
-      // NOVA IMPLEMENTAÇÃO: Usar Google Vision + IA para extração real
       setProcessingStage('Convertendo PDF para análise...');
       
       console.log('📤 Enviando arquivo para processamento com Google Vision + IA');
       console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      // Converter arquivo para base64
-      const arrayBuffer = await file.arrayBuffer();
-      const base64Buffer = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      // Converter arquivo para base64 de forma segura
+      setProcessingStage('Processando arquivo PDF...');
+      const base64Buffer = await convertFileToBase64(file);
 
       setProcessingStage('Extraindo texto com Google Vision...');
 
