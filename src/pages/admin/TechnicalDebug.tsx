@@ -8,7 +8,10 @@ import {
   MessageSquare,
   Settings,
   Activity,
-  UserPlus
+  UserPlus,
+  Eye,
+  Brain,
+  Bot
 } from 'lucide-react';
 import PermissionGuard from '@/components/PermissionGuard';
 import AdobeDebugTab from '@/components/admin/debug/AdobeDebugTab';
@@ -18,6 +21,9 @@ import LogsDebugTab from '@/components/admin/debug/LogsDebugTab';
 import EmailDebugTab from '@/components/admin/debug/EmailDebugTab';
 import WhapiManagementTab from '@/components/admin/debug/WhapiManagementTab';
 import SignUpDebugTab from '@/components/admin/debug/SignUpDebugTab';
+import GoogleVisionDebugTab from '@/components/admin/debug/GoogleVisionDebugTab';
+import GrokDebugTab from '@/components/admin/debug/GrokDebugTab';
+import OpenAIDebugTab from '@/components/admin/debug/OpenAIDebugTab';
 import DebugHeader from '@/components/admin/debug/DebugHeader';
 import StatusOverview from '@/components/admin/debug/StatusOverview';
 import QuickActions from '@/components/admin/debug/QuickActions';
@@ -66,40 +72,68 @@ const TechnicalDebug = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="adobe" className="flex items-center space-x-2">
-                  <FileText className="w-4 h-4" />
-                  <span>Adobe PDF</span>
-                </TabsTrigger>
-                <TabsTrigger value="email" className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4" />
-                  <span>Email</span>
-                </TabsTrigger>
-                <TabsTrigger value="whapi-config" className="flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Whapi Config</span>
-                </TabsTrigger>
-                <TabsTrigger value="whapi" className="flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Whapi Test</span>
-                </TabsTrigger>
-                <TabsTrigger value="signup" className="flex items-center space-x-2">
-                  <UserPlus className="w-4 h-4" />
-                  <span>Sign Up Test</span>
-                </TabsTrigger>
-                <TabsTrigger value="system" className="flex items-center space-x-2">
-                  <Settings className="w-4 h-4" />
-                  <span>Sistema</span>
-                </TabsTrigger>
-                <TabsTrigger value="logs" className="flex items-center space-x-2">
-                  <Activity className="w-4 h-4" />
-                  <span>Logs</span>
-                </TabsTrigger>
-              </TabsList>
+              <div className="space-y-2">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="adobe" className="flex items-center space-x-1">
+                    <FileText className="w-3 h-3" />
+                    <span className="text-xs">Adobe PDF</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="google-vision" className="flex items-center space-x-1">
+                    <Eye className="w-3 h-3" />
+                    <span className="text-xs">Google Vision</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="grok" className="flex items-center space-x-1">
+                    <Brain className="w-3 h-3" />
+                    <span className="text-xs">Grok AI</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="openai" className="flex items-center space-x-1">
+                    <Bot className="w-3 h-3" />
+                    <span className="text-xs">OpenAI</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="email" className="flex items-center space-x-1">
+                    <Mail className="w-3 h-3" />
+                    <span className="text-xs">Email</span>
+                  </TabsTrigger>
+                </TabsList>
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="whapi-config" className="flex items-center space-x-1">
+                    <MessageSquare className="w-3 h-3" />
+                    <span className="text-xs">Whapi Config</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="whapi" className="flex items-center space-x-1">
+                    <MessageSquare className="w-3 h-3" />
+                    <span className="text-xs">Whapi Test</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="signup" className="flex items-center space-x-1">
+                    <UserPlus className="w-3 h-3" />
+                    <span className="text-xs">Sign Up</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="system" className="flex items-center space-x-1">
+                    <Settings className="w-3 h-3" />
+                    <span className="text-xs">Sistema</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="logs" className="flex items-center space-x-1">
+                    <Activity className="w-3 h-3" />
+                    <span className="text-xs">Logs</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               <div className="mt-6">
                 <TabsContent value="adobe" className="space-y-4">
                   <AdobeDebugTab />
+                </TabsContent>
+
+                <TabsContent value="google-vision" className="space-y-4">
+                  <GoogleVisionDebugTab />
+                </TabsContent>
+
+                <TabsContent value="grok" className="space-y-4">
+                  <GrokDebugTab />
+                </TabsContent>
+
+                <TabsContent value="openai" className="space-y-4">
+                  <OpenAIDebugTab />
                 </TabsContent>
 
                 <TabsContent value="email" className="space-y-4">
