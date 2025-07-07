@@ -19,37 +19,47 @@ export class FileValidator {
   }
 
   static validateAdobeCredentials(): { clientId: string; clientSecret: string; orgId: string } {
-    const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID');
+    // Tentar ambos os nomes para compatibilidade
+    const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID') || Deno.env.get('ADOBE_PDF_API_KEY');
     const adobeClientSecret = Deno.env.get('ADOBE_CLIENT_SECRET');
     const adobeOrgId = Deno.env.get('ADOBE_ORG_ID');
 
-    console.log('🔑 Checking Adobe credentials availability...');
-    console.log('Client ID exists:', !!adobeClientId);
-    console.log('Client Secret exists:', !!adobeClientSecret); 
-    console.log('Org ID exists:', !!adobeOrgId);
-
+    console.log('🔑 Verificando disponibilidade das credenciais Adobe...');
+    console.log('✅ Variáveis de ambiente disponíveis:');
+    console.log('- ADOBE_CLIENT_ID:', !!Deno.env.get('ADOBE_CLIENT_ID'));
+    console.log('- ADOBE_PDF_API_KEY:', !!Deno.env.get('ADOBE_PDF_API_KEY'));
+    console.log('- ADOBE_CLIENT_SECRET:', !!adobeClientSecret);
+    console.log('- ADOBE_ORG_ID:', !!adobeOrgId);
+    
+    console.log('🔍 Client ID final (usando fallback):', !!adobeClientId);
+    
     if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
-      console.error('❌ Adobe credentials missing!');
+      console.error('❌ Credenciais Adobe faltando!');
+      console.error('Missing credentials:', {
+        clientId: !adobeClientId,
+        clientSecret: !adobeClientSecret,
+        orgId: !adobeOrgId
+      });
       throw new Error('Adobe PDF Services credentials not configured. Please contact administrator.');
     }
 
-    // Basic validation - only check if they exist and have reasonable length
-    if (adobeClientId.length < 10) {
-      throw new Error('Adobe Client ID appears to be too short');
+    // Validação mínima - apenas verificar se existem
+    if (!adobeClientId || adobeClientId.length < 5) {
+      throw new Error('Adobe Client ID/API Key missing or too short');
     }
 
-    if (adobeClientSecret.length < 10) {
-      throw new Error('Adobe Client Secret appears to be too short');
+    if (!adobeClientSecret || adobeClientSecret.length < 5) {
+      throw new Error('Adobe Client Secret missing or too short');
     }
 
-    if (!adobeOrgId.includes('@') || !adobeOrgId.includes('AdobeOrg')) {
-      throw new Error('Adobe Org ID format invalid - should contain @ and AdobeOrg'); 
+    if (!adobeOrgId || adobeOrgId.length < 5) {
+      throw new Error('Adobe Org ID missing or too short');
     }
 
-    console.log('✅ Adobe credentials basic validation passed');
+    console.log('✅ Credenciais Adobe carregadas com sucesso');
     console.log('🔍 Client ID length:', adobeClientId.length);
     console.log('🔍 Client Secret length:', adobeClientSecret.length);
-    console.log('🔍 Org ID format:', adobeOrgId.includes('@') && adobeOrgId.includes('AdobeOrg'));
+    console.log('🔍 Org ID length:', adobeOrgId.length);
 
     return {
       clientId: adobeClientId,

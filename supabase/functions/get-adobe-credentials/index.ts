@@ -19,16 +19,28 @@ serve(async (req) => {
       throw new Error('Authorization header required');
     }
 
-    // Buscar credenciais do ambiente
-    const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID');
+    // Buscar credenciais do ambiente (com fallback)
+    const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID') || Deno.env.get('ADOBE_PDF_API_KEY');
     const adobeClientSecret = Deno.env.get('ADOBE_CLIENT_SECRET');
     const adobeOrgId = Deno.env.get('ADOBE_ORG_ID');
 
+    console.log('🔑 Verificando credenciais Adobe disponíveis...');
+    console.log('- ADOBE_CLIENT_ID:', !!Deno.env.get('ADOBE_CLIENT_ID'));
+    console.log('- ADOBE_PDF_API_KEY:', !!Deno.env.get('ADOBE_PDF_API_KEY'));
+    console.log('- ADOBE_CLIENT_SECRET:', !!adobeClientSecret);
+    console.log('- ADOBE_ORG_ID:', !!adobeOrgId);
+    console.log('- Client ID final (fallback):', !!adobeClientId);
+
     if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
+      console.error('❌ Credenciais Adobe faltando:', {
+        clientId: !adobeClientId,
+        clientSecret: !adobeClientSecret,
+        orgId: !adobeOrgId
+      });
       throw new Error('Adobe API credentials not configured');
     }
 
-    console.log('Adobe credentials requested and provided');
+    console.log('✅ Adobe credentials requested and provided');
 
     return new Response(
       JSON.stringify({

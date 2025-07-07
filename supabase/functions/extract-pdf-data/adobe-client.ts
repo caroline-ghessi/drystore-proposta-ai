@@ -12,9 +12,13 @@ export class AdobeClient {
   }
 
   async getAccessToken(): Promise<string> {
-    console.log('🔄 Getting Adobe access token...');
-    console.log('🔍 Using credentials - Client ID:', this.credentials.clientId.substring(0, 8) + '...');
-    console.log('🔍 Using credentials - Org ID:', this.credentials.orgId.substring(0, 15) + '...');
+    console.log('🔄 Obtendo token de acesso Adobe...');
+    console.log('🔍 Credenciais em uso:');
+    console.log('  - Client ID length:', this.credentials.clientId.length);
+    console.log('  - Client Secret length:', this.credentials.clientSecret.length); 
+    console.log('  - Org ID length:', this.credentials.orgId.length);
+    console.log('  - Client ID preview:', this.credentials.clientId.substring(0, 10) + '...');
+    console.log('  - Org ID preview:', this.credentials.orgId.substring(0, 20) + '...');
     
     const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
       method: 'POST',
