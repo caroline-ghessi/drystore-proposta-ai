@@ -38,94 +38,97 @@ export class AdobeClient {
   }
 
   async uploadFile(file: File, accessToken: string): Promise<string> {
-    console.log('Starting Adobe file upload via Netlify proxy...');
+    console.log('🚀 Starting Adobe file upload - Direct method...');
+    console.log('📄 File details:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
     
+    // Validar token de acesso
+    if (!accessToken || accessToken.length < 10) {
+      throw new Error('Invalid Adobe access token');
+    }
+
     try {
-      // Converter file para base64 para enviar via proxy
-      const buffer = await file.arrayBuffer();
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-      
-      console.log('File converted to base64, size:', buffer.byteLength);
-
-      // URL do proxy Netlify (substitua pela sua URL real após deploy)
-      const proxyUrl = 'https://your-netlify-app.netlify.app/.netlify/functions/adobe-upload-proxy';
-      
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Adobe-Access-Token': accessToken,
-          'X-Adobe-Client-Id': this.credentials.clientId,
-          'X-Adobe-Org-Id': this.credentials.orgId,
-        },
-        body: JSON.stringify({
-          fileData: base64Data,
-          fileName: file.name
-        })
-      });
-
-      console.log('Proxy response status:', proxyResponse.status);
-
-      if (!proxyResponse.ok) {
-        const errorText = await proxyResponse.text();
-        console.error('Proxy error details:', errorText);
-        
-        // Fallback: tentar upload direto
-        console.log('Attempting fallback direct upload...');
-        return await this.uploadFileDirect(file, accessToken);
-      }
-
-      const proxyData = await proxyResponse.json();
-      const assetID = proxyData.assetID;
-      console.log('File uploaded via proxy successfully, Asset ID:', assetID);
-      return assetID;
-
-    } catch (error) {
-      console.error('Proxy upload failed:', error);
-      
-      // Fallback: tentar upload direto
-      console.log('Attempting fallback direct upload...');
       return await this.uploadFileDirect(file, accessToken);
+    } catch (error) {
+      console.error('❌ Direct upload failed:', error);
+      throw error;
     }
   }
 
   private async uploadFileDirect(file: File, accessToken: string): Promise<string> {
-    console.log('Starting fallback direct Adobe file upload...');
+    console.log('📤 Starting direct Adobe file upload...');
+    console.log('🔍 Upload details:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      accessTokenLength: accessToken.length
+    });
     
-    // Transform file correctly for FormData
-    const buffer = await file.arrayBuffer();
-    console.log('File converted to ArrayBuffer, size:', buffer.byteLength);
-    
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    console.log('Blob created, type:', blob.type, 'size:', blob.size);
-    
-    const fixedFile = new File([blob], file.name, { type: 'application/pdf' });
-    console.log('File recreated:', fixedFile.name, 'type:', fixedFile.type, 'size:', fixedFile.size);
-    
+    // Prepare FormData with correct file handling
     const uploadFormData = new FormData();
-    uploadFormData.append('file', fixedFile);
+    uploadFormData.append('file', file, file.name);
+
+    // Detailed headers for Adobe API
+    const headers = {
+      'Authorization': `Bearer ${accessToken}`,
+      'X-API-Key': this.credentials.clientId,
+      'X-Adobe-Organization-Id': this.credentials.orgId,
+    };
+
+    console.log('📨 Making request to Adobe with headers:', {
+      hasAuth: headers.Authorization.startsWith('Bearer '),
+      apiKey: headers['X-API-Key'].substring(0, 8) + '...',
+      orgId: headers['X-Adobe-Organization-Id'].substring(0, 15) + '...'
+    });
 
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'X-API-Key': this.credentials.clientId,
-        'X-Adobe-Organization-Id': this.credentials.orgId,
-      },
+      headers,
       body: uploadFormData
     });
 
-    console.log('Direct upload response status:', uploadResponse.status);
+    console.log('📨 Adobe upload response:', {
+      status: uploadResponse.status,
+      statusText: uploadResponse.statusText,
+      headers: Object.fromEntries(uploadResponse.headers.entries())
+    });
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
-      console.error('Direct upload error details:', errorText);
-      throw new Error(`Failed to upload file to Adobe: ${uploadResponse.status} - ${errorText}`);
+      console.error('❌ Adobe upload error:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        error: errorText
+      });
+      
+      // Provide specific error messages
+      if (uploadResponse.status === 415) {
+        throw new Error('Adobe rejected file format. Ensure PDF is valid and not corrupted.');
+      } else if (uploadResponse.status === 401) {
+        throw new Error('Adobe authentication failed. Check credentials configuration.');
+      } else if (uploadResponse.status === 413) {
+        throw new Error('File too large for Adobe API. Maximum size is 10MB.');
+      }
+      
+      throw new Error(`Adobe upload failed: ${uploadResponse.status} - ${errorText}`);
     }
 
     const uploadData = await uploadResponse.json();
     const assetID = uploadData.assetID;
-    console.log('File uploaded directly to Adobe successfully, Asset ID:', assetID);
+    
+    if (!assetID) {
+      console.error('❌ No assetID in response:', uploadData);
+      throw new Error('Adobe upload succeeded but no assetID returned');
+    }
+
+    console.log('✅ File uploaded to Adobe successfully!', {
+      assetID: assetID,
+      fileName: file.name
+    });
+    
     return assetID;
   }
 

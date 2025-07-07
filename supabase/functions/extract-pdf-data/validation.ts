@@ -23,12 +23,27 @@ export class FileValidator {
     const adobeClientSecret = Deno.env.get('ADOBE_CLIENT_SECRET');
     const adobeOrgId = Deno.env.get('ADOBE_ORG_ID');
 
+    console.log('🔑 Checking Adobe credentials availability...');
+    console.log('Client ID exists:', !!adobeClientId);
+    console.log('Client Secret exists:', !!adobeClientSecret); 
+    console.log('Org ID exists:', !!adobeOrgId);
+
     if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
-      throw new Error('Adobe API credentials not configured');
+      console.error('❌ Adobe credentials missing!');
+      throw new Error('Adobe PDF Services credentials not configured. Please contact administrator.');
     }
 
-    console.log('Adobe credentials loaded - Client ID:', adobeClientId.substring(0, 8) + '...');
-    console.log('Adobe Org ID:', adobeOrgId);
+    // Validate credential format
+    if (!adobeClientId.includes('-') || adobeClientId.length < 20) {
+      throw new Error('Invalid Adobe Client ID format');
+    }
+
+    if (!adobeOrgId.includes('@') || !adobeOrgId.includes('AdobeOrg')) {
+      throw new Error('Invalid Adobe Org ID format'); 
+    }
+
+    console.log('✅ Adobe credentials validated - Client ID:', adobeClientId.substring(0, 8) + '...');
+    console.log('✅ Adobe Org ID validated:', adobeOrgId.substring(0, 15) + '...');
 
     return {
       clientId: adobeClientId,
