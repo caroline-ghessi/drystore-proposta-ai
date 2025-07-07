@@ -37,3 +37,24 @@ export interface ERPExtractionQualityWeights {
   paymentTerms: number;
   delivery: number;
 }
+
+// Google Cloud types for ERP processing
+export interface GoogleCredentials {
+  client_email: string;
+  private_key: string;
+}
+
+export interface JWTPayload {
+  iss: string;
+  scope: string;
+  aud: string;
+  exp: number;
+  iat: number;
+}
+
+export interface GoogleTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  scope?: string;
+}

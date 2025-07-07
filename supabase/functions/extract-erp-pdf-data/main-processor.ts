@@ -2,8 +2,8 @@
 
 import type { ExtractedERPData, ProcessingConfig } from './types.ts';
 import { PDFToImageConverter } from './pdf-converter.ts';
-import { GoogleAuthManager } from '../process-energy-bill/google-auth.ts';
-import { GoogleVisionClient } from '../process-energy-bill/google-vision.ts';
+import { GoogleAuthManager } from './google-auth.ts';
+import { GoogleVisionClient } from './google-vision.ts';
 import { AIERPParser } from './ai-erp-parser.ts';
 import { ERPFallbackProvider } from './erp-fallback.ts';
 
