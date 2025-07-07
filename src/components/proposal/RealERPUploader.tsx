@@ -8,6 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface ExtractedData {
   id?: string;
   client?: string;
+  vendor?: string;
+  proposalNumber?: string;
+  date?: string;
   items: Array<{
     description: string;
     quantity: number;
@@ -19,7 +22,6 @@ interface ExtractedData {
   total: number;
   paymentTerms?: string;
   delivery?: string;
-  vendor?: string;
 }
 
 interface RealERPUploaderProps {
@@ -166,12 +168,19 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       setIsProcessing(false);
 
       // Mostrar tipo de processamento usado
-      const processingType = result.processor === 'google-vision-api' 
-        ? 'com Google Vision + IA' 
-        : 'com fallback inteligente';
+      let processingType = 'com fallback inteligente';
+      let processingIcon = '🧠';
+      
+      if (result.processor === 'google-vision-api') {
+        processingType = 'com Google Vision + IA';
+        processingIcon = '👁️';
+      } else if (result.processor === 'direct-text-extraction') {
+        processingType = 'com extração direta de texto';
+        processingIcon = '📄';
+      }
 
       toast({
-        title: "PDF processado com sucesso!",
+        title: `${processingIcon} PDF processado com sucesso!`,
         description: `${result.data.items.length} itens extraídos ${processingType}.`,
       });
 
@@ -287,10 +296,20 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
                   <p className="font-medium text-green-800">Dados Extraídos com Sucesso!</p>
                 </div>
                 <div className="text-sm text-green-700 space-y-1">
-                  {extractedData.client && <p>✓ Cliente: {extractedData.client}</p>}
+                  {extractedData.client && extractedData.client !== 'Cliente não identificado' && (
+                    <p>✓ Cliente: {extractedData.client}</p>
+                  )}
+                  {extractedData.proposalNumber && extractedData.proposalNumber !== 'N/A' && (
+                    <p>✓ Proposta: {extractedData.proposalNumber}</p>
+                  )}
                   <p>✓ {extractedData.items.length} itens identificados</p>
                   <p>✓ Valor total: R$ {extractedData.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  {extractedData.paymentTerms && <p>✓ Condições: {extractedData.paymentTerms}</p>}
+                  {extractedData.paymentTerms && extractedData.paymentTerms !== 'N/A' && (
+                    <p>✓ Condições: {extractedData.paymentTerms}</p>
+                  )}
+                  {extractedData.vendor && extractedData.vendor !== 'N/A' && (
+                    <p>✓ Vendedor: {extractedData.vendor}</p>
+                  )}
                 </div>
               </div>
             )}

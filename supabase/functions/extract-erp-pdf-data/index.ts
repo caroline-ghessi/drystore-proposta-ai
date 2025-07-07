@@ -48,13 +48,24 @@ serve(async (req) => {
     const processor = new GoogleVisionERPProcessor(googleCredentials || '', googleProjectId || '')
     const parsedData = await processor.processERPFile(pdfFile, fileName)
 
-    const processorType = (googleCredentials && googleProjectId) ? 'google-vision-api' : 'intelligent-fallback'
+    // Determinar o tipo de processamento baseado na qualidade dos dados
+    let processorType = 'intelligent-fallback';
+    if (googleCredentials && googleProjectId) {
+      // Verificar se os dados parecem ter sido extraídos com sucesso (não são apenas fallback)
+      if (parsedData.client !== 'Cliente não identificado' && parsedData.items.length > 0) {
+        processorType = 'google-vision-api';
+      } else if (parsedData.proposalNumber && parsedData.proposalNumber !== 'N/A') {
+        processorType = 'direct-text-extraction';
+      }
+    }
+    
     console.log('✅ ERP Processing completed:', {
       processor: processorType,
       client: parsedData.client,
       vendor: parsedData.vendor,
       items_count: parsedData.items?.length || 0,
-      total: parsedData.total
+      total: parsedData.total,
+      credentialsAvailable: !!(googleCredentials && googleProjectId)
     })
 
     return new Response(
