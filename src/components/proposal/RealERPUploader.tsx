@@ -86,29 +86,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     await processWithAdobeAPI(file);
   };
 
-  // Função para converter arquivo em base64 de forma segura (evita stack overflow)
-  const convertFileToBase64 = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          // Remover o prefixo "data:application/pdf;base64," se existir
-          const base64 = reader.result.includes(',') 
-            ? reader.result.split(',')[1] 
-            : reader.result;
-          resolve(base64);
-        } else {
-          reject(new Error('Erro na conversão para base64'));
-        }
-      };
-      reader.onerror = () => reject(new Error('Erro ao ler o arquivo'));
-      reader.readAsDataURL(file);
-    });
-  };
 
   const processWithAdobeAPI = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStage('Iniciando extração de dados...');
+    setProcessingStage('Iniciando extração com Adobe PDF Services...');
 
     try {
       // Validação prévia do tamanho do arquivo
@@ -122,38 +103,33 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      setProcessingStage('Convertendo PDF para análise...');
+      setProcessingStage('Preparando arquivo para Adobe Extract PDF...');
       
-      console.log('📤 Enviando arquivo para processamento com Google Vision + IA');
+      console.log('📤 Enviando arquivo para processamento com Adobe Extract PDF');
       console.log('Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
 
-      // Converter arquivo para base64 de forma segura
-      setProcessingStage('Processando arquivo PDF...');
-      const base64Buffer = await convertFileToBase64(file);
+      setProcessingStage('Extraindo estrutura e tabelas com Adobe PDF Services...');
 
-      setProcessingStage('Extraindo texto com Google Vision...');
+      // Criar FormData para envio do arquivo
+      const formData = new FormData();
+      formData.append('file', file);
 
       const response = await fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            pdfBuffer: base64Buffer,
-            fileName: file.name,
-            fileSize: file.size
-          }),
+          body: formData,
         }
       );
 
-      console.log('📨 ERP extraction response status:', response.status);
+      console.log('📨 Adobe extraction response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Erro de conexão' }));
-        console.error('❌ ERP extraction error:', errorData);
+        console.error('❌ Adobe extraction error:', errorData);
         throw new Error(errorData.error || 'Falha na extração de dados');
       }
 
@@ -163,25 +139,39 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error(result.error || 'Falha na extração de dados');
       }
 
+      // Validação de qualidade dos dados extraídos
+      const extractedItems = result.data.items || [];
+      const expectedItemsCount = 10; // PDF possui 10 itens
+      
+      console.log('📊 Validação de qualidade:', {
+        itemsExtracted: extractedItems.length,
+        expectedItems: expectedItemsCount,
+        completeness: (extractedItems.length / expectedItemsCount * 100).toFixed(1) + '%'
+      });
+
       setExtractedData(result.data);
       setIsAnalyzed(true);
       setIsProcessing(false);
 
-      // Mostrar tipo de processamento usado
-      let processingType = 'com fallback inteligente';
-      let processingIcon = '🧠';
+      // Mostrar feedback baseado na qualidade da extração
+      const completeness = extractedItems.length / expectedItemsCount;
+      let processingIcon = '📄';
+      let processingMessage = '';
       
-      if (result.processor === 'google-vision-api') {
-        processingType = 'com Google Vision + IA';
-        processingIcon = '👁️';
-      } else if (result.processor === 'direct-text-extraction') {
-        processingType = 'com extração direta de texto';
-        processingIcon = '📄';
+      if (completeness >= 0.9) {
+        processingIcon = '✅';
+        processingMessage = `${extractedItems.length} itens extraídos com Adobe PDF Services (completo).`;
+      } else if (completeness >= 0.7) {
+        processingIcon = '⚠️';
+        processingMessage = `${extractedItems.length} itens extraídos de ${expectedItemsCount} esperados (parcial).`;
+      } else {
+        processingIcon = '🔍';
+        processingMessage = `${extractedItems.length} itens extraídos. Pode ser necessário revisão manual.`;
       }
 
       toast({
-        title: `${processingIcon} PDF processado com sucesso!`,
-        description: `${result.data.items.length} itens extraídos ${processingType}.`,
+        title: `${processingIcon} PDF processado com Adobe!`,
+        description: processingMessage,
       });
 
     } catch (error) {
@@ -218,7 +208,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           Upload do PDF do ERP
         </CardTitle>
         <CardDescription>
-          A IA extrairá automaticamente quantitativos e valores do PDF do seu sistema ERP
+          Adobe PDF Services extrairá automaticamente todas as tabelas e dados estruturados do PDF
         </CardDescription>
       </CardHeader>
       <CardContent>

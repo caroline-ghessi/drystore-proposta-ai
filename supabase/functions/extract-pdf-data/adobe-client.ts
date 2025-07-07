@@ -134,8 +134,10 @@ export class AdobeClient {
       assetID: assetID,
       elementsToExtract: ['text', 'tables'],
       tableOutputFormat: 'xlsx',
-      getCharBounds: false,
-      includeStyling: true
+      renditionsToExtract: ['tables'],
+      getCharBounds: true,
+      includeStyling: true,
+      getStylingInfo: true
     };
 
     console.log('Sending extract request with corrected payload:', JSON.stringify(extractPayload, null, 2));
