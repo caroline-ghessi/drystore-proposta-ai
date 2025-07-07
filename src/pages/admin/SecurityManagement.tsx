@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Shield, Eye, Lock, AlertTriangle, Users, Settings } from 'lucide-react';
 import SecurityDashboard from '@/components/security/SecurityDashboard';
 import SecurityAuditPanel from '@/components/security/SecurityAuditPanel';
+import SecurityEventsList from '@/components/security/SecurityEventsList';
+import AccessControlPanel from '@/components/security/AccessControlPanel';
+import SecuritySettingsPanel from '@/components/security/SecuritySettingsPanel';
 import PermissionGuard from '@/components/PermissionGuard';
 
 const SecurityManagement = () => {
@@ -57,51 +60,15 @@ const SecurityManagement = () => {
               </TabsContent>
 
               <TabsContent value="events" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Eventos de Segurança Detalhados</CardTitle>
-                    <CardDescription>
-                      Análise completa de todos os eventos de segurança
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-500">
-                      Funcionalidade em desenvolvimento...
-                    </p>
-                  </CardContent>
-                </Card>
+                <SecurityEventsList />
               </TabsContent>
 
               <TabsContent value="access" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Controle de Acesso</CardTitle>
-                    <CardDescription>
-                      Gerenciamento de permissões e bloqueios
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-500">
-                      Funcionalidade em desenvolvimento...
-                    </p>
-                  </CardContent>
-                </Card>
+                <AccessControlPanel />
               </TabsContent>
 
               <TabsContent value="settings" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Configurações de Segurança</CardTitle>
-                    <CardDescription>
-                      Ajustes de políticas e regras de segurança
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-500">
-                      Funcionalidade em desenvolvimento...
-                    </p>
-                  </CardContent>
-                </Card>
+                <SecuritySettingsPanel />
               </TabsContent>
             </Tabs>
           </div>
