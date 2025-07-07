@@ -34,7 +34,7 @@ export const MenuSection = ({ title, items, showSection = true }: MenuSectionPro
           onClick={() => navigate(item.path)}
           className={`flex items-center space-x-2 cursor-pointer ${
             location.pathname === item.path 
-              ? 'bg-drystore-blue text-white' 
+              ? 'bg-drystore-orange text-white' 
               : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
         >
