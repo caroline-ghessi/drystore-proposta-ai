@@ -77,6 +77,7 @@ const ProposalLayoutsViewer = React.lazy(() => import('@/pages/admin/ProposalLay
 const SolarProductsManagement = React.lazy(() => import('@/pages/admin/SolarProductsManagement'));
 const TechnicalDebug = React.lazy(() => import('@/pages/admin/TechnicalDebug'));
 const AIPromptTester = React.lazy(() => import('@/pages/admin/AIPromptTester'));
+const RecommendationRules = React.lazy(() => import('@/pages/admin/RecommendationRules'));
 const SalesTargets = React.lazy(() => import('@/pages/SalesTargets'));
 
 // Payment Pages
@@ -315,6 +316,10 @@ const AppContent = () => {
         <Route 
           path="/admin/ai-prompt-tester" 
           element={createAdminRoute({ path: '/admin/ai-prompt-tester', element: AIPromptTester, fallbackType: 'form' })} 
+        />
+        <Route 
+          path="/admin/recommendation-rules" 
+          element={createAdminRoute({ path: '/admin/recommendation-rules', element: RecommendationRules, fallbackType: 'table' })} 
         />
 
         {/* ============= PROTECTED ADMIN ROUTES ============= */}
