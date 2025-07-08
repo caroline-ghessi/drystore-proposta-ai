@@ -114,16 +114,28 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('🔄 Tentando extração via Adobe PDF Services...');
+      console.log('🚀 Iniciando processamento modular...');
+      
+      // Converter arquivo para base64
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
       const response = await fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-processing-orchestrator`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
           },
-          body: formData,
+          body: JSON.stringify({
+            file_data: fileBase64,
+            file_name: file.name,
+            user_id: session.user.id,
+            processing_options: {
+              extraction_method: 'adobe'
+            }
+          }),
         }
       );
 
@@ -154,49 +166,61 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       console.log('📊 Resultado completo:', result);
 
       if (!result.success) {
-        throw new Error(result.error || 'Falha na extração de dados');
+        throw new Error(result.data?.error || result.error || 'Falha na extração de dados');
       }
 
-      // Determinar método de extração usado
-      const extractionMethod = result.method || 'Adobe PDF Services';
-      const extractedItems = result.data.items || [];
+      // Extrair dados da resposta modular
+      const proposalData = result.data.formatted_data;
+      const confidenceScore = result.final_confidence_score;
+      const processingLog = result.processing_log;
       
-      console.log('✅ Extração bem-sucedida:', {
-        method: extractionMethod,
-        itemsExtracted: extractedItems.length,
-        hasClient: !!result.data.client,
-        totalValue: result.data.total
+      console.log('✅ Processamento modular bem-sucedido:', {
+        confidence_score: confidenceScore,
+        items_count: result.data.items_count,
+        proposal_id: result.data.proposal_id,
+        stages: processingLog.stages.map(s => `${s.stage}: ${s.success ? '✅' : '❌'}`)
       });
 
-      setExtractedData(result.data);
+      // Converter para formato esperado pelo componente
+      const extractedData = {
+        client: proposalData.client_name || 'Cliente não identificado',
+        proposalNumber: proposalData.proposal_number || 'N/A',
+        vendor: proposalData.vendor_name || 'N/A',
+        items: proposalData.items || [],
+        subtotal: proposalData.subtotal || 0,
+        total: proposalData.valor_total || 0,
+        paymentTerms: proposalData.observacoes || 'N/A',
+        delivery: 'N/A'
+      };
+
+      setExtractedData(extractedData);
       setIsAnalyzed(true);
       setIsProcessing(false);
 
-      // Feedback baseado no método de extração
+      // Feedback baseado no processamento modular
       let processingIcon = '✅';
       let processingTitle = '';
       let processingMessage = '';
       
-      if (extractionMethod.includes('Adobe PDF Services')) {
+      const totalStages = processingLog.stages.length;
+      const successfulStages = processingLog.stages.filter(s => s.success).length;
+      
+      if (confidenceScore >= 90) {
         processingIcon = '🚀';
-        processingTitle = 'PDF processado com Adobe PDF Services!';
-        processingMessage = `${extractedItems.length} itens extraídos com alta precisão.`;
-      } else if (extractionMethod.includes('Processamento Local')) {
+        processingTitle = 'PDF processado com alta precisão!';
+        processingMessage = `${result.data.items_count} itens extraídos com confiança de ${confidenceScore}%.`;
+      } else if (confidenceScore >= 70) {
         processingIcon = '⚙️';
-        processingTitle = 'PDF processado com método local!';
-        processingMessage = `${extractedItems.length} itens extraídos. Adobe indisponível, usando processamento local.`;
-      } else if (extractionMethod.includes('google-vision')) {
+        processingTitle = 'PDF processado com boa precisão!';
+        processingMessage = `${result.data.items_count} itens extraídos com confiança de ${confidenceScore}%.`;
+      } else if (confidenceScore >= 50) {
         processingIcon = '🔍';
-        processingTitle = 'PDF processado com Google Vision!';
-        processingMessage = `${extractedItems.length} itens extraídos via análise inteligente.`;
-      } else if (extractionMethod.includes('fallback') || extractionMethod.includes('intelligent')) {
-        processingIcon = '🧠';
-        processingTitle = 'PDF processado com IA local!';
-        processingMessage = `${extractedItems.length} itens extraídos via processamento inteligente.`;
+        processingTitle = 'PDF processado com precisão moderada!';
+        processingMessage = `${result.data.items_count} itens extraídos. Revise os dados antes de prosseguir.`;
       } else {
-        processingIcon = '✅';
-        processingTitle = 'PDF processado com sucesso!';
-        processingMessage = `${extractedItems.length} itens extraídos.`;
+        processingIcon = '⚠️';
+        processingTitle = 'PDF processado com baixa precisão!';
+        processingMessage = `${result.data.items_count} itens extraídos. Recomenda-se revisão manual.`;
       }
 
       toast({

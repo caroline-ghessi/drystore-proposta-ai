@@ -27,3 +27,21 @@ verify_jwt = true
 
 [functions.ai-chatbot]
 verify_jwt = true
+
+[functions.pdf-text-extractor]
+verify_jwt = true
+
+[functions.ai-data-organizer]
+verify_jwt = true
+
+[functions.proposal-formatter]
+verify_jwt = true
+
+[functions.data-validator]
+verify_jwt = true
+
+[functions.data-saver]
+verify_jwt = true
+
+[functions.pdf-processing-orchestrator]
+verify_jwt = true
