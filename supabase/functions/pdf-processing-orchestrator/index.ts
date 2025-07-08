@@ -182,6 +182,9 @@ serve(async (req) => {
 });
 
 async function extractText(fileData: string, fileName: string, options: any) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
+  
   try {
     const response = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/pdf-text-extractor`,
@@ -195,17 +198,33 @@ async function extractText(fileData: string, fileName: string, options: any) {
           file_data: fileData,
           file_name: fileName,
           extraction_method: options.extraction_method || 'adobe'
-        })
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Text extraction failed with status: ${response.status}`);
+    }
+
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Text extraction timeout' };
+    }
+    
     return { success: false, error: error.message };
   }
 }
 
 async function organizeData(extractedText: string) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+  
   try {
     const response = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-data-organizer`,
@@ -218,17 +237,33 @@ async function organizeData(extractedText: string) {
         body: JSON.stringify({
           extracted_text: extractedText,
           context: 'erp_pdf'
-        })
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Data organization failed with status: ${response.status}`);
+    }
+
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Data organization timeout' };
+    }
+    
     return { success: false, error: error.message };
   }
 }
 
 async function formatData(organizedData: any) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  
   try {
     const response = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/proposal-formatter`,
@@ -241,17 +276,33 @@ async function formatData(organizedData: any) {
         body: JSON.stringify({
           organized_data: organizedData,
           format_type: 'drystore_proposal'
-        })
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Data formatting failed with status: ${response.status}`);
+    }
+
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Data formatting timeout' };
+    }
+    
     return { success: false, error: error.message };
   }
 }
 
 async function validateData(formattedData: any) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+  
   try {
     const response = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-validator`,
@@ -264,17 +315,33 @@ async function validateData(formattedData: any) {
         body: JSON.stringify({
           formatted_data: formattedData,
           validation_rules: 'standard'
-        })
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Data validation failed with status: ${response.status}`);
+    }
+
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Data validation timeout' };
+    }
+    
     return { success: false, error: error.message };
   }
 }
 
 async function saveData(formattedData: any, validationResult: any, userId: string) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  
   try {
     const response = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-saver`,
@@ -289,12 +356,25 @@ async function saveData(formattedData: any, validationResult: any, userId: strin
           validation_result: validationResult,
           save_type: 'proposal_draft',
           user_id: userId
-        })
+        }),
+        signal: controller.signal
       }
     );
 
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Data saving failed with status: ${response.status}`);
+    }
+
     return await response.json();
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Data saving timeout' };
+    }
+    
     return { success: false, error: error.message };
   }
 }

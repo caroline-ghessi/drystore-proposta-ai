@@ -97,16 +97,112 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     throw new Error('Adobe API credentials not configured');
   }
 
-  // Implementar lógica de extração Adobe aqui
-  // Por enquanto, retornando um mock para teste
-  return {
-    text: 'Texto extraído via Adobe PDF Services...',
-    metadata: {
-      method: 'adobe_pdf_services',
-      file_name: fileName,
-      extraction_time: new Date().toISOString()
+  console.log('🔧 Iniciando extração Adobe PDF Services...');
+  
+  try {
+    // Converter base64 para Uint8Array
+    const binaryData = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+    
+    // Fazer upload do arquivo primeiro
+    const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
+      method: 'POST',
+      headers: {
+        'X-API-Key': adobeClientId,
+        'Authorization': `Bearer ${adobeApiKey}`,
+        'Content-Type': 'application/pdf'
+      },
+      body: binaryData
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Adobe upload failed: ${uploadResponse.status}`);
     }
-  };
+
+    const uploadResult = await uploadResponse.json();
+    const assetId = uploadResult.assetID;
+    
+    console.log('📄 Arquivo enviado para Adobe, Asset ID:', assetId);
+
+    // Criar job de extração
+    const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
+      method: 'POST',
+      headers: {
+        'X-API-Key': adobeClientId,
+        'Authorization': `Bearer ${adobeApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        assetID: assetId,
+        elementsToExtract: ['text', 'tables'],
+        elementsToExtractRenditions: ['tables']
+      })
+    });
+
+    if (!extractResponse.ok) {
+      throw new Error(`Adobe extraction failed: ${extractResponse.status}`);
+    }
+
+    const extractResult = await extractResponse.json();
+    const jobId = extractResult.location.split('/').pop();
+    
+    console.log('⏳ Job de extração criado:', jobId);
+
+    // Aguardar conclusão do job (máximo 30 segundos)
+    let attempts = 0;
+    const maxAttempts = 15;
+    
+    while (attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos
+      
+      const statusResponse = await fetch(`https://pdf-services.adobe.io/operation/extractpdf/${jobId}`, {
+        headers: {
+          'X-API-Key': adobeClientId,
+          'Authorization': `Bearer ${adobeApiKey}`
+        }
+      });
+
+      const status = await statusResponse.json();
+      
+      if (status.status === 'done') {
+        console.log('✅ Extração Adobe concluída');
+        
+        // Baixar resultado
+        const resultResponse = await fetch(status.dowloadUri);
+        const resultData = await resultResponse.json();
+        
+        // Extrair texto dos elementos
+        let extractedText = '';
+        if (resultData.elements) {
+          extractedText = resultData.elements
+            .filter((elem: any) => elem.Text)
+            .map((elem: any) => elem.Text)
+            .join(' ');
+        }
+        
+        return {
+          text: extractedText,
+          metadata: {
+            method: 'adobe_pdf_services',
+            file_name: fileName,
+            extraction_time: new Date().toISOString(),
+            pages: resultData.pages?.length || 0,
+            elements: resultData.elements?.length || 0
+          }
+        };
+      } else if (status.status === 'failed') {
+        throw new Error('Adobe extraction job failed');
+      }
+      
+      attempts++;
+      console.log(`⏳ Aguardando Adobe... tentativa ${attempts}/${maxAttempts}`);
+    }
+    
+    throw new Error('Adobe extraction timeout');
+    
+  } catch (error) {
+    console.error('❌ Erro na extração Adobe:', error);
+    throw new Error(`Adobe extraction failed: ${error.message}`);
+  }
 }
 
 async function extractWithGoogleVision(fileData: string) {
@@ -116,13 +212,114 @@ async function extractWithGoogleVision(fileData: string) {
     throw new Error('Google Vision credentials not configured');
   }
 
-  // Implementar lógica de extração Google Vision aqui
-  // Por enquanto, retornando um mock para teste
-  return {
-    text: 'Texto extraído via Google Vision...',
-    metadata: {
-      method: 'google_vision',
-      extraction_time: new Date().toISOString()
+  console.log('🔧 Iniciando extração Google Vision...');
+  
+  try {
+    // Parse das credenciais
+    const credentials = JSON.parse(googleCredentials);
+    
+    // Criar token de acesso
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: await createJWT(credentials)
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    if (!accessToken) {
+      throw new Error('Failed to get Google access token');
     }
-  };
+
+    console.log('🔑 Token Google obtido com sucesso');
+
+    // Fazer OCR do PDF
+    const visionResponse = await fetch('https://vision.googleapis.com/v1/images:annotate', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        requests: [{
+          image: {
+            content: fileData
+          },
+          features: [{
+            type: 'DOCUMENT_TEXT_DETECTION',
+            maxResults: 1
+          }]
+        }]
+      })
+    });
+
+    if (!visionResponse.ok) {
+      throw new Error(`Google Vision API failed: ${visionResponse.status}`);
+    }
+
+    const visionResult = await visionResponse.json();
+    
+    if (visionResult.responses?.[0]?.error) {
+      throw new Error(`Google Vision error: ${visionResult.responses[0].error.message}`);
+    }
+
+    const extractedText = visionResult.responses?.[0]?.fullTextAnnotation?.text || '';
+    
+    console.log('✅ Extração Google Vision concluída');
+    
+    return {
+      text: extractedText,
+      metadata: {
+        method: 'google_vision',
+        extraction_time: new Date().toISOString(),
+        confidence: visionResult.responses?.[0]?.fullTextAnnotation?.confidence || 0,
+        pages: visionResult.responses?.[0]?.fullTextAnnotation?.pages?.length || 0
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ Erro na extração Google Vision:', error);
+    throw new Error(`Google Vision extraction failed: ${error.message}`);
+  }
+}
+
+async function createJWT(credentials: any): Promise<string> {
+  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const now = Math.floor(Date.now() / 1000);
+  
+  const payload = btoa(JSON.stringify({
+    iss: credentials.client_email,
+    scope: 'https://www.googleapis.com/auth/cloud-vision',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  }));
+
+  const message = `${header}.${payload}`;
+  
+  // Importar chave privada
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    new TextEncoder().encode(credentials.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  // Assinar
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    privateKey,
+    new TextEncoder().encode(message)
+  );
+
+  const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  
+  return `${message}.${signatureBase64}`;
 }
