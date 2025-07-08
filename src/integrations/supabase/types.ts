@@ -804,6 +804,84 @@ export type Database = {
           },
         ]
       }
+      pdf_processing_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          file_name: string
+          id: string
+          processing_id: string
+          stage: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          file_name: string
+          id?: string
+          processing_id: string
+          stage: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          file_name?: string
+          id?: string
+          processing_id?: string
+          stage?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      pdf_processing_metrics: {
+        Row: {
+          avg_duration_ms: number | null
+          created_at: string
+          date: string
+          error_count: number
+          id: string
+          most_common_error: string | null
+          stage: string
+          success_count: number
+          total_attempts: number
+          updated_at: string
+        }
+        Insert: {
+          avg_duration_ms?: number | null
+          created_at?: string
+          date: string
+          error_count?: number
+          id?: string
+          most_common_error?: string | null
+          stage: string
+          success_count?: number
+          total_attempts?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_duration_ms?: number | null
+          created_at?: string
+          date?: string
+          error_count?: number
+          id?: string
+          most_common_error?: string | null
+          stage?: string
+          success_count?: number
+          total_attempts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           ativo: boolean
