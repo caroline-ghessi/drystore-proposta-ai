@@ -89,33 +89,67 @@ serve(async (req) => {
 });
 
 async function extractWithAdobe(fileData: string, fileName: string) {
-  const adobeApiKey = Deno.env.get('ADOBE_PDF_API_KEY');
   const adobeClientId = Deno.env.get('ADOBE_CLIENT_ID');
   const adobeClientSecret = Deno.env.get('ADOBE_CLIENT_SECRET');
+  const adobeOrgId = Deno.env.get('ADOBE_ORG_ID');
   
-  if (!adobeApiKey || !adobeClientId || !adobeClientSecret) {
+  if (!adobeClientId || !adobeClientSecret || !adobeOrgId) {
     throw new Error('Adobe API credentials not configured');
   }
 
   console.log('🔧 Iniciando extração Adobe PDF Services...');
   
   try {
-    // Converter base64 para Uint8Array
-    const binaryData = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+    // Step 1: Get access token
+    console.log('🔐 Getting Adobe access token...');
+    const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'client_id': adobeClientId,
+        'client_secret': adobeClientSecret,
+        'grant_type': 'client_credentials',
+        'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_write_documents'
+      }).toString()
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Adobe token error:', errorText);
+      throw new Error(`Adobe authentication failed: ${tokenResponse.status} - ${errorText}`);
+    }
+
+    const { access_token } = await tokenResponse.json();
+    console.log('✅ Adobe token obtained successfully');
+
+    // Step 2: Convert and upload file
+    const uint8Array = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+    const blob = new Blob([uint8Array], { type: 'application/pdf' });
+    const file = new File([blob], fileName, { 
+      type: 'application/pdf',
+      lastModified: Date.now()
+    });
     
-    // Fazer upload do arquivo primeiro
+    const formData = new FormData();
+    formData.append('file', file, fileName);
+    
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
       headers: {
-        'X-API-Key': adobeApiKey,
-        'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`,
-        'Content-Type': 'application/pdf'
+        'Authorization': `Bearer ${access_token}`,
+        'X-API-Key': adobeClientId,
+        'X-Adobe-Organization-Id': adobeOrgId,
+        'Accept': 'application/json',
       },
-      body: binaryData
+      body: formData
     });
 
     if (!uploadResponse.ok) {
-      throw new Error(`Adobe upload failed: ${uploadResponse.status}`);
+      const errorText = await uploadResponse.text();
+      console.error('❌ Adobe upload error:', errorText);
+      throw new Error(`Adobe upload failed: ${uploadResponse.status} - ${errorText}`);
     }
 
     const uploadResult = await uploadResponse.json();
@@ -123,12 +157,13 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     
     console.log('📄 Arquivo enviado para Adobe, Asset ID:', assetId);
 
-    // Criar job de extração
+    // Step 3: Create extraction job
     const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
       method: 'POST',
       headers: {
-        'X-API-Key': adobeApiKey,
-        'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`,
+        'Authorization': `Bearer ${access_token}`,
+        'X-API-Key': adobeClientId,
+        'X-Adobe-Organization-Id': adobeOrgId,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -139,7 +174,9 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     });
 
     if (!extractResponse.ok) {
-      throw new Error(`Adobe extraction failed: ${extractResponse.status}`);
+      const errorText = await extractResponse.text();
+      console.error('❌ Adobe extraction error:', errorText);
+      throw new Error(`Adobe extraction failed: ${extractResponse.status} - ${errorText}`);
     }
 
     const extractResult = await extractResponse.json();
@@ -147,17 +184,18 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     
     console.log('⏳ Job de extração criado:', jobId);
 
-    // Aguardar conclusão do job (máximo 30 segundos)
+    // Step 4: Poll for completion
     let attempts = 0;
-    const maxAttempts = 15;
+    const maxAttempts = 20;
     
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos
       
       const statusResponse = await fetch(`https://pdf-services.adobe.io/operation/extractpdf/${jobId}`, {
         headers: {
-          'X-API-Key': adobeApiKey,
-          'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`
+          'Authorization': `Bearer ${access_token}`,
+          'X-API-Key': adobeClientId,
+          'X-Adobe-Organization-Id': adobeOrgId
         }
       });
 
