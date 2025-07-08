@@ -45,3 +45,6 @@ verify_jwt = true
 
 [functions.pdf-processing-orchestrator]
 verify_jwt = true
+
+[functions.pdf-processing-logger]
+verify_jwt = true
