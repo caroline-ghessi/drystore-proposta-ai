@@ -12,3 +12,18 @@ verify_jwt = true
 
 [functions.upload-to-adobe]
 verify_jwt = true
+
+[functions.ai-proposal-assistant]
+verify_jwt = true
+
+[functions.ai-sentiment-analysis]
+verify_jwt = true
+
+[functions.ai-dynamic-pricing]
+verify_jwt = true
+
+[functions.ai-fraud-detection]
+verify_jwt = true
+
+[functions.ai-chatbot]
+verify_jwt = true

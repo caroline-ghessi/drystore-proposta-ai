@@ -1,16 +1,97 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Bot, User, Clock } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { MessageSquare, Bot, User, Clock, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Message {
+  id: string;
+  type: 'user' | 'bot';
+  content: string;
+  timestamp: string;
+}
 
 export const ChatBot = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      type: 'bot',
+      content: 'Olá! Sou o assistente virtual da DryStore. Como posso ajudar você hoje?',
+      timestamp: new Date().toLocaleTimeString()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
   const conversations = [
     { id: 1, client: 'João Silva', status: 'ativo', messages: 12, lastMessage: '5 min atrás' },
     { id: 2, client: 'Maria Santos', status: 'resolvido', messages: 8, lastMessage: '2h atrás' },
     { id: 3, client: 'Carlos Lima', status: 'ativo', messages: 4, lastMessage: '15 min atrás' },
   ];
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage.trim(),
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chatbot', {
+        body: {
+          message: userMessage.content,
+          conversationHistory: messages.slice(-5), // Últimas 5 mensagens para contexto
+          clientContext: {
+            company: 'DryStore',
+            sector: 'construção civil',
+            products: ['drywall', 'telhas', 'estruturas']
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: data.response,
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error sending message to chatbot:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: 'Desculpe, estou com dificuldades técnicas no momento. Tente novamente em alguns instantes.',
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   return (
     <Card>
@@ -49,8 +130,56 @@ export const ChatBot = () => {
           </div>
           
           <div>
-            <h4 className="font-medium mb-3">Configurações do Bot</h4>
+            <h4 className="font-medium mb-3">Teste do Chatbot</h4>
             <div className="space-y-4">
+              <div className="border rounded-lg h-64 flex flex-col">
+                <ScrollArea className="flex-1 p-3">
+                  <div className="space-y-2">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[80%] p-2 rounded-lg text-sm ${
+                            message.type === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          <p>{message.content}</p>
+                          <p className="text-xs opacity-75 mt-1">{message.timestamp}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {isTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 p-2 rounded-lg">
+                          <p className="text-sm text-gray-600">Digitando...</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                <div className="flex gap-2 p-3 border-t">
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Digite sua mensagem..."
+                    disabled={isTyping}
+                  />
+                  <Button 
+                    onClick={sendMessage}
+                    disabled={!inputMessage.trim() || isTyping}
+                    size="sm"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
               <div className="p-3 bg-gray-50 rounded-lg">
                 <p className="font-medium text-sm mb-2">Respostas Automáticas</p>
                 <ul className="text-xs text-gray-600 space-y-1">
@@ -60,9 +189,6 @@ export const ChatBot = () => {
                   <li>✅ Agendamento de reuniões</li>
                 </ul>
               </div>
-              <Button className="w-full">
-                Configurar Respostas
-              </Button>
             </div>
           </div>
         </div>

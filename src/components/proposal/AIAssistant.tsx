@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Bot, Send, User, Lightbulb, MessageCircle, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AIMessage {
   id: string;
@@ -27,28 +28,6 @@ const AIAssistant = ({ proposalId, clientQuestions, proposalData }: AIAssistantP
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Simular respostas da IA baseadas no contexto
-  const getAIResponse = (userMessage: string): string => {
-    const responses = {
-      'preco': 'Entendo a preocupação com o preço. Destaque o valor agregado: materiais premium, garantia estendida e instalação profissional. Compare com concorrentes enfatizando a qualidade superior.',
-      'prazo': 'Para objeções sobre prazo, explique que nosso cronograma é realista e garante qualidade. Ofereça marcos intermediários para tranquilizar o cliente sobre o progresso.',
-      'garantia': 'Nossa garantia é diferenciada: 5 anos para estrutura e 2 anos para telhas. Explique que isso demonstra confiança na qualidade e reduz riscos para o cliente.',
-      'qualidade': 'Destaque nossos 22 anos de experiência e 50.000+ clientes atendidos. Mencione certificações dos materiais e case studies de projetos similares.',
-      'pagamento': 'Oferecemos flexibilidade: parcelamento em até 12x, desconto à vista ou financiamento próprio. Adapte às necessidades financeiras do cliente.',
-      'default': 'Com base na proposta e no perfil do cliente, sugiro focar nos benefícios únicos: economia a longo prazo, durabilidade superior e suporte técnico especializado.'
-    };
-
-    const lowerMessage = userMessage.toLowerCase();
-    
-    for (const [key, response] of Object.entries(responses)) {
-      if (key !== 'default' && lowerMessage.includes(key)) {
-        return response;
-      }
-    }
-    
-    return responses.default;
-  };
-
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -63,21 +42,42 @@ const AIAssistant = ({ proposalId, clientQuestions, proposalData }: AIAssistantP
     setInputMessage('');
     setIsLoading(true);
 
-    // Simular delay da IA
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-proposal-assistant', {
+        body: {
+          message: userMessage.content,
+          proposalData,
+          clientQuestions
+        }
+      });
+
+      if (error) throw error;
+
       const aiResponse: AIMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: getAIResponse(userMessage.content),
+        content: data.response,
         timestamp: new Date().toLocaleString()
       };
 
       setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('Error calling AI assistant:', error);
+      
+      const errorResponse: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: 'Desculpe, não consegui processar sua mensagem no momento. Tente novamente.',
+        timestamp: new Date().toLocaleString()
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const loadClientQuestions = () => {
+  const loadClientQuestions = async () => {
     if (clientQuestions.length === 0) {
       toast({
         title: "Nenhuma dúvida encontrada",
@@ -95,17 +95,41 @@ const AIAssistant = ({ proposalId, clientQuestions, proposalData }: AIAssistantP
     };
 
     setMessages(prev => [...prev, contextMessage]);
+    setIsLoading(true);
     
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-proposal-assistant', {
+        body: {
+          message: `Analisar dúvidas do cliente: ${clientQuestions.join(', ')}`,
+          proposalData,
+          clientQuestions
+        }
+      });
+
+      if (error) throw error;
+
       const aiResponse: AIMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `Analisei as dúvidas do cliente. Recomendo abordar cada ponto com transparência: ${getAIResponse(clientQuestions.join(' '))} Prepare respostas técnicas detalhadas e ofereça uma reunião para esclarecimentos adicionais.`,
+        content: data.response,
         timestamp: new Date().toLocaleString()
       };
 
       setMessages(prev => [...prev, aiResponse]);
-    }, 2000);
+    } catch (error) {
+      console.error('Error analyzing client questions:', error);
+      
+      const errorResponse: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: 'Não foi possível analisar as dúvidas do cliente no momento.',
+        timestamp: new Date().toLocaleString()
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const suggestedPrompts = [
