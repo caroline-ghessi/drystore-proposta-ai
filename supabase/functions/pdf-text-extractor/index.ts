@@ -107,8 +107,8 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
       method: 'POST',
       headers: {
-        'X-API-Key': adobeClientId,
-        'Authorization': `Bearer ${adobeApiKey}`,
+        'X-API-Key': adobeApiKey,
+        'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`,
         'Content-Type': 'application/pdf'
       },
       body: binaryData
@@ -127,8 +127,8 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
       method: 'POST',
       headers: {
-        'X-API-Key': adobeClientId,
-        'Authorization': `Bearer ${adobeApiKey}`,
+        'X-API-Key': adobeApiKey,
+        'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -156,8 +156,8 @@ async function extractWithAdobe(fileData: string, fileName: string) {
       
       const statusResponse = await fetch(`https://pdf-services.adobe.io/operation/extractpdf/${jobId}`, {
         headers: {
-          'X-API-Key': adobeClientId,
-          'Authorization': `Bearer ${adobeApiKey}`
+          'X-API-Key': adobeApiKey,
+          'Authorization': `Bearer ${adobeClientId}:${adobeClientSecret}`
         }
       });
 

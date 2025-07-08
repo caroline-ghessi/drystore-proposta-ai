@@ -187,7 +187,7 @@ async function extractText(fileData: string, fileName: string, options: any) {
   
   try {
     const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/pdf-text-extractor`,
+      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-text-extractor`,
       {
         method: 'POST',
         headers: {
@@ -227,7 +227,7 @@ async function organizeData(extractedText: string) {
   
   try {
     const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-data-organizer`,
+      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/ai-data-organizer`,
       {
         method: 'POST',
         headers: {
@@ -266,7 +266,7 @@ async function formatData(organizedData: any) {
   
   try {
     const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/proposal-formatter`,
+      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/proposal-formatter`,
       {
         method: 'POST',
         headers: {
@@ -305,7 +305,7 @@ async function validateData(formattedData: any) {
   
   try {
     const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-validator`,
+      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/data-validator`,
       {
         method: 'POST',
         headers: {
@@ -344,7 +344,7 @@ async function saveData(formattedData: any, validationResult: any, userId: strin
   
   try {
     const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-saver`,
+      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/data-saver`,
       {
         method: 'POST',
         headers: {

@@ -35,6 +35,8 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
   const [isAnalyzed, setIsAnalyzed] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [processingStage, setProcessingStage] = useState('');
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [lastAttemptTime, setLastAttemptTime] = useState(0);
   const { toast } = useToast();
 
   const handleDrag = (e: React.DragEvent) => {
@@ -88,8 +90,38 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
 
   const processWithAdobeAPI = async (file: File) => {
+    // Controle de debounce - evitar múltiplas tentativas muito rápidas
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastAttemptTime;
+    
+    if (timeSinceLastAttempt < 5000 && attemptCount > 0) { // 5 segundos entre tentativas
+      toast({
+        title: "Aguarde um momento",
+        description: `Por favor, aguarde ${Math.ceil((5000 - timeSinceLastAttempt) / 1000)} segundos antes de tentar novamente.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Incrementar contador de tentativas
+    const newAttemptCount = attemptCount + 1;
+    setAttemptCount(newAttemptCount);
+    setLastAttemptTime(now);
+    
+    if (newAttemptCount > 3) {
+      toast({
+        title: "Muitas tentativas",
+        description: "Você excedeu o limite de tentativas. Recarregue a página para tentar novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
-    setProcessingStage('Iniciando extração de dados...');
+    setProcessingStage(`Iniciando extração de dados... (Tentativa ${newAttemptCount}/3)`);
+
+    const processingId = crypto.randomUUID();
+    console.log(`🚀 [${processingId}] Iniciando processamento - Tentativa ${newAttemptCount}`);
 
     try {
       // Validação prévia do tamanho do arquivo
@@ -102,6 +134,9 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       if (!session) {
         throw new Error('Usuário não autenticado');
       }
+
+      // Log inicial
+      await logProcessingStep(processingId, session.user.id, file.name, 'started', 'Processamento iniciado', null, null);
 
       setProcessingStage('Preparando arquivo para extração...');
       
@@ -248,10 +283,13 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       } else if (errorMessage.includes('Adobe indisponível') || 
                  errorMessage.includes('Adobe PDF Services não configurado')) {
         
-        // Neste caso, o processamento local pode ter funcionado
-        // Não mostrar erro ainda, vamos aguardar o resultado
-        console.log('⚠️ Adobe indisponível, aguardando fallback local...');
-        return; // Não mostrar erro ainda
+        // Tentar fallback local imediato
+        console.log('⚠️ Adobe indisponível, tentando fallback local...');
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession) {
+          await attemptLocalFallback(file, currentSession.user.id, processingId);
+        }
+        return;
         
       } else {
         // Outros tipos de erro
@@ -287,6 +325,96 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     setIsAnalyzed(false);
     setExtractedData(null);
     setProcessingStage('');
+    setAttemptCount(0);
+    setLastAttemptTime(0);
+  };
+
+  // Log de processamento estruturado
+  const logProcessingStep = async (processingId: string, userId: string, fileName: string, status: string, stage: string, duration: number | null, errorMessage: string | null) => {
+    try {
+      await supabase.functions.invoke('pdf-processing-logger', {
+        body: {
+          processing_id: processingId,
+          user_id: userId,
+          file_name: fileName,
+          stage,
+          status,
+          duration,
+          error_message: errorMessage,
+          details: { attempt_count: attemptCount + 1 }
+        }
+      });
+    } catch (error) {
+      console.error('❌ Falha ao registrar log:', error);
+    }
+  };
+
+  // Fallback local quando Adobe não está disponível
+  const attemptLocalFallback = async (file: File, userId: string, processingId: string) => {
+    try {
+      setProcessingStage('Processando com método local...');
+      
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      const response = await fetch(
+        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            pdfBuffer: fileBase64,
+            fileName: file.name,
+            fileSize: file.size
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const fallbackData = {
+            client: result.data.client || 'Cliente não identificado',
+            proposalNumber: result.data.proposalNumber || 'N/A',
+            vendor: result.data.vendor || 'N/A',  
+            items: result.data.items || [],
+            subtotal: result.data.subtotal || 0,
+            total: result.data.total || 0,
+            paymentTerms: result.data.paymentTerms || 'N/A',
+            delivery: 'N/A'
+          };
+
+          setExtractedData(fallbackData);
+          setIsAnalyzed(true);
+          setIsProcessing(false);
+
+          await logProcessingStep(processingId, userId, file.name, 'success', 'fallback_local', Date.now(), null);
+
+          toast({
+            title: "✅ PDF processado com método local",
+            description: `${fallbackData.items.length} itens extraídos via processamento local.`,
+          });
+          return;
+        }
+      }
+      
+      throw new Error('Fallback local também falhou');
+      
+    } catch (error) {
+      console.error('❌ Fallback local falhou:', error);
+      await logProcessingStep(processingId, userId, file.name, 'error', 'fallback_local', null, error.message);
+      
+      setIsProcessing(false);
+      toast({
+        title: "Erro no processamento",
+        description: "Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -337,9 +465,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
               <FileText className="w-8 h-8 text-drystore-blue mr-3" />
               <div className="flex-1">
                 <p className="font-medium text-gray-900">{uploadedFile.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
+                 <p className="text-sm text-gray-500">
+                   {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
+                   {attemptCount > 0 && ` • Tentativa ${attemptCount}/3`}
+                 </p>
               </div>
               {isProcessing && (
                 <div className="flex items-center text-blue-600">
