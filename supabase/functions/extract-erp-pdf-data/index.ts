@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { GoogleVisionERPProcessor } from './main-processor.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,115 +12,66 @@ serve(async (req) => {
   }
 
   try {
-    console.log('📄 Processing ERP PDF with Google Vision API - Direct Upload Mode')
+    console.log('🔄 ERP PDF Processing - Redirecting to Adobe PDF Services')
+    console.log('📄 Request method:', req.method)
+    console.log('📄 Content-Type:', req.headers.get('content-type'))
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // NOVA LÓGICA: Detectar se é FormData ou JSON
-    let pdfFile: File;
-    let fileName: string;
-    let fileSize: number;
-
-    const contentType = req.headers.get('content-type') || '';
-    
-    if (contentType.includes('multipart/form-data')) {
-      // UPLOAD DIRETO VIA FORMDATA - Evita problemas de stack overflow
-      console.log('📄 Processing FormData upload...');
-      const formData = await req.formData();
-      
-      const file = formData.get('file') as File;
-      fileName = formData.get('fileName') as string || file.name;
-      fileSize = parseInt(formData.get('fileSize') as string) || file.size;
-      
-      if (!file || !fileName) {
-        throw new Error('File and filename are required in FormData');
-      }
-      
-      pdfFile = file;
-      console.log('📄 FormData PDF received:', fileName, 'Size:', fileSize);
-      
-    } else {
-      // FALLBACK: Método antigo com base64 (apenas para arquivos muito pequenos)
-      console.log('📄 Processing JSON with base64...');
-      const { pdfBuffer, fileName: jsonFileName, fileSize: jsonFileSize } = await req.json();
-      
-      if (!pdfBuffer || !jsonFileName) {
-        throw new Error('PDF buffer and filename are required');
-      }
-
-      fileName = jsonFileName;
-      fileSize = jsonFileSize;
-      
-      // Converter o buffer base64 de volta para Uint8Array
-      const pdfData = new Uint8Array(atob(pdfBuffer).split('').map(char => char.charCodeAt(0)));
-      pdfFile = new File([pdfData], fileName, { type: 'application/pdf' });
-      
-      console.log('📄 Base64 PDF converted:', fileName, 'Size:', fileSize);
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
+    if (!authHeader) {
+      console.log('❌ Missing authorization header')
+      throw new Error('Authorization header required')
     }
 
-    // Validação de tamanho (limite mais rigoroso para evitar stack overflow)
-    if (fileSize > 2 * 1024 * 1024) {
-      throw new Error('File size exceeds 2MB limit - use smaller files to avoid processing issues');
-    }
+    console.log('✅ Authorization found, forwarding to Adobe PDF Services...')
 
-    console.log('📄 PDF file prepared:', fileName, 'Size:', fileSize);
+    // Forward directly to extract-pdf-data (Adobe PDF Services)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const adobeEndpoint = `${supabaseUrl}/functions/v1/extract-pdf-data`
+    
+    console.log('📤 Forwarding to:', adobeEndpoint)
 
-    // PROCESSAMENTO COM GOOGLE VISION API
-    console.log('🤖 Starting ERP PDF processing with Google Vision...')
-    const googleCredentials = Deno.env.get('GOOGLE_CLOUD_CREDENTIALS')
-    const googleProjectId = Deno.env.get('GOOGLE_CLOUD_PROJECT_ID')
-    
-    console.log('🔑 Google Cloud credentials status:', { 
-      hasCredentials: !!googleCredentials, 
-      hasProjectId: !!googleProjectId,
-      projectId: googleProjectId
-    });
-    
-    const processor = new GoogleVisionERPProcessor(googleCredentials || '', googleProjectId || '')
-    const parsedData = await processor.processERPFile(pdfFile, fileName)
-
-    // Determinar o tipo de processamento baseado na qualidade dos dados
-    let processorType = 'intelligent-fallback';
-    if (googleCredentials && googleProjectId) {
-      // Verificar se os dados parecem ter sido extraídos com sucesso (não são apenas fallback)
-      if (parsedData.client !== 'Cliente não identificado' && parsedData.items.length > 0) {
-        processorType = 'google-vision-api';
-      } else if (parsedData.proposalNumber && parsedData.proposalNumber !== 'N/A') {
-        processorType = 'direct-text-extraction';
-      }
-    }
-    
-    console.log('✅ ERP Processing completed:', {
-      processor: processorType,
-      client: parsedData.client,
-      vendor: parsedData.vendor,
-      items_count: parsedData.items?.length || 0,
-      total: parsedData.total,
-      credentialsAvailable: !!(googleCredentials && googleProjectId)
+    // Forward the entire request to Adobe PDF Services
+    const forwardResponse = await fetch(adobeEndpoint, {
+      method: req.method,
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': req.headers.get('content-type') || 'multipart/form-data'
+      },
+      body: req.body
     })
 
+    const responseData = await forwardResponse.json()
+    
+    console.log('✅ Adobe PDF Services response:', {
+      success: responseData.success,
+      method: responseData.method,
+      hasData: !!responseData.data,
+      itemsCount: responseData.data?.items?.length || 0
+    })
+
+    // Return the Adobe response with consistent format
     return new Response(
       JSON.stringify({
-        success: true,
-        data: parsedData,
-        processor: processorType
+        success: responseData.success,
+        data: responseData.data,
+        processor: 'adobe-pdf-services',
+        method: responseData.method || 'Adobe PDF Services'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+        status: forwardResponse.status
       }
     )
 
   } catch (error) {
-    console.error('❌ Error processing ERP PDF:', error)
+    console.error('❌ Error in ERP PDF processing:', error)
     
     return new Response(
       JSON.stringify({
         error: error.message,
         success: false,
+        processor: 'error',
         details: error.stack
       }),
       {
