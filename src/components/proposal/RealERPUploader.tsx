@@ -187,7 +187,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       
       const response = await Promise.race([
         fetch(
-          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
+          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
           {
             method: 'POST',
             headers: {
