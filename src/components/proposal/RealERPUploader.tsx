@@ -35,41 +35,44 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
   const [isAnalyzed, setIsAnalyzed] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [processingStage, setProcessingStage] = useState('');
-  const [attemptCount, setAttemptCount] = useState(0);
-  const [lastAttemptTime, setLastAttemptTime] = useState(0);
-  const [isProcessingInProgress, setIsProcessingInProgress] = useState(false);
   const [processingStartTime, setProcessingStartTime] = useState(0);
   const [canCancel, setCanCancel] = useState(false);
-  const [fallbackAttempted, setFallbackAttempted] = useState(false); // NOVO: Flag para controle único de fallback
+  
+  // CONTROLE GLOBAL ÚNICO - Impede QUALQUER nova tentativa
+  const [isGloballyProcessing, setIsGloballyProcessing] = useState(false);
+  const [currentProcessingId, setCurrentProcessingId] = useState('');
+  const [maxAttempts] = useState(1); // APENAS 1 tentativa para eliminar recursão
+  
   const { toast } = useToast();
 
-  // Forçar reset para estados travados
+  // RESET GLOBAL - Limpa TODOS os estados e mutex
   const forceReset = () => {
-    console.log('🔄 Forçando reset do estado');
+    console.log('🔄 RESET GLOBAL - Limpando todos os estados e mutex');
     setUploadedFile(null);
     setIsProcessing(false);
     setIsAnalyzed(false);
     setExtractedData(null);
     setProcessingStage('');
-    setAttemptCount(0);
-    setLastAttemptTime(0);
-    setIsProcessingInProgress(false);
     setProcessingStartTime(0);
     setCanCancel(false);
-    setFallbackAttempted(false); // NOVO: Reset do controle de fallback
+    
+    // CRÍTICO: Limpar controle global
+    setIsGloballyProcessing(false);
+    setCurrentProcessingId('');
+    
     toast({
       title: "Sistema resetado",
-      description: "O processamento foi resetado devido a um travamento.",
+      description: "O processamento foi resetado completamente.",
     });
   };
 
-  // Auto-reset para estados travados (15 segundos - mais agressivo)
+  // CIRCUIT BREAKER - Auto-reset mais agressivo (15 segundos)
   useEffect(() => {
     const checkStuckState = () => {
-      if (isProcessingInProgress && processingStartTime > 0) {
+      if (isGloballyProcessing && processingStartTime > 0) {
         const elapsed = Date.now() - processingStartTime;
-        if (elapsed > 15000) { // 15 segundos (reduzido de 30s)
-          console.log('🔄 Auto-reset: Estado travado detectado');
+        if (elapsed > 15000) { // 15 segundos - mais agressivo
+          console.log('🔄 CIRCUIT BREAKER: Estado travado detectado após 15s');
           forceReset();
         }
       }
@@ -77,7 +80,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     
     const interval = setInterval(checkStuckState, 2000); // Verificar a cada 2s
     return () => clearInterval(interval);
-  }, [isProcessingInProgress, processingStartTime, forceReset]);
+  }, [isGloballyProcessing, processingStartTime]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -125,86 +128,63 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     }
 
     setUploadedFile(file);
-    await processWithDirectExtraction(file); // NOVO: Tentar processamento direto primeiro
+    await processFile(file); // NOVO: Função coordenadora única
   };
 
 
-  // NOVO: Processamento direto como primeira opção (mais rápido e simples)
-  const processWithDirectExtraction = async (file: File) => {
-    // Evitar múltiplas execuções simultâneas
-    if (isProcessingInProgress) {
-      console.log('⚠️ Processamento já em andamento, ignorando nova tentativa');
-      return;
-    }
-
-    // Controle de debounce - evitar múltiplas tentativas muito rápidas
-    const now = Date.now();
-    const timeSinceLastAttempt = now - lastAttemptTime;
-    
-    if (timeSinceLastAttempt < 3000 && attemptCount > 0) { // 3 segundos entre tentativas
+  // COORDENADOR ÚNICO - Elimina recursão completamente
+  const processFile = async (file: File) => {
+    // MUTEX GLOBAL - Impede qualquer nova tentativa
+    if (isGloballyProcessing) {
+      console.log('⚠️ MUTEX: Processamento já em andamento globalmente');
       toast({
-        title: "Aguarde um momento",
-        description: `Por favor, aguarde ${Math.ceil((3000 - timeSinceLastAttempt) / 1000)} segundos antes de tentar novamente.`,
+        title: "Processamento em andamento",
+        description: "Aguarde o processamento atual terminar.",
         variant: "destructive"
       });
       return;
     }
 
-    // Incrementar contador de tentativas
-    const newAttemptCount = attemptCount + 1;
-    setAttemptCount(newAttemptCount);
-    setLastAttemptTime(now);
-    
-    if (newAttemptCount > 2) { // Reduzido de 3 para 2 tentativas
+    // Validações básicas
+    if (file.size > 10 * 1024 * 1024) {
       toast({
-        title: "Muitas tentativas",
-        description: "Você excedeu o limite de tentativas. Recarregue a página para tentar novamente.",
+        title: "Arquivo muito grande",
+        description: "O arquivo deve ter no máximo 10MB.",
         variant: "destructive"
       });
       return;
     }
 
-    // Marcar como processando
-    setIsProcessingInProgress(true);
+    // ATIVAR MUTEX GLOBAL
+    const processingId = crypto.randomUUID();
+    setIsGloballyProcessing(true);
+    setCurrentProcessingId(processingId);
     setIsProcessing(true);
     setProcessingStartTime(Date.now());
     setCanCancel(true);
-    setProcessingStage(`Iniciando processamento direto... (Tentativa ${newAttemptCount}/2)`);
 
-    const processingId = crypto.randomUUID();
-    console.log(`🚀 [${processingId}] Iniciando processamento direto - Tentativa ${newAttemptCount}`);
+    console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // Timeout reduzido para 45 segundos total
+    // TIMEOUT ABSOLUTO DE 30 SEGUNDOS
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 45 segundos')), 45 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 30 segundos')), 30 * 1000);
     });
 
     try {
-      // Validação prévia do tamanho do arquivo
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Arquivo muito grande. O tamanho máximo é 10MB.');
-      }
-
-      // Obter token de autenticação do Supabase
+      // Obter session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Usuário não autenticado');
       }
 
-      // Log inicial
-      await logProcessingStep(processingId, session.user.id, file.name, 'started', 'Processamento direto iniciado', null, null);
-
-      console.log('📤 Tentando processamento direto primeiro');
-      console.log('📄 Arquivo:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
-
-      // Converter arquivo para base64
+      // Converter arquivo
       const arrayBuffer = await file.arrayBuffer();
       const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      setProcessingStage('Processando com método direto...');
 
-      // Primeira tentativa: processamento direto (mais rápido)
-      const directResponse = await Promise.race([
+      // TENTATIVA ÚNICA - extract-erp-pdf-data apenas
+      setProcessingStage('Processando PDF com método otimizado...');
+      
+      const response = await Promise.race([
         fetch(
           `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
           {
@@ -223,10 +203,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         timeoutPromise
       ]) as Response;
 
-      console.log('📨 Direct response status:', directResponse.status);
+      console.log(`📨 [${processingId}] Response status:`, response.status);
 
-      if (directResponse.ok) {
-        const result = await directResponse.json();
+      if (response.ok) {
+        const result = await response.json();
         
         if (result.success && result.data) {
           const extractedData = {
@@ -243,36 +223,59 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           setExtractedData(extractedData);
           setIsAnalyzed(true);
 
-          await logProcessingStep(processingId, session.user.id, file.name, 'success', 'processamento_direto', Date.now(), null);
+          console.log(`✅ [${processingId}] Processamento bem-sucedido:`, {
+            items_count: extractedData.items.length,
+            total: extractedData.total
+          });
 
           toast({
             title: "🚀 PDF processado com sucesso!",
-            description: `${extractedData.items.length} itens extraídos via processamento direto.`,
+            description: `${extractedData.items.length} itens extraídos.`,
           });
+          
           return;
         }
       }
 
-      // Se processamento direto falhou, tentar Adobe como fallback
-      console.log('⚠️ Processamento direto falhou, tentando Adobe...');
-      setProcessingStage('Processamento direto falhou - Tentando Adobe...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return await processWithAdobeAPI(file, session, processingId);
+      // Se chegou aqui, falhou
+      throw new Error('Processamento falhou - dados não extraídos');
 
     } catch (error) {
-      console.error('❌ Error in direct processing:', error);
+      console.error(`❌ [${processingId}] Erro no processamento:`, error);
       
       const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       
-      // Se timeout, tentar Adobe como fallback
+      // FALLBACK BÁSICO - Dados mínimos para evitar travamento total
       if (errorMessage.includes('Timeout') || errorMessage.includes('timeout')) {
-        console.log('⏱️ Timeout no processamento direto, tentando Adobe...');
-        setProcessingStage('Timeout direto - Tentando Adobe...');
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession) {
-          return await processWithAdobeAPI(file, currentSession, processingId);
-        }
+        console.log(`⏱️ [${processingId}] Timeout - Gerando dados mínimos`);
+        
+        const fallbackData = {
+          client: 'Cliente não identificado',
+          proposalNumber: 'N/A',
+          vendor: 'N/A',
+          items: [{
+            description: 'Item não identificado - Revisar manualmente',
+            quantity: 1,
+            unit: 'un',
+            unitPrice: 0,
+            total: 0
+          }],
+          subtotal: 0,
+          total: 0,
+          paymentTerms: 'A definir',
+          delivery: 'A definir'
+        };
+
+        setExtractedData(fallbackData);
+        setIsAnalyzed(true);
+
+        toast({
+          title: "⚠️ Processamento com limitações",
+          description: "PDF processado parcialmente. Revise os dados antes de prosseguir.",
+          variant: "destructive"
+        });
+        
+        return;
       }
       
       toast({
@@ -282,158 +285,18 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       });
       
     } finally {
-      // Limpar estados sempre
+      // LIBERAR MUTEX SEMPRE
+      console.log(`🔓 [${processingId}] Liberando mutex global`);
+      setIsGloballyProcessing(false);
+      setCurrentProcessingId('');
       setIsProcessing(false);
-      setIsProcessingInProgress(false);
       setCanCancel(false);
       setProcessingStartTime(0);
     }
   };
 
-  const processWithAdobeAPI = async (file: File, session?: any, processingId?: string) => {
-    // Se não recebeu session, obter nova
-    if (!session) {
-      const { data: { session: newSession } } = await supabase.auth.getSession();
-      if (!newSession) {
-        throw new Error('Usuário não autenticado');
-      }
-      session = newSession;
-    }
-
-    // Se não recebeu processingId, criar novo
-    if (!processingId) {
-      processingId = crypto.randomUUID();
-    }
-
-    console.log(`🚀 [${processingId}] Iniciando processamento Adobe como fallback`);
-
-    setProcessingStage('Tentando Adobe PDF Services...');
-    
-    // Converter arquivo para base64
-    const arrayBuffer = await file.arrayBuffer();
-    const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    
-    // Timeout reduzido para 30 segundos para Adobe
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Adobe excedeu 30 segundos')), 30 * 1000);
-    });
-
-    // Executar processamento com timeout
-    const response = await Promise.race([
-      fetch(
-        `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-processing-orchestrator`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            file_data: fileBase64,
-            file_name: file.name,
-            user_id: session.user.id,
-            processing_options: {
-              extraction_method: 'adobe'
-            }
-          }),
-        }
-      ),
-      timeoutPromise
-    ]) as Response;
-
-    console.log('📨 Adobe response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Erro de conexão' }));
-      console.error('❌ Adobe extraction error:', errorData);
-      
-      // Determinar tipo de erro
-      const errorMessage = errorData.error || errorData.technical_details || 'Falha na extração de dados';
-      console.log('🔍 Analisando tipo de erro:', errorMessage);
-      
-      // Se for erro de configuração Adobe, tentar fallback local DIRETAMENTE
-      if (errorMessage.includes('Adobe') || errorMessage.includes('credentials') || 
-          errorMessage.includes('authentication') || errorMessage.includes('401')) {
-        console.log('⚠️ Erro de configuração Adobe detectado, tentando fallback local...');
-        setProcessingStage('Adobe indisponível - Tentando processamento local...');
-        
-        // Dar um tempo para o usuário ver a mensagem
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Tentar fallback local SEM recursão
-        return await attemptLocalFallback(file, session.user.id, processingId);
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
-    console.log('📊 Resultado Adobe:', result);
-
-    if (!result.success) {
-      // Se Adobe falhou, tentar fallback local
-      console.log('⚠️ Adobe processamento falhou, tentando fallback local...');
-      setProcessingStage('Processamento Adobe falhou - Tentando método local...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return await attemptLocalFallback(file, session.user.id, processingId);
-    }
-
-    // Sucesso Adobe - processar resultado
-    const proposalData = result.data.formatted_data;
-    const confidenceScore = result.final_confidence_score;
-    const processingLog = result.processing_log;
-    
-    console.log('✅ Processamento modular bem-sucedido:', {
-      confidence_score: confidenceScore,
-      items_count: result.data.items_count,
-      proposal_id: result.data.proposal_id,
-      stages: processingLog.stages.map(s => `${s.stage}: ${s.success ? '✅' : '❌'}`)
-    });
-
-    // Converter para formato esperado pelo componente
-    const extractedData = {
-      client: proposalData.client_name || 'Cliente não identificado',
-      proposalNumber: proposalData.proposal_number || 'N/A',
-      vendor: proposalData.vendor_name || 'N/A',
-      items: proposalData.items || [],
-      subtotal: proposalData.subtotal || 0,
-      total: proposalData.valor_total || 0,
-      paymentTerms: proposalData.observacoes || 'N/A',
-      delivery: 'N/A'
-    };
-
-    setExtractedData(extractedData);
-    setIsAnalyzed(true);
-    
-    // Feedback baseado no processamento modular
-    let processingIcon = '✅';
-    let processingTitle = '';
-    let processingMessage = '';
-    
-    if (confidenceScore >= 90) {
-      processingIcon = '🚀';
-      processingTitle = 'PDF processado com alta precisão!';
-      processingMessage = `${result.data.items_count} itens extraídos com confiança de ${confidenceScore}%.`;
-    } else if (confidenceScore >= 70) {
-      processingIcon = '⚙️';
-      processingTitle = 'PDF processado com boa precisão!';
-      processingMessage = `${result.data.items_count} itens extraídos com confiança de ${confidenceScore}%.`;
-    } else if (confidenceScore >= 50) {
-      processingIcon = '🔍';
-      processingTitle = 'PDF processado com precisão moderada!';
-      processingMessage = `${result.data.items_count} itens extraídos. Revise os dados antes de prosseguir.`;
-    } else {
-      processingIcon = '⚠️';
-      processingTitle = 'PDF processado com baixa precisão!';
-      processingMessage = `${result.data.items_count} itens extraídos. Recomenda-se revisão manual.`;
-    }
-
-    toast({
-      title: `${processingIcon} ${processingTitle}`,
-      description: processingMessage,
-    });
-
-  };
+  // FUNÇÕES ANTIGAS REMOVIDAS - Evita recursão completamente
+  // processWithAdobeAPI e attemptLocalFallback foram eliminadas para evitar calls em cadeia
 
   const handlePreview = () => {
     if (extractedData) {
@@ -447,140 +310,34 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     setIsAnalyzed(false);
     setExtractedData(null);
     setProcessingStage('');
-    setAttemptCount(0);
-    setLastAttemptTime(0);
-    setIsProcessingInProgress(false);
     setProcessingStartTime(0);
     setCanCancel(false);
-    setFallbackAttempted(false); // NOVO: Reset do controle de fallback
+    
+    // LIMPAR MUTEX GLOBAL
+    setIsGloballyProcessing(false);
+    setCurrentProcessingId('');
   };
 
 
   // Cancelar processamento
   const cancelProcessing = () => {
-    console.log('❌ Cancelando processamento pelo usuário');
+    console.log(`❌ [${currentProcessingId}] Cancelando processamento pelo usuário`);
     setIsProcessing(false);
-    setIsProcessingInProgress(false);
     setCanCancel(false);
     setProcessingStage('');
+    
+    // LIBERAR MUTEX GLOBAL
+    setIsGloballyProcessing(false);
+    setCurrentProcessingId('');
+    
     toast({
       title: "Processamento cancelado",
       description: "O processamento foi cancelado pelo usuário.",
     });
   };
 
-  // Log de processamento estruturado
-  const logProcessingStep = async (processingId: string, userId: string, fileName: string, status: string, stage: string, duration: number | null, errorMessage: string | null) => {
-    try {
-      await supabase.functions.invoke('pdf-processing-logger', {
-        body: {
-          processing_id: processingId,
-          user_id: userId,
-          file_name: fileName,
-          stage,
-          status,
-          duration,
-          error_message: errorMessage,
-          details: { attempt_count: attemptCount + 1 }
-        }
-      });
-    } catch (error) {
-      console.error('❌ Falha ao registrar log:', error);
-    }
-  };
-
-  // Fallback local quando Adobe não está disponível (CONTROLE ÚNICO)
-  const attemptLocalFallback = async (file: File, userId: string, processingId: string) => {
-    // NOVO: Controle único de fallback para evitar loops infinitos
-    if (fallbackAttempted) {
-      console.log('⚠️ Fallback já foi tentado, evitando nova tentativa');
-      toast({
-        title: "Erro no processamento",
-        description: "Não foi possível processar o PDF após múltiplas tentativas.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setFallbackAttempted(true); // Marcar como tentado
-    
-    try {
-      setProcessingStage('Processando com método local...');
-      
-      const arrayBuffer = await file.arrayBuffer();
-      const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      // Timeout reduzido para 15 segundos para fallback local
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout: Fallback excedeu 15 segundos')), 15 * 1000);
-      });
-
-      const response = await Promise.race([
-        fetch(
-          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-erp-pdf-data`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              pdfBuffer: fileBase64,
-              fileName: file.name,
-              fileSize: file.size
-            }),
-          }
-        ),
-        timeoutPromise
-      ]) as Response;
-
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          const fallbackData = {
-            client: result.data.client || 'Cliente não identificado',
-            proposalNumber: result.data.proposalNumber || 'N/A',
-            vendor: result.data.vendor || 'N/A',  
-            items: result.data.items || [],
-            subtotal: result.data.subtotal || 0,
-            total: result.data.total || 0,
-            paymentTerms: result.data.paymentTerms || 'N/A',
-            delivery: 'N/A'
-          };
-
-          setExtractedData(fallbackData);
-          setIsAnalyzed(true);
-          setIsProcessing(false);
-          setIsProcessingInProgress(false);
-          setCanCancel(false);
-
-          await logProcessingStep(processingId, userId, file.name, 'success', 'fallback_local', Date.now(), null);
-
-          toast({
-            title: "✅ PDF processado com método local",
-            description: `${fallbackData.items.length} itens extraídos via processamento local.`,
-          });
-          return;
-        }
-      }
-      
-      throw new Error('Fallback local também falhou');
-      
-    } catch (error) {
-      console.error('❌ Fallback local falhou:', error);
-      await logProcessingStep(processingId, userId, file.name, 'error', 'fallback_local', null, error.message);
-      
-      setIsProcessing(false);
-      setIsProcessingInProgress(false);
-      setCanCancel(false);
-      toast({
-        title: "Erro no processamento",
-        description: "Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.",
-        variant: "destructive"
-      });
-    }
-  };
+  // REMOVIDO: Todas as funções auxiliares que causavam recursão foram eliminadas
+  // O processamento agora é feito apenas pela função processFile() de forma linear
 
   return (
     <Card className="border-0 shadow-lg">
@@ -632,7 +389,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
                 <p className="font-medium text-gray-900">{uploadedFile.name}</p>
                  <p className="text-sm text-gray-500">
                    {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB
-                   {attemptCount > 0 && ` • Tentativa ${attemptCount}/3`}
+                   {currentProcessingId && ` • ID: ${currentProcessingId.slice(0, 8)}`}
                  </p>
               </div>
               {isProcessing && (
@@ -713,8 +470,8 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
                 >
                   Enviar Outro Arquivo
                 </Button>
-                
-                {isProcessingInProgress && (
+                 
+                {isGloballyProcessing && (
                   <Button 
                     variant="outline" 
                     onClick={forceReset}
