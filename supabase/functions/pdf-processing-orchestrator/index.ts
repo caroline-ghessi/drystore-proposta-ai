@@ -183,7 +183,7 @@ serve(async (req) => {
 
 async function extractText(fileData: string, fileName: string, options: any) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout (reduzido)
   
   try {
     const response = await fetch(
@@ -223,7 +223,7 @@ async function extractText(fileData: string, fileName: string, options: any) {
 
 async function organizeData(extractedText: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout (reduzido)
   
   try {
     const response = await fetch(
