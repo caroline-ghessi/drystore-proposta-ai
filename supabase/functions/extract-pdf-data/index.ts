@@ -143,6 +143,116 @@ serve(async (req) => {
     console.log(`🔄 [${requestId}] Attempting smart fallback with real text extraction...`);
     
     try {
+      // Funções auxiliares para extração de texto
+      function extractClientFromText(text: string): string | null {
+        const clientPatterns = [
+          /cliente[\s\:]+([A-Za-z\s]+)/i,
+          /razão social[\s\:]+([A-Za-z\s]+)/i,
+          /empresa[\s\:]+([A-Za-z\s]+)/i,
+          /para[\s\:]+([A-Za-z\s]+)/i
+        ];
+        
+        for (const pattern of clientPatterns) {
+          const match = text.match(pattern);
+          if (match && match[1]) {
+            return match[1].trim().substring(0, 50);
+          }
+        }
+        return null;
+      }
+      
+      function extractVendorFromText(text: string): string | null {
+        const vendorPatterns = [
+          /fornecedor[\s\:]+([A-Za-z\s]+)/i,
+          /de[\s\:]+([A-Za-z\s]+)/i,
+          /empresa emitente[\s\:]+([A-Za-z\s]+)/i
+        ];
+        
+        for (const pattern of vendorPatterns) {
+          const match = text.match(pattern);
+          if (match && match[1]) {
+            return match[1].trim().substring(0, 50);
+          }
+        }
+        return null;
+      }
+      
+      function extractProposalNumberFromText(text: string): string | null {
+        const numberPatterns = [
+          /proposta[\s\#\:]*(\d+)/i,
+          /orçamento[\s\#\:]*(\d+)/i,
+          /número[\s\#\:]*(\d+)/i,
+          /n[º°][\s]*(\d+)/i
+        ];
+        
+        for (const pattern of numberPatterns) {
+          const match = text.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        return null;
+      }
+      
+      function extractPaymentTermsFromText(text: string): string | null {
+        const paymentPatterns = [
+          /pagamento[\s\:]+([^\.]+)/i,
+          /prazo[\s\:]+([^\.]+)/i,
+          /condições[\s\:]+([^\.]+)/i
+        ];
+        
+        for (const pattern of paymentPatterns) {
+          const match = text.match(pattern);
+          if (match && match[1]) {
+            return match[1].trim().substring(0, 100);
+          }
+        }
+        return null;
+      }
+      
+      function extractItemsFromText(text: string, fileName: string): Array<{
+        description: string;
+        quantity: number;
+        unit: string;
+        unitPrice: number;
+        total: number;
+      }> {
+        const items = [];
+        
+        // Procurar por padrões de valores monetários
+        const moneyPattern = /R?\$?\s*(\d+[,\.]\d{2})/g;
+        const moneyMatches = text.match(moneyPattern) || [];
+        
+        // Se encontrou valores, criar itens genéricos
+        if (moneyMatches.length > 0) {
+          moneyMatches.slice(0, 5).forEach((match, index) => {
+            const value = parseFloat(match.replace(/[R\$\s]/g, '').replace(',', '.'));
+            if (value > 0) {
+              items.push({
+                description: `Item ${index + 1} (extraído automaticamente)`,
+                quantity: 1,
+                unit: 'un',
+                unitPrice: value,
+                total: value
+              });
+            }
+          });
+        }
+        
+        // Se não encontrou itens, criar um item genérico
+        if (items.length === 0) {
+          items.push({
+            description: `Serviço/produto referente ao arquivo: ${fileName}`,
+            quantity: 1,
+            unit: 'un',
+            unitPrice: 0,
+            total: 0
+          });
+        }
+        
+        return items;
+      }
+
       // Extrair texto básico do PDF usando uma abordagem mais simples
       const arrayBuffer = await file.arrayBuffer();
       const pdfBytes = new Uint8Array(arrayBuffer);
@@ -268,120 +378,4 @@ serve(async (req) => {
       );
     }
   }
-
-// Funções auxiliares para extração de texto
-function extractClientFromText(text: string): string | null {
-  // Procurar por padrões de cliente
-  const clientPatterns = [
-    /cliente[\s\:]+([A-Za-z\s]+)/i,
-    /razão social[\s\:]+([A-Za-z\s]+)/i,
-    /empresa[\s\:]+([A-Za-z\s]+)/i,
-    /para[\s\:]+([A-Za-z\s]+)/i
-  ];
-  
-  for (const pattern of clientPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 50);
-    }
-  }
-  return null;
-}
-
-function extractVendorFromText(text: string): string | null {
-  // Procurar por padrões de fornecedor
-  const vendorPatterns = [
-    /fornecedor[\s\:]+([A-Za-z\s]+)/i,
-    /de[\s\:]+([A-Za-z\s]+)/i,
-    /empresa emitente[\s\:]+([A-Za-z\s]+)/i
-  ];
-  
-  for (const pattern of vendorPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 50);
-    }
-  }
-  return null;
-}
-
-function extractProposalNumberFromText(text: string): string | null {
-  // Procurar por números de proposta/orçamento
-  const numberPatterns = [
-    /proposta[\s\#\:]*(\d+)/i,
-    /orçamento[\s\#\:]*(\d+)/i,
-    /número[\s\#\:]*(\d+)/i,
-    /n[º°][\s]*(\d+)/i
-  ];
-  
-  for (const pattern of numberPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  return null;
-}
-
-function extractPaymentTermsFromText(text: string): string | null {
-  // Procurar por condições de pagamento
-  const paymentPatterns = [
-    /pagamento[\s\:]+([^\.]+)/i,
-    /prazo[\s\:]+([^\.]+)/i,
-    /condições[\s\:]+([^\.]+)/i
-  ];
-  
-  for (const pattern of paymentPatterns) {
-    const match = text.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim().substring(0, 100);
-    }
-  }
-  return null;
-}
-
-function extractItemsFromText(text: string, fileName: string): Array<{
-  description: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  total: number;
-}> {
-  // Tentar extrair itens básicos do texto
-  const items = [];
-  
-  // Procurar por padrões de valores monetários
-  const moneyPattern = /R?\$?\s*(\d+[,\.]\d{2})/g;
-  const moneyMatches = text.match(moneyPattern) || [];
-  
-  // Se encontrou valores, criar itens genéricos
-  if (moneyMatches.length > 0) {
-    moneyMatches.slice(0, 5).forEach((match, index) => { // Máximo 5 itens
-      const value = parseFloat(match.replace(/[R\$\s]/g, '').replace(',', '.'));
-      if (value > 0) {
-        items.push({
-          description: `Item ${index + 1} (extraído automaticamente)`,
-          quantity: 1,
-          unit: 'un',
-          unitPrice: value,
-          total: value
-        });
-      }
-    });
-  }
-  
-  // Se não encontrou itens, criar um item genérico baseado no nome do arquivo
-  if (items.length === 0) {
-    items.push({
-      description: `Serviço/produto referente ao arquivo: ${fileName}`,
-      quantity: 1,
-      unit: 'un',
-      unitPrice: 0,
-      total: 0
-    });
-  }
-  
-  return items;
-}
-
-}); // Fechamento da função serve()
+});
