@@ -38,26 +38,55 @@ class FileValidator {
   }
 }
 
-// Cliente Adobe consolidado
+// Cliente Adobe consolidado com cache de token
 class AdobeClient {
+  private static tokenCache: { token: string; expiresAt: number } | null = null;
+  
   constructor(private credentials: { clientId: string; clientSecret: string; orgId: string }) {}
 
   async getAccessToken(): Promise<string> {
-    const response = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
+    // Verificar se o token cached ainda é válido (com 5 min de margem)
+    const now = Date.now();
+    if (AdobeClient.tokenCache && AdobeClient.tokenCache.expiresAt > now + 300000) {
+      console.log('🔄 Reutilizando token Adobe cached (válido por mais', Math.round((AdobeClient.tokenCache.expiresAt - now) / 60000), 'minutos)');
+      return AdobeClient.tokenCache.token;
+    }
+
+    console.log('🔑 Gerando novo token Adobe...');
+    const response = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
+        grant_type: 'client_credentials',
         client_id: this.credentials.clientId,
         client_secret: this.credentials.clientSecret,
-        scope: 'openid,AdobeID,read_organizations,additional_info.roles,additional_info.projectedProductContext'
+        scope: 'openid,AdobeID,DCAPI'
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Adobe authentication failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ Adobe authentication failed:', response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Adobe API rate limit exceeded. Too many token requests.');
+      }
+      if (response.status === 401) {
+        throw new Error('Adobe credentials invalid. Check CLIENT_ID and CLIENT_SECRET.');
+      }
+      
+      throw new Error(`Adobe authentication failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('✅ Adobe token gerado com sucesso. Expires in:', data.expires_in, 'seconds');
+    
+    // Cache do token com timestamp de expiração
+    AdobeClient.tokenCache = {
+      token: data.access_token,
+      expiresAt: now + (data.expires_in * 1000) // expires_in vem em segundos
+    };
+    
     return data.access_token;
   }
 
