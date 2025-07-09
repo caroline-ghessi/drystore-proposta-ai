@@ -118,10 +118,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) { // 10MB
+    if (file.size > 2 * 1024 * 1024) { // 2MB - Limite mais seguro para evitar stack overflow
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 10MB.",
+        description: "O arquivo deve ter no máximo 2MB para processamento seguro.",
         variant: "destructive"
       });
       return;
@@ -145,11 +145,11 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       return;
     }
 
-    // Validações básicas
-    if (file.size > 10 * 1024 * 1024) {
+    // Validações básicas - Limite reduzido para evitar stack overflow
+    if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 10MB.",
+        description: "O arquivo deve ter no máximo 2MB para processamento seguro.",
         variant: "destructive"
       });
       return;
@@ -165,9 +165,9 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
     console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // TIMEOUT ABSOLUTO DE 30 SEGUNDOS
+    // TIMEOUT MAIS GENEROSO DE 45 SEGUNDOS - Upload direto é mais eficiente
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 30 segundos')), 30 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 45 segundos')), 45 * 1000);
     });
 
     try {
@@ -177,12 +177,13 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // Converter arquivo
-      const arrayBuffer = await file.arrayBuffer();
-      const fileBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-
-      // TENTATIVA ÚNICA - extract-erp-pdf-data apenas
-      setProcessingStage('Processando PDF com método otimizado...');
+      // UPLOAD DIRETO VIA FORMDATA - Evita conversão base64 que causa stack overflow
+      setProcessingStage('Enviando arquivo via upload direto...');
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('fileSize', file.size.toString());
       
       const response = await Promise.race([
         fetch(
@@ -190,14 +191,10 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json'
+              'Authorization': `Bearer ${session.access_token}`
+              // Não incluir Content-Type para FormData - deixar o browser definir
             },
-            body: JSON.stringify({
-              pdfBuffer: fileBase64,
-              fileName: file.name,
-              fileSize: file.size
-            }),
+            body: formData
           }
         ),
         timeoutPromise
@@ -347,7 +344,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           Upload do PDF do ERP
         </CardTitle>
         <CardDescription>
-          Sistema inteligente de extração de dados com Adobe PDF Services e processamento local
+          Sistema otimizado de extração de dados - Limite: 2MB para processamento seguro
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -366,7 +363,7 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
               Arraste o PDF do ERP aqui ou clique para selecionar
             </h3>
             <p className="text-gray-500 mb-4">
-              PDF com lista de quantitativos e valores do seu sistema ERP
+              PDF com lista de quantitativos e valores do seu sistema ERP (até 2MB)
             </p>
             <input
               type="file"

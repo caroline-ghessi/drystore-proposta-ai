@@ -13,26 +13,61 @@ serve(async (req) => {
   }
 
   try {
-    console.log('📄 Processing ERP PDF with Google Vision API')
+    console.log('📄 Processing ERP PDF with Google Vision API - Direct Upload Mode')
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { pdfBuffer, fileName, fileSize } = await req.json()
+    // NOVA LÓGICA: Detectar se é FormData ou JSON
+    let pdfFile: File;
+    let fileName: string;
+    let fileSize: number;
+
+    const contentType = req.headers.get('content-type') || '';
     
-    if (!pdfBuffer || !fileName) {
-      throw new Error('PDF buffer and filename are required')
+    if (contentType.includes('multipart/form-data')) {
+      // UPLOAD DIRETO VIA FORMDATA - Evita problemas de stack overflow
+      console.log('📄 Processing FormData upload...');
+      const formData = await req.formData();
+      
+      const file = formData.get('file') as File;
+      fileName = formData.get('fileName') as string || file.name;
+      fileSize = parseInt(formData.get('fileSize') as string) || file.size;
+      
+      if (!file || !fileName) {
+        throw new Error('File and filename are required in FormData');
+      }
+      
+      pdfFile = file;
+      console.log('📄 FormData PDF received:', fileName, 'Size:', fileSize);
+      
+    } else {
+      // FALLBACK: Método antigo com base64 (apenas para arquivos muito pequenos)
+      console.log('📄 Processing JSON with base64...');
+      const { pdfBuffer, fileName: jsonFileName, fileSize: jsonFileSize } = await req.json();
+      
+      if (!pdfBuffer || !jsonFileName) {
+        throw new Error('PDF buffer and filename are required');
+      }
+
+      fileName = jsonFileName;
+      fileSize = jsonFileSize;
+      
+      // Converter o buffer base64 de volta para Uint8Array
+      const pdfData = new Uint8Array(atob(pdfBuffer).split('').map(char => char.charCodeAt(0)));
+      pdfFile = new File([pdfData], fileName, { type: 'application/pdf' });
+      
+      console.log('📄 Base64 PDF converted:', fileName, 'Size:', fileSize);
     }
 
-    console.log('📄 Processing ERP PDF:', fileName, 'Size:', fileSize)
+    // Validação de tamanho (limite mais rigoroso para evitar stack overflow)
+    if (fileSize > 2 * 1024 * 1024) {
+      throw new Error('File size exceeds 2MB limit - use smaller files to avoid processing issues');
+    }
 
-    // Converter o buffer base64 de volta para Uint8Array
-    const pdfData = new Uint8Array(atob(pdfBuffer).split('').map(char => char.charCodeAt(0)))
-    const pdfFile = new File([pdfData], fileName, { type: 'application/pdf' })
-
-    console.log('📄 PDF file created:', pdfFile.name, 'Size:', pdfFile.size)
+    console.log('📄 PDF file prepared:', fileName, 'Size:', fileSize);
 
     // PROCESSAMENTO COM GOOGLE VISION API
     console.log('🤖 Starting ERP PDF processing with Google Vision...')
