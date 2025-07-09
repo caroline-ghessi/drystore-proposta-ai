@@ -383,3 +383,5 @@ function extractItemsFromText(text: string, fileName: string): Array<{
   
   return items;
 }
+
+}); // Fechamento da função serve()
