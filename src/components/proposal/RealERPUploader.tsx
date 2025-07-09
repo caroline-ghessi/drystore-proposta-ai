@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Check, AlertCircle, Eye, Loader2 } from 'lucide-react';
@@ -38,7 +38,44 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
   const [attemptCount, setAttemptCount] = useState(0);
   const [lastAttemptTime, setLastAttemptTime] = useState(0);
   const [isProcessingInProgress, setIsProcessingInProgress] = useState(false);
+  const [processingStartTime, setProcessingStartTime] = useState(0);
+  const [canCancel, setCanCancel] = useState(false);
   const { toast } = useToast();
+
+  // Forçar reset para estados travados
+  const forceReset = () => {
+    console.log('🔄 Forçando reset do estado');
+    setUploadedFile(null);
+    setIsProcessing(false);
+    setIsAnalyzed(false);
+    setExtractedData(null);
+    setProcessingStage('');
+    setAttemptCount(0);
+    setLastAttemptTime(0);
+    setIsProcessingInProgress(false);
+    setProcessingStartTime(0);
+    setCanCancel(false);
+    toast({
+      title: "Sistema resetado",
+      description: "O processamento foi resetado devido a um travamento.",
+    });
+  };
+
+  // Auto-reset para estados travados (30 segundos)
+  useEffect(() => {
+    const checkStuckState = () => {
+      if (isProcessingInProgress && processingStartTime > 0) {
+        const elapsed = Date.now() - processingStartTime;
+        if (elapsed > 30000) { // 30 segundos
+          console.log('🔄 Auto-reset: Estado travado detectado');
+          forceReset();
+        }
+      }
+    };
+    
+    const interval = setInterval(checkStuckState, 5000);
+    return () => clearInterval(interval);
+  }, [isProcessingInProgress, processingStartTime, forceReset]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -127,14 +164,16 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     // Marcar como processando
     setIsProcessingInProgress(true);
     setIsProcessing(true);
+    setProcessingStartTime(Date.now());
+    setCanCancel(true);
     setProcessingStage(`Iniciando extração de dados... (Tentativa ${newAttemptCount}/3)`);
 
     const processingId = crypto.randomUUID();
     console.log(`🚀 [${processingId}] Iniciando processamento - Tentativa ${newAttemptCount}`);
 
-    // Timeout absoluto de 5 minutos
+    // Timeout absoluto de 2 minutos (mais conservador)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 5 minutos')), 5 * 60 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 2 minutos')), 2 * 60 * 1000);
     });
 
     try {
@@ -315,9 +354,11 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       });
       
     } finally {
-      // Limpar estados
+      // Limpar estados sempre
       setIsProcessing(false);
       setIsProcessingInProgress(false);
+      setCanCancel(false);
+      setProcessingStartTime(0);
     }
   };
 
@@ -336,6 +377,22 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
     setAttemptCount(0);
     setLastAttemptTime(0);
     setIsProcessingInProgress(false);
+    setProcessingStartTime(0);
+    setCanCancel(false);
+  };
+
+
+  // Cancelar processamento
+  const cancelProcessing = () => {
+    console.log('❌ Cancelando processamento pelo usuário');
+    setIsProcessing(false);
+    setIsProcessingInProgress(false);
+    setCanCancel(false);
+    setProcessingStage('');
+    toast({
+      title: "Processamento cancelado",
+      description: "O processamento foi cancelado pelo usuário.",
+    });
   };
 
   // Log de processamento estruturado
@@ -400,6 +457,8 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
           setExtractedData(fallbackData);
           setIsAnalyzed(true);
           setIsProcessing(false);
+          setIsProcessingInProgress(false);
+          setCanCancel(false);
 
           await logProcessingStep(processingId, userId, file.name, 'success', 'fallback_local', Date.now(), null);
 
@@ -418,6 +477,8 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
       await logProcessingStep(processingId, userId, file.name, 'error', 'fallback_local', null, error.message);
       
       setIsProcessing(false);
+      setIsProcessingInProgress(false);
+      setCanCancel(false);
       toast({
         title: "Erro no processamento",
         description: "Não foi possível processar o PDF. Verifique se o arquivo não está corrompido.",
@@ -495,13 +556,30 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
 
             {isProcessing && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <Loader2 className="animate-spin w-5 h-5 text-blue-600 mr-2" />
-                  <p className="text-blue-800 font-medium">Processamento em Andamento</p>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <Loader2 className="animate-spin w-5 h-5 text-blue-600 mr-2" />
+                    <p className="text-blue-800 font-medium">Processamento em Andamento</p>
+                  </div>
+                  {canCancel && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={cancelProcessing}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Cancelar
+                    </Button>
+                  )}
                 </div>
                 <p className="text-blue-700 text-sm">{processingStage}</p>
                 <div className="mt-2 text-xs text-blue-600">
                   Este processo pode levar alguns minutos...
+                  {processingStartTime > 0 && (
+                    <span className="ml-2">
+                      ({Math.round((Date.now() - processingStartTime) / 1000)}s)
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -532,13 +610,26 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
             )}
 
             <div className="flex justify-between pt-4">
-              <Button 
-                variant="outline" 
-                onClick={resetUpload}
-                disabled={isProcessing}
-              >
-                Enviar Outro Arquivo
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={resetUpload}
+                  disabled={isProcessing}
+                >
+                  Enviar Outro Arquivo
+                </Button>
+                
+                {isProcessingInProgress && (
+                  <Button 
+                    variant="outline" 
+                    onClick={forceReset}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Forçar Reset
+                  </Button>
+                )}
+              </div>
               
               <Button 
                 onClick={handlePreview}
