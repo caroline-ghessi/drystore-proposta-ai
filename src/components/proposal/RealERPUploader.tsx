@@ -177,24 +177,44 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         throw new Error('Usuário não autenticado');
       }
 
-      // UPLOAD DIRETO VIA FORMDATA - Evita conversão base64 que causa stack overflow
-      setProcessingStage('Enviando arquivo via upload direto...');
+      // CONVERSÃO PARA BASE64 E JSON ESTRUTURADO
+      setProcessingStage('Convertendo arquivo para processamento...');
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('fileName', file.name);
-      formData.append('fileSize', file.size.toString());
+      // Converter arquivo para base64
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // Remove o prefixo data:application/pdf;base64,
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      // Payload JSON estruturado
+      const payload = {
+        fileData: fileBase64,
+        fileName: file.name,
+        fileSize: file.size,
+        userId: session.user.id,
+        options: {
+          extractionMethod: 'adobe_with_fallback',
+          confidenceThreshold: 0.7
+        }
+      };
+      
+      setProcessingStage('Enviando para processamento orquestrado...');
       
       const response = await Promise.race([
         fetch(
-          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/extract-pdf-data`,
+          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-processing-orchestrator`,
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${session.access_token}`
-              // Não incluir Content-Type para FormData - deixar o browser definir
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
             },
-            body: formData
+            body: JSON.stringify(payload)
           }
         ),
         timeoutPromise
