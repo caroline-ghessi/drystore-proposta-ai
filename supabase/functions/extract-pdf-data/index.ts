@@ -178,21 +178,21 @@ serve(async (req) => {
     // Tentar fallback de emergência mesmo com erro
     let emergencyData = null;
     try {
-      console.log(`🚨 [${requestId}] Tentando fallback de emergência...`);
+      console.log(`🚨 [${correlationId}] Tentando fallback de emergência...`);
       const formData = await req.formData();
       const file = formData.get('file') as File;
       if (file) {
-        emergencyData = await processWithFallback(file, requestId);
+        emergencyData = await processWithFallback(file, correlationId);
       }
     } catch (emergencyError) {
-      console.error(`❌ [${requestId}] Fallback de emergência falhou:`, emergencyError.message);
+      console.error(`❌ [${correlationId}] Fallback de emergência falhou:`, emergencyError.message);
     }
     
     clearTimeout(timeoutId);
     
     // Se conseguiu dados de emergência, retornar com sucesso parcial
     if (emergencyData) {
-      console.log(`✅ [${requestId}] Recuperado com fallback de emergência`);
+      console.log(`✅ [${correlationId}] Recuperado com fallback de emergência`);
       return new Response(
         JSON.stringify({
           success: true,
@@ -211,7 +211,7 @@ serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message,
-        request_id: requestId,
+        correlation_id: correlationId,
         processing_time_ms: errorTime,
         timestamp: new Date().toISOString(),
         suggestions: [
@@ -293,7 +293,7 @@ async function processWithFallback(file: File, correlationId?: string): Promise<
   
   try {
     // Método 1: Tentar extração direta
-    console.log(`🔄 [${requestId}] Tentando extração direta...`);
+    console.log(`${logPrefix} 🔄 Tentando extração direta...`);
     const arrayBuffer = await file.arrayBuffer();
     const pdfBytes = new Uint8Array(arrayBuffer);
     
@@ -317,23 +317,23 @@ async function processWithFallback(file: File, correlationId?: string): Promise<
         }
       }
       
-      console.log(`✅ [${requestId}] Extração ${extractionMethod}: ${text.length} caracteres`);
+      console.log(`${logPrefix} ✅ Extração ${extractionMethod}: ${text.length} caracteres`);
     }
     
   } catch (extractError) {
-    console.log(`⚠️ [${requestId}] Erro na extração: ${extractError.message}`);
+    console.log(`${logPrefix} ⚠️ Erro na extração: ${extractError.message}`);
   }
   
   // Método 2: Fallback limitado se não conseguiu extrair texto
   if (!text || text.length < 10) {
-    console.log(`🔄 [${requestId}] Aplicando fallback limitado...`);
+    console.log(`${logPrefix} 🔄 Aplicando fallback limitado...`);
     text = `Arquivo PDF recebido: ${file.name}
     Extração manual necessária.
     Revisar conteúdo do PDF para extrair dados corretos.`;
     extractionMethod = 'manual_review_required';
   }
 
-  console.log(`✅ [${requestId}] Texto final (${extractionMethod}): ${text.length} caracteres`);
+  console.log(`${logPrefix} ✅ Texto final (${extractionMethod}): ${text.length} caracteres`);
 
   // Extrair dados com método robusto
   const items = extractItemsFromText(text, `${file.name} (${extractionMethod})`);
@@ -353,7 +353,7 @@ async function processWithFallback(file: File, correlationId?: string): Promise<
     processedAt: new Date().toISOString()
   };
 
-  console.log(`✅ [${requestId}] Dados estruturados: ${items.length} itens, Total: R$ ${result.total}`);
+  console.log(`${logPrefix} ✅ Dados estruturados: ${items.length} itens, Total: R$ ${result.total}`);
   return result;
 }
 

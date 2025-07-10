@@ -107,6 +107,73 @@ const AdobeDebugTab = () => {
     return id;
   };
 
+  // Novo health check completo
+  const runAdobeHealthCheck = async () => {
+    const correlationId = generateCorrelationId();
+    const startTime = Date.now();
+    
+    addTestResult({
+      test: 'Health Check Completo Adobe',
+      status: 'running',
+      message: 'Executando diagnóstico completo da integração Adobe...'
+    });
+
+    setConnectionStatus('checking');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Chamar nova edge function de health check
+      const healthResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/debug-adobe-health', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+          'X-Correlation-ID': correlationId
+        }
+      });
+
+      if (!healthResponse.ok) {
+        throw new Error(`Health check falhou: ${healthResponse.status}`);
+      }
+
+      const healthData = await healthResponse.json();
+      const duration = Date.now() - startTime;
+
+      // Atualizar status de conexão
+      setConnectionStatus(healthData.overall_status === 'healthy' ? 'connected' : 'disconnected');
+
+      addTestResult({
+        test: 'Health Check Completo Adobe',
+        status: healthData.overall_status === 'healthy' ? 'success' : 
+               healthData.overall_status === 'degraded' ? 'warning' : 'error',
+        message: `Health check concluído: ${healthData.overall_status.toUpperCase()}`,
+        duration,
+        details: healthData
+      });
+
+      toast({
+        title: "Health Check Concluído",
+        description: `Status: ${healthData.overall_status.toUpperCase()}`,
+        variant: healthData.overall_status === 'healthy' ? 'default' : 'destructive'
+      });
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      setConnectionStatus('disconnected');
+      
+      addTestResult({
+        test: 'Health Check Completo Adobe',
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Erro no health check',
+        duration,
+        details: { error, correlationId }
+      });
+    }
+  };
+
   const testAdobeCredentials = async () => {
     const correlationId = generateCorrelationId();
     const startTime = Date.now();
@@ -152,9 +219,9 @@ const AdobeDebugTab = () => {
         correlation_id: correlationId
       });
 
-      // Teste 2: Validar token de acesso Adobe
+      // Teste 2: Validar token de acesso Adobe - CORRIGIDO PARA v1
       const tokenStartTime = Date.now();
-      const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
+      const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -163,7 +230,7 @@ const AdobeDebugTab = () => {
           'client_id': credentials.clientId,
           'client_secret': credentials.clientSecret,
           'grant_type': 'client_credentials',
-          'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_write_documents'
+          'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext'
         }).toString()
       });
 
@@ -773,6 +840,16 @@ const AdobeDebugTab = () => {
                   >
                     <Server className="w-4 h-4 mr-2" />
                     Teste de Performance e Conectividade
+                  </Button>
+                  
+                  <Button 
+                    onClick={runAdobeHealthCheck}
+                    disabled={isRunningTests}
+                    variant="outline"
+                    className="justify-start"
+                  >
+                    <Monitor className="w-4 h-4 mr-2" />
+                    Health Check Completo
                   </Button>
                   
                   <Button 

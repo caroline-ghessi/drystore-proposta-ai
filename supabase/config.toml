@@ -50,3 +50,21 @@ verify_jwt = true
 
 [functions.pdf-processing-logger]
 verify_jwt = true
+
+[functions.extract-pdf-data]
+verify_jwt = true
+
+[functions.upload-to-adobe]
+verify_jwt = true
+
+[functions.process-adobe-extraction]
+verify_jwt = true
+
+[functions.adobe-logger]
+verify_jwt = true
+
+[functions.debug-adobe-health]
+verify_jwt = true
+
+[functions.system-monitor]
+verify_jwt = true

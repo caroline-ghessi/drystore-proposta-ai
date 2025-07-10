@@ -116,8 +116,8 @@ async function uploadToAdobeWithPolling(
   const logPrefix = correlationId ? `[${correlationId}]` : '';
   
   // Step 1: Get access token
-  console.log('🔐 Getting Adobe access token...');
-  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
+  console.log(`${logPrefix} 🔐 Getting Adobe access token...`);
+  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -126,7 +126,7 @@ async function uploadToAdobeWithPolling(
       'client_id': clientId,
       'client_secret': clientSecret,
       'grant_type': 'client_credentials',
-      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_write_documents'
+      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext'
     }).toString()
   });
 
@@ -137,10 +137,10 @@ async function uploadToAdobeWithPolling(
   }
 
   const { access_token } = await tokenResponse.json();
-  console.log('✅ Adobe token obtained successfully');
+  console.log(`${logPrefix} ✅ Adobe token obtained successfully`);
 
   // Step 2: Upload file usando estratégia única baseada no tamanho
-  console.log('📤 Uploading file to Adobe (sequential strategy)...');
+  console.log(`${logPrefix} 📤 Uploading file to Adobe (sequential strategy)...`);
   
   const fileSize = arrayBuffer.byteLength;
   let uploadStrategy = 'multipart';
@@ -154,7 +154,7 @@ async function uploadToAdobeWithPolling(
     uploadStrategy = 'chunked_multipart';
   }
   
-  console.log(`📋 Using upload strategy: ${uploadStrategy} for file size: ${fileSize} bytes`);
+  console.log(`${logPrefix} 📋 Using upload strategy: ${uploadStrategy} for file size: ${fileSize} bytes`);
   
   const uint8Array = new Uint8Array(arrayBuffer);
   const blob = new Blob([uint8Array], { type: 'application/pdf' });
@@ -190,17 +190,17 @@ async function uploadToAdobeWithPolling(
   }
 
   const assetID = uploadResult.assetID;
-  console.log('📨 Upload completed, assetID:', assetID);
+  console.log(`${logPrefix} 📨 Upload completed, assetID:`, assetID);
 
   // Step 3: POLLING - Aguardar que o asset esteja disponível
-  console.log('⏳ Starting polling to validate asset availability...');
+  console.log(`${logPrefix} ⏳ Starting polling to validate asset availability...`);
   
   const maxPollingAttempts = 20; // 120s total (6s * 20)
   let pollingAttempt = 0;
   
   while (pollingAttempt < maxPollingAttempts) {
     pollingAttempt++;
-    console.log(`🔍 Polling attempt ${pollingAttempt}/${maxPollingAttempts}...`);
+    console.log(`${logPrefix} 🔍 Polling attempt ${pollingAttempt}/${maxPollingAttempts}...`);
     
     try {
       // Fazer uma requisição simples para verificar se o asset existe
@@ -214,25 +214,25 @@ async function uploadToAdobeWithPolling(
       });
 
       if (checkResponse.ok) {
-        console.log('✅ Asset is available and ready for processing!');
+        console.log(`${logPrefix} ✅ Asset is available and ready for processing!`);
         return assetID;
       } else if (checkResponse.status === 404) {
-        console.log(`⏳ Asset not ready yet, waiting... (attempt ${pollingAttempt})`);
+        console.log(`${logPrefix} ⏳ Asset not ready yet, waiting... (attempt ${pollingAttempt})`);
       } else {
-        console.log(`⚠️ Unexpected response: ${checkResponse.status}, continuing polling...`);
+        console.log(`${logPrefix} ⚠️ Unexpected response: ${checkResponse.status}, continuing polling...`);
       }
     } catch (pollError) {
-      console.log(`⚠️ Polling error (attempt ${pollingAttempt}):`, pollError.message);
+      console.log(`${logPrefix} ⚠️ Polling error (attempt ${pollingAttempt}):`, pollError.message);
     }
 
     // Backoff exponencial: 3s, 4.5s, 6.75s, etc. (máximo 10s)
     const waitTime = Math.min(3000 * Math.pow(1.5, pollingAttempt - 1), 10000);
-    console.log(`⏸️ Waiting ${waitTime}ms before next polling attempt...`);
+    console.log(`${logPrefix} ⏸️ Waiting ${waitTime}ms before next polling attempt...`);
     await new Promise(resolve => setTimeout(resolve, waitTime));
   }
 
   // Se chegou aqui, o polling falhou
-  console.error('❌ Asset validation failed after maximum polling attempts');
+  console.error(`${logPrefix} ❌ Asset validation failed after maximum polling attempts`);
   throw new Error(`Asset not available after ${maxPollingAttempts} polling attempts (120s timeout)`);
 }
 
