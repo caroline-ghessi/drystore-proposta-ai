@@ -132,10 +132,21 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) { // 2MB - Limite mais seguro para evitar stack overflow
+    // Validação do arquivo com limite aumentado
+    if (file.size > 15 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 2MB para processamento seguro.",
+        description: "O arquivo deve ter no máximo 15MB para processamento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar se o arquivo é realmente um PDF
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Apenas arquivos PDF são aceitos.",
         variant: "destructive"
       });
       return;
@@ -159,11 +170,11 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
       return;
     }
 
-    // Validações básicas - Limite reduzido para evitar stack overflow
-    if (file.size > 2 * 1024 * 1024) {
+    // Validações básicas - Limite aumentado para suportar PDFs maiores
+    if (file.size > 15 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 2MB para processamento seguro.",
+        description: "O arquivo deve ter no máximo 15MB para processamento.",
         variant: "destructive"
       });
       return;
@@ -179,9 +190,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
     console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // TIMEOUT OTIMIZADO DE 30 SEGUNDOS - Alinhado com timeouts das funções (5s cada)
+    // TIMEOUT OTIMIZADO DE 150 SEGUNDOS - Para suportar retry e arquivos complexos
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 30 segundos')), 30 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 150 segundos')), 150 * 1000);
     });
 
     try {

@@ -8,9 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// TIMEOUT OTIMIZADO - 35 segundos total (dentro do limite Supabase de 45s)
-const TOTAL_TIMEOUT = 35000;
-const ADOBE_TIMEOUT = 25000;
+// TIMEOUT OTIMIZADO - 60 segundos total para arquivos maiores
+const TOTAL_TIMEOUT = 60000;
+const ADOBE_TIMEOUT = 45000;
 
 serve(async (req) => {
   const startTime = Date.now();
@@ -23,11 +23,9 @@ serve(async (req) => {
 
   console.log(`🚀 [${requestId}] === PDF PROCESSING STARTED ===`);
 
-  // TIMEOUT PRINCIPAL - 35 segundos máximo (dentro do limite Supabase)
-  const timeoutController = new AbortController();
+  // TIMEOUT PRINCIPAL - 60 segundos máximo para arquivos maiores
   const timeoutId = setTimeout(() => {
-    console.log(`⏰ [${requestId}] TIMEOUT GERAL após 35 segundos - forçando fallback`);
-    timeoutController.abort();
+    console.log(`⏰ [${requestId}] TIMEOUT GERAL após 60 segundos - forçando fallback`);
   }, TOTAL_TIMEOUT);
 
   try {
@@ -113,7 +111,7 @@ serve(async (req) => {
       const adobePromise = Promise.race([
         processWithAdobeClient(file, adobeClient),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Adobe timeout after 25s')), ADOBE_TIMEOUT)
+          setTimeout(() => reject(new Error('Adobe timeout after 45s')), ADOBE_TIMEOUT)
         )
       ]);
 
@@ -319,18 +317,13 @@ async function processWithFallback(file: File, requestId: string): Promise<any> 
     console.log(`⚠️ [${requestId}] Erro na extração: ${extractError.message}`);
   }
   
-  // Método 2: Fallback garantido se não conseguiu extrair texto
+  // Método 2: Fallback limitado se não conseguiu extrair texto
   if (!text || text.length < 10) {
-    console.log(`🔄 [${requestId}] Aplicando fallback garantido...`);
-    text = `Arquivo PDF processado: ${file.name}
-    Tamanho: ${(file.size/1024/1024).toFixed(2)}MB
-    Data: ${new Date().toLocaleDateString()}
-    Processamento: Extração nativa
-    
-    Item 1: Produto/Serviço Principal
-    Item 2: Instalação/Configuração
-    Item 3: Suporte/Garantia`;
-    extractionMethod = 'guaranteed';
+    console.log(`🔄 [${requestId}] Aplicando fallback limitado...`);
+    text = `Arquivo PDF recebido: ${file.name}
+    Extração manual necessária.
+    Revisar conteúdo do PDF para extrair dados corretos.`;
+    extractionMethod = 'manual_review_required';
   }
 
   console.log(`✅ [${requestId}] Texto final (${extractionMethod}): ${text.length} caracteres`);
@@ -346,7 +339,7 @@ async function processWithFallback(file: File, requestId: string): Promise<any> 
     proposalNumber: extractProposalNumber(text) || `PROP-${Date.now().toString().slice(-8)}`,
     items,
     subtotal: total,
-    total: total || 1000, // Valor mínimo se não encontrou valores
+    total: total || 0, // Não criar valores fictícios
     paymentTerms: 'À vista ou parcelado - a definir',
     delivery: 'Prazo a definir conforme projeto',
     extractionMethod,

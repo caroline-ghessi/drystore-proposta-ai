@@ -240,84 +240,124 @@ serve(async (req) => {
 });
 
 async function extractText(fileData: string, fileName: string, options: any, processingId?: string) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  // Implementar retry com backoff exponencial
+  let lastError: Error | null = null;
   
-  try {
-    const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/pdf-text-extractor`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify({
-          file_data: fileData,
-          file_name: fileName,
-          extraction_method: options.extractionMethod || 'adobe',
-          processing_id: processingId
-        }),
-        signal: controller.signal
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`📤 [${processingId}] extractText attempt ${attempt}/3`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      
+      try {
+        const response = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/pdf-text-extractor`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            },
+            body: JSON.stringify({
+              file_data: fileData,
+              file_name: fileName,
+              extraction_method: options.extractionMethod || 'adobe',
+              processing_id: processingId
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Text extraction failed with status: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+          throw new Error('Text extraction timeout');
+        }
+        
+        throw error;
       }
-    );
-
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`Text extraction failed with status: ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      console.log(`⚠️ [${processingId}] extractText attempt ${attempt} failed: ${error.message}`);
+      
+      if (attempt < 3) {
+        const backoffTime = Math.pow(2, attempt - 1) * 1000; // 1s, 2s
+        console.log(`🔄 [${processingId}] Retrying in ${backoffTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
     }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    if (error.name === 'AbortError') {
-      return { success: false, error: 'Text extraction timeout' };
-    }
-    
-    return { success: false, error: error.message };
   }
+  
+  throw lastError || new Error('Text extraction failed after 3 attempts');
 }
 
 async function organizeData(extractedText: string, processingId?: string) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  // Implementar retry com backoff exponencial
+  let lastError: Error | null = null;
   
-  try {
-    const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-data-organizer`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify({
-          extracted_text: extractedText,
-          context: 'erp_pdf',
-          processing_id: processingId
-        }),
-        signal: controller.signal
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`🧠 [${processingId}] organizeData attempt ${attempt}/3`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      
+      try {
+        const response = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-data-organizer`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            },
+            body: JSON.stringify({
+              extracted_text: extractedText,
+              context: 'erp_pdf',
+              processing_id: processingId
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Data organization failed with status: ${response.status}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+          throw new Error('Data organization timeout');
+        }
+        
+        throw error;
       }
-    );
-
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`Data organization failed with status: ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      console.log(`⚠️ [${processingId}] organizeData attempt ${attempt} failed: ${error.message}`);
+      
+      if (attempt < 3) {
+        const backoffTime = Math.pow(2, attempt - 1) * 1000; // 1s, 2s
+        console.log(`🔄 [${processingId}] Retrying in ${backoffTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
     }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    if (error.name === 'AbortError') {
-      return { success: false, error: 'Data organization timeout' };
-    }
-    
-    return { success: false, error: error.message };
   }
+  
+  throw lastError || new Error('Data organization failed after 3 attempts');
 }
 
 async function formatData(organizedData: any, processingId?: string) {

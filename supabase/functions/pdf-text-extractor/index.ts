@@ -283,9 +283,9 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     
     console.log('⏳ Job de extração criado:', jobId);
 
-    // Step 4: Poll for completion (CORREÇÃO: timeout reduzido para 30s)
+    // Step 4: Poll for completion (timeout aumentado para 45s)
     let attempts = 0;
-    const maxAttempts = 10; // CORREÇÃO: 10 tentativas x 3s = 30s máximo
+    const maxAttempts = 15; // 15 tentativas x 3s = 45s máximo
     const pollingStartTime = Date.now();
     
     while (attempts < maxAttempts) {
