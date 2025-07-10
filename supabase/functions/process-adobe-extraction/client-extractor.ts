@@ -87,25 +87,51 @@ export class ClientExtractor {
   // Validar se um nome é válido para um cliente real
   private static isValidClientName(name: string): boolean {
     if (!name || name.length < 6 || name.length > 50) {
+      console.log(`❌ Nome rejeitado por tamanho: ${name?.length || 0} caracteres`);
       return false;
+    }
+    
+    // VALIDAÇÃO ANTI-TESTE CRÍTICA - Primeiro bloquear dados conhecidos de teste
+    const upperName = name.toUpperCase().trim();
+    
+    // BLOQUEIO CRÍTICO: Nunca aceitar essas strings como nomes de cliente
+    const criticalBlocks = [
+      'PROPOSTA COMERCIAL', 'PROPOSTA', 'COMERCIAL',
+      'PEDRO BARTELLE', // Dados de teste específicos que estavam poluindo
+      'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL', 'UNITÁRIO',
+      'DRYSTORE', 'SOLUÇÕES INTELIGENTES',
+      'DATA:', 'TELEFONE:', 'EMAIL:', 'ENDEREÇO:',
+      'CNPJ:', 'CPF:', 'RG:', 'ORÇAMENTO',
+      'CLIENTE TESTE', 'TEST CLIENT'
+    ];
+    
+    for (const block of criticalBlocks) {
+      if (upperName.includes(block)) {
+        console.log(`❌ Nome rejeitado por conter termo bloqueado: "${block}" em "${name}"`);
+        return false;
+      }
     }
     
     // Deve conter apenas letras, espaços e caracteres especiais brasileiros
     if (!/^[A-ZÁÊÔÇÃÕ\s&\-\.]{6,}$/i.test(name)) {
+      console.log(`❌ Nome rejeitado por caracteres inválidos: "${name}"`);
       return false;
     }
     
     // Deve ter pelo menos 2 palavras (nome e sobrenome)
     const words = name.split(/\s+/).filter(w => w.length > 1);
     if (words.length < 2) {
+      console.log(`❌ Nome rejeitado por ter menos de 2 palavras: "${name}"`);
       return false;
     }
     
     // Não deve conter termos do sistema ou dados de teste
     if (this.isSystemOrCompanyLine(name) || this.isTestData(name)) {
+      console.log(`❌ Nome rejeitado por ser termo do sistema ou teste: "${name}"`);
       return false;
     }
     
+    console.log(`✅ Nome validado com sucesso: "${name}"`);
     return true;
   }
 
@@ -115,7 +141,10 @@ export class ClientExtractor {
       'DRYSTORE', 'SOLUÇÕES INTELIGENTES', 'PROPOSTA COMERCIAL',
       'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL', 'UNITÁRIO',
       'PRODUTO', 'CNPJ', 'FONE', 'EMAIL', 'CEP', 'RUA', 'AVENIDA',
-      'BOLETO', 'PAGAMENTO', 'ENTREGA', 'PRAZO', 'CONDIÇÕES'
+      'BOLETO', 'PAGAMENTO', 'ENTREGA', 'PRAZO', 'CONDIÇÕES',
+      // Dados de teste específicos que estavam causando problemas
+      'PEDRO BARTELLE', 'PROPOSTA', 'COMERCIAL',
+      'DATA:', 'TELEFONE:', 'ENDEREÇO:'
     ];
     
     const upperLine = line.toUpperCase();

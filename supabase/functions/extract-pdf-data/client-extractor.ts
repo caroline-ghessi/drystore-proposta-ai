@@ -111,32 +111,64 @@ export class ClientExtractor {
   }
 
   private static isValidDrystoreClientName(name: string): boolean {
+    // VALIDAÇÃO RIGOROSA ANTI-TESTE - Primeiro bloquear dados conhecidos de teste
+    const upperName = name.toUpperCase().trim();
+    
+    // BLOQUEIO CRÍTICO: Nunca aceitar essas strings como nomes de cliente
+    const criticalBlocks = [
+      'PROPOSTA COMERCIAL', 'PROPOSTA', 'COMERCIAL',
+      'PEDRO BARTELLE', // Dados de teste específicos
+      'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL',
+      'DRYSTORE', 'SOLUÇÕES INTELIGENTES',
+      'DATA:', 'TELEFONE:', 'EMAIL:', 'ENDEREÇO:',
+      'CNPJ:', 'CPF:', 'RG:'
+    ];
+    
+    for (const block of criticalBlocks) {
+      if (upperName.includes(block)) {
+        console.log(`❌ Nome rejeitado por conter termo bloqueado: "${block}" em "${name}"`);
+        return false;
+      }
+    }
+    
     // Deve ter entre 6 e 40 caracteres
     if (name.length < 6 || name.length > 40) {
+      console.log(`❌ Nome rejeitado por tamanho: ${name.length} caracteres`);
       return false;
     }
     
     // Deve conter apenas letras, espaços e caracteres especiais brasileiros
     if (!/^[A-ZÁÊÔÇÃÕ\s&\-\.]+$/i.test(name)) {
+      console.log(`❌ Nome rejeitado por caracteres inválidos: "${name}"`);
       return false;
     }
     
     // Deve ter pelo menos 2 palavras
-    const words = name.split(/\s+/);
+    const words = name.split(/\s+/).filter(w => w.length > 0);
     if (words.length < 2) {
+      console.log(`❌ Nome rejeitado por ter menos de 2 palavras: "${name}"`);
+      return false;
+    }
+    
+    // Palavras devem ter pelo menos 2 caracteres cada
+    if (words.some(word => word.length < 2)) {
+      console.log(`❌ Nome rejeitado por ter palavras muito curtas: "${name}"`);
       return false;
     }
     
     // Não deve ser uma frase excluída
     if (this.isExcludedPhrase(name)) {
+      console.log(`❌ Nome rejeitado por frase excluída: "${name}"`);
       return false;
     }
     
-    // Validações específicas para Drystore
-    if (name.includes('PROPOSTA') || name.includes('COMERCIAL') || name.includes('DESCRIÇÃO')) {
+    // Não deve ser dados de teste
+    if (this.isTestData(name)) {
+      console.log(`❌ Nome rejeitado por ser dados de teste: "${name}"`);
       return false;
     }
     
+    console.log(`✅ Nome validado com sucesso: "${name}"`);
     return true;
   }
 
@@ -190,17 +222,30 @@ export class ClientExtractor {
 
   private static isExcludedPhrase(line: string): boolean {
     const excludedPhrases = [
+      // Frases do sistema Drystore
       'PROPOSTA COMERCIAL',
       'ORÇAMENTO COMERCIAL', 
       'SOLUÇÕES INTELIGENTES',
       'DESCRIÇÃO PRODUTO',
       'VALOR UNITÁRIO',
       'CONDIÇÕES PAGAMENTO',
-      'PRAZO ENTREGA'
+      'PRAZO ENTREGA',
+      // Dados de teste conhecidos
+      'PEDRO BARTELLE',
+      'CLIENTE TESTE',
+      'TEST CLIENT',
+      // Termos de sistema/layout
+      'DRYSTORE SOLUÇÕES',
+      'PROPOSTA N',
+      'DATA:',
+      'TELEFONE:',
+      'EMAIL:',
+      'ENDEREÇO:'
     ];
     
+    const upperLine = line.toUpperCase();
     return excludedPhrases.some(phrase => 
-      line.toUpperCase().includes(phrase.toUpperCase())
+      upperLine.includes(phrase.toUpperCase())
     );
   }
 

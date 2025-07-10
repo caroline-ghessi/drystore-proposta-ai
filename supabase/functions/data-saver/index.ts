@@ -107,9 +107,29 @@ async function saveAsProposalDraft(
 
     // Verificar se há dados do cliente - mapear corretamente
     let clientId = null;
-    const clientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
+    const rawClientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
     
-    if (clientName && clientName !== 'N/A' && clientName.trim() !== '') {
+    // VALIDAÇÃO ANTI-TESTE: Bloquear nomes de cliente inválidos
+    function isValidClientName(name: string): boolean {
+      if (!name || name === 'N/A' || name.trim() === '') return false;
+      
+      const upperName = name.toUpperCase().trim();
+      const invalidNames = [
+        'PROPOSTA COMERCIAL', 'PROPOSTA', 'COMERCIAL',
+        'PEDRO BARTELLE', 'CLIENTE TESTE', 'TEST CLIENT',
+        'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL',
+        'DRYSTORE', 'SOLUÇÕES INTELIGENTES'
+      ];
+      
+      return !invalidNames.some(invalid => upperName.includes(invalid)) &&
+             name.length >= 6 && 
+             name.length <= 40 &&
+             name.split(/\s+/).length >= 2;
+    }
+    
+    const clientName = isValidClientName(rawClientName) ? rawClientName.trim() : null;
+    
+    if (clientName) {
       console.log('👤 Processando dados do cliente:', clientName);
       
       // Buscar cliente existente por nome
