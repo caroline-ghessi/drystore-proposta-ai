@@ -109,22 +109,24 @@ async function saveAsProposalDraft(
     let clientId = null;
     const rawClientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
     
-    // VALIDAÇÃO ANTI-TESTE: Bloquear nomes de cliente inválidos
+    // VALIDAÇÃO FLEXÍVEL: Permitir mais nomes de clientes válidos
     function isValidClientName(name: string): boolean {
-      if (!name || name === 'N/A' || name.trim() === '') return false;
+      if (!name || name.trim() === '') return false;
       
-      const upperName = name.toUpperCase().trim();
+      const trimmedName = name.trim();
+      
+      // Apenas bloquear nomes obviamente inválidos
       const invalidNames = [
-        'PROPOSTA COMERCIAL', 'PROPOSTA', 'COMERCIAL',
-        'PEDRO BARTELLE', 'CLIENTE TESTE', 'TEST CLIENT',
-        'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL',
-        'DRYSTORE', 'SOLUÇÕES INTELIGENTES'
+        'PROPOSTA COMERCIAL', 'PEDRO BARTELLE', 'CLIENTE TESTE', 'TEST CLIENT',
+        'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL'
       ];
       
-      return !invalidNames.some(invalid => upperName.includes(invalid)) &&
-             name.length >= 6 && 
-             name.length <= 40 &&
-             name.split(/\s+/).length >= 2;
+      const upperName = trimmedName.toUpperCase();
+      const hasInvalidName = invalidNames.some(invalid => upperName === invalid);
+      
+      return !hasInvalidName && 
+             trimmedName.length >= 3 && 
+             trimmedName.length <= 60;
     }
     
     const clientName = isValidClientName(rawClientName) ? rawClientName.trim() : null;

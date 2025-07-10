@@ -52,9 +52,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
   
   const { toast } = useToast();
 
-  // RESET GLOBAL - Limpa TODOS os estados e mutex
+  // RESET GLOBAL - Limpa TODOS os estados, mutex E cache local
   const forceReset = () => {
-    console.log('🔄 RESET GLOBAL - Limpando todos os estados e mutex');
+    console.log('🔄 RESET GLOBAL - Limpando estados, mutex E cache local');
     setUploadedFile(null);
     setIsProcessing(false);
     setIsAnalyzed(false);
@@ -67,9 +67,16 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
     setIsGloballyProcessing(false);
     setCurrentProcessingId('');
     
+    // NOVO: Limpar qualquer cache do navegador
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+    }
+    
     toast({
-      title: "Sistema resetado",
-      description: "O processamento foi resetado completamente.",
+      title: "Sistema resetado completamente",
+      description: "Cache limpo, processamento resetado. Pronto para novo PDF.",
     });
   };
 
@@ -267,58 +274,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
           
           return;
         } else if (result.success === false && result.processing_log) {
-          // FALLBACK INTELIGENTE: Verificar se dados parciais estão disponíveis
-          console.log(`⚠️ [${processingId}] Processamento parcial - verificando dados salvos`);
-          
-          // Buscar dados em propostas_brutas como fallback (incluindo dados marcados como teste)
-          const { data: rawData } = await supabase
-            .from('propostas_brutas')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          
-          if (rawData?.dados_estruturados) {
-            // Type assertion para dados estruturados
-            const structuredData = rawData.dados_estruturados as any;
-            
-            // RECUPERAR NOME REAL DO CLIENTE - Corrigir se foi marcado erroneamente
-            let clientName = rawData.cliente_identificado;
-            if (clientName === 'DADOS_TESTE_REMOVIDO' && rawData.arquivo_nome) {
-              // Tentar extrair cliente do nome do arquivo
-              const fileNameMatch = rawData.arquivo_nome.match(/([A-Z\s]+)\.pdf$/i);
-              if (fileNameMatch) {
-                const nameFromFile = fileNameMatch[1].replace(/\d+/g, '').trim();
-                if (nameFromFile.length > 6) {
-                  clientName = nameFromFile;
-                  console.log(`🔄 [${processingId}] Cliente recuperado do nome do arquivo: "${clientName}"`);
-                }
-              }
-            }
-            
-            const fallbackData = {
-              client: clientName || 'Cliente não identificado',
-              proposalNumber: 'N/A (processamento parcial)',
-              vendor: 'DryStore',
-              items: (structuredData?.items && Array.isArray(structuredData.items)) ? structuredData.items : [],
-              subtotal: structuredData?.subtotal || 0,
-              total: rawData.valor_total_extraido || 0,
-              paymentTerms: 'Processamento parcial - revisar dados',
-              delivery: 'A definir na revisão'
-            };
-
-            setExtractedData(fallbackData);
-            setIsAnalyzed(true);
-
-            toast({
-              title: "⚠️ Dados parciais recuperados",
-              description: "Processamento incompleto, mas dados foram salvos. Revise antes de prosseguir.",
-              variant: "destructive"
-            });
-            
-            return;
-          }
+          // ERRO LIMPO: Não buscar dados antigos
+          console.log(`❌ [${processingId}] Processamento falhou - sem fallback para dados antigos`);
+          throw new Error(`Processamento falhou: ${result.processing_log?.errors?.join(', ') || 'Erro desconhecido'}`);
         }
       }
 

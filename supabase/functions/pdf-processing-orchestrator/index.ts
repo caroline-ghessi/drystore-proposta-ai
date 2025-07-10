@@ -241,11 +241,11 @@ serve(async (req) => {
 
 async function extractText(fileData: string, fileName: string, options: any, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
   
   try {
     const response = await fetch(
-      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-text-extractor`,
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/pdf-text-extractor`,
       {
         method: 'POST',
         headers: {
@@ -282,11 +282,11 @@ async function extractText(fileData: string, fileName: string, options: any, pro
 
 async function organizeData(extractedText: string, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
   
   try {
     const response = await fetch(
-      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/ai-data-organizer`,
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-data-organizer`,
       {
         method: 'POST',
         headers: {
@@ -322,11 +322,11 @@ async function organizeData(extractedText: string, processingId?: string) {
 
 async function formatData(organizedData: any, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
   
   try {
     const response = await fetch(
-      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/proposal-formatter`,
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/proposal-formatter`,
       {
         method: 'POST',
         headers: {
@@ -362,11 +362,11 @@ async function formatData(organizedData: any, processingId?: string) {
 
 async function validateData(formattedData: any, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
   
   try {
     const response = await fetch(
-      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/data-validator`,
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-validator`,
       {
         method: 'POST',
         headers: {
@@ -402,11 +402,11 @@ async function validateData(formattedData: any, processingId?: string) {
 
 async function saveData(formattedData: any, validationResult: any, userId: string, productGroup: string = 'geral', processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
   
   try {
     const response = await fetch(
-      `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/data-saver`,
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-saver`,
       {
         method: 'POST',
         headers: {
