@@ -106,8 +106,9 @@ serve(async (req) => {
 
     try {
       // Etapa 1: Extração de texto
-      console.log('📄 Etapa 1: Extração de texto...');
+      console.log('📄 Etapa 1: Extração de texto...', { fileName, userId });
       const textResult = await extractText(fileData, fileName, options);
+      console.log('📄 Etapa 1 CONCLUÍDA:', { success: textResult.success, hasText: !!textResult.extracted_text });
       processingLog.stages.push({
         stage: 'text_extraction',
         success: textResult.success,
@@ -120,9 +121,10 @@ serve(async (req) => {
       }
 
       // Etapa 2: Organização de dados
-      console.log('🧠 Etapa 2: Organização de dados...');
+      console.log('🧠 Etapa 2: Organização de dados...', { textLength: textResult.extracted_text?.length });
       const stageStart = Date.now();
       const organizationResult = await organizeData(textResult.extracted_text);
+      console.log('🧠 Etapa 2 CONCLUÍDA:', { success: organizationResult.success, itemsFound: organizationResult.organized_data?.items?.length });
       processingLog.stages.push({
         stage: 'data_organization',
         success: organizationResult.success,
@@ -135,9 +137,10 @@ serve(async (req) => {
       }
 
       // Etapa 3: Formatação
-      console.log('📝 Etapa 3: Formatação...');
+      console.log('📝 Etapa 3: Formatação...', { hasOrganizedData: !!organizationResult.organized_data });
       const formatStart = Date.now();
       const formatResult = await formatData(organizationResult.organized_data);
+      console.log('📝 Etapa 3 CONCLUÍDA:', { success: formatResult.success, hasFormattedData: !!formatResult.formatted_data });
       processingLog.stages.push({
         stage: 'data_formatting',
         success: formatResult.success,
@@ -149,9 +152,10 @@ serve(async (req) => {
       }
 
       // Etapa 4: Validação
-      console.log('✅ Etapa 4: Validação...');
+      console.log('✅ Etapa 4: Validação...', { hasFormattedData: !!formatResult.formatted_data });
       const validationStart = Date.now();
       const validationResult = await validateData(formatResult.formatted_data);
+      console.log('✅ Etapa 4 CONCLUÍDA:', { success: validationResult.success, confidence: validationResult.validation_result?.confidence_score });
       processingLog.stages.push({
         stage: 'data_validation',
         success: validationResult.success,
@@ -164,7 +168,7 @@ serve(async (req) => {
       }
 
       // Etapa 5: Salvamento
-      console.log('💾 Etapa 5: Salvamento...');
+      console.log('💾 Etapa 5: Salvamento...', { userId, productGroup, hasValidationResult: !!validationResult.validation_result });
       const saveStart = Date.now();
       const saveResult = await saveData(
         formatResult.formatted_data, 
@@ -172,6 +176,7 @@ serve(async (req) => {
         userId,
         productGroup
       );
+      console.log('💾 Etapa 5 CONCLUÍDA:', { success: saveResult.success, proposalId: saveResult.saved_data?.proposal_id });
       processingLog.stages.push({
         stage: 'data_saving',
         success: saveResult.success,
