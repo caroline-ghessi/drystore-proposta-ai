@@ -1,18 +1,16 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { AdobeClient, AdobeCredentials } from './adobe-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Cache global de token Adobe (simplificado)
-let adobeTokenCache: { token: string; expiresAt: number } | null = null;
-
-// TIMEOUT OTIMIZADO - 60 segundos total para arquivos grandes
-const TOTAL_TIMEOUT = 60000;
-const ADOBE_TIMEOUT = 40000;
+// TIMEOUT OTIMIZADO - 35 segundos total (dentro do limite Supabase de 45s)
+const TOTAL_TIMEOUT = 35000;
+const ADOBE_TIMEOUT = 25000;
 
 serve(async (req) => {
   const startTime = Date.now();
@@ -25,10 +23,10 @@ serve(async (req) => {
 
   console.log(`🚀 [${requestId}] === PDF PROCESSING STARTED ===`);
 
-  // TIMEOUT PRINCIPAL - 60 segundos máximo
+  // TIMEOUT PRINCIPAL - 35 segundos máximo (dentro do limite Supabase)
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => {
-    console.log(`⏰ [${requestId}] TIMEOUT GERAL após 60 segundos - forçando fallback`);
+    console.log(`⏰ [${requestId}] TIMEOUT GERAL após 35 segundos - forçando fallback`);
     timeoutController.abort();
   }, TOTAL_TIMEOUT);
 
@@ -108,11 +106,14 @@ serve(async (req) => {
         throw new Error('Adobe credentials not configured');
       }
 
-      // Obter token com timeout de 40s
+      // Usar AdobeClient corretamente com timeout de 25s
+      const adobeCredentials: AdobeCredentials = { clientId, clientSecret, orgId };
+      const adobeClient = new AdobeClient(adobeCredentials);
+      
       const adobePromise = Promise.race([
-        processWithAdobe(file, { clientId, clientSecret, orgId }),
+        processWithAdobeClient(file, adobeClient),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Adobe timeout after 40s')), ADOBE_TIMEOUT)
+          setTimeout(() => reject(new Error('Adobe timeout after 25s')), ADOBE_TIMEOUT)
         )
       ]);
 
@@ -226,100 +227,32 @@ serve(async (req) => {
   }
 });
 
-// FUNÇÃO ADOBE SIMPLIFICADA
-async function processWithAdobe(file: File, credentials: any): Promise<any> {
-  // Obter token (com cache)
-  const now = Date.now();
-  if (!adobeTokenCache || adobeTokenCache.expiresAt < now + 300000) {
-    const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-        scope: 'openid,AdobeID,DCAPI'
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error(`Adobe token failed: ${tokenResponse.status}`);
-    }
-
-    const tokenData = await tokenResponse.json();
-    adobeTokenCache = {
-      token: tokenData.access_token,
-      expiresAt: now + (tokenData.expires_in * 1000)
-    };
-  }
-
-  const accessToken = adobeTokenCache.token;
-
-  // Upload arquivo
-  const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'X-API-Key': credentials.clientId,
-      'Content-Type': file.type
-    },
-    body: await file.arrayBuffer()
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error(`Upload failed: ${uploadResponse.status}`);
-  }
-
-  const { assetID } = await uploadResponse.json();
-
-  // Iniciar extração
-  const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'X-API-Key': credentials.clientId,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      assetID,
-      elementsToExtract: ['text', 'tables']
-    })
-  });
-
-  if (!extractResponse.ok) {
-    throw new Error(`Extraction failed: ${extractResponse.status}`);
-  }
-
-  const location = extractResponse.headers.get('location')!;
-
-  // Polling simplificado (máximo 8 tentativas = 16 segundos)
-  for (let i = 0; i < 8; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const statusResponse = await fetch(location, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'X-API-Key': credentials.clientId
-      }
-    });
-
-    const statusData = await statusResponse.json();
-    
-    if (statusData.status === 'done') {
-      // Download resultado
-      const resultResponse = await fetch(statusData.asset.downloadUri);
-      const resultData = await resultResponse.json();
-      
-      // Parse simples
-      return parseAdobeData(resultData);
-    }
-    
-    if (statusData.status === 'failed') {
-      throw new Error('Adobe processing failed');
-    }
-  }
-
-  throw new Error('Adobe polling timeout');
+// FUNÇÃO ADOBE CORRIGIDA - usando AdobeClient class
+async function processWithAdobeClient(file: File, adobeClient: AdobeClient): Promise<any> {
+  console.log('🔑 Iniciando processamento Adobe com implementação correta...');
+  
+  // 1. Obter token de acesso
+  const accessToken = await adobeClient.getAccessToken();
+  console.log('✅ Token Adobe obtido com sucesso');
+  
+  // 2. Upload do arquivo
+  const assetID = await adobeClient.uploadFile(file, accessToken);
+  console.log('✅ Arquivo enviado para Adobe, Asset ID:', assetID);
+  
+  // 3. Iniciar extração
+  const location = await adobeClient.startExtraction(assetID, accessToken);
+  console.log('✅ Extração iniciada, polling location:', location);
+  
+  // 4. Polling para obter resultado
+  const extractResult = await adobeClient.pollExtractionResult(location, accessToken);
+  console.log('✅ Extração completa:', extractResult.status);
+  
+  // 5. Download dos dados extraídos
+  const resultData = await adobeClient.downloadResult(extractResult.asset.downloadUri);
+  console.log('✅ Dados baixados com sucesso');
+  
+  // 6. Parse dos dados Adobe
+  return parseAdobeData(resultData);
 }
 
 // PARSER ADOBE SIMPLIFICADO

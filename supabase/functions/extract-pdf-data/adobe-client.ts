@@ -29,7 +29,7 @@ export class AdobeClient {
         'client_id': this.credentials.clientId,
         'client_secret': this.credentials.clientSecret,
         'grant_type': 'client_credentials',
-        'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,additional_info.roles'
+        'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,additional_info.roles,DCAPI'
       }).toString()
     });
 
