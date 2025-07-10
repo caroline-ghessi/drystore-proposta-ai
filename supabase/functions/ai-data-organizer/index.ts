@@ -35,15 +35,16 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-2-latest',
+        model: 'grok-4-0709',
         messages: [
           { 
             role: 'system', 
-            content: 'Você é um especialista em extração e estruturação de dados de documentos comerciais brasileiros. Sempre responda apenas com JSON válido, sem explicações adicionais.' 
+            content: 'Você é um especialista em extração e estruturação de dados de documentos comerciais brasileiros. Sempre responda apenas com JSON válido estruturado conforme o schema fornecido.' 
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 2000,
+        response_format: { type: "json_object" },
+        max_tokens: 8000,
         temperature: 0.1
       }),
     });

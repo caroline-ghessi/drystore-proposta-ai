@@ -47,9 +47,10 @@ export class AIERPParser {
           content: prompt
         }
       ],
-      model: 'grok-2-1212',
+      model: 'grok-4-0709',
       temperature: 0.1,
-      max_tokens: 2000
+      max_tokens: 8000,
+      response_format: { type: "json_object" }
     };
 
     console.log('🚀 Calling Grok API for ERP parsing...');

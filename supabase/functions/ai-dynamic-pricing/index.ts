@@ -55,11 +55,11 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-2-latest',
+        model: 'grok-4-0709',
         messages: [
           { role: 'user', content: prompt }
         ],
-        max_tokens: 600,
+        max_tokens: 1500,
         temperature: 0.4
       }),
     });
