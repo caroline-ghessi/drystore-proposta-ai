@@ -1,12 +1,36 @@
 project_id = "mlzgeceiinjwpffgsxuy"
 
-[functions.extract-pdf-data]
+[functions.pdf-processing-orchestrator]
+verify_jwt = true
+
+[functions.pdf-text-extractor]
+verify_jwt = true
+
+[functions.ai-data-organizer]
+verify_jwt = true
+
+[functions.proposal-formatter]
+verify_jwt = true
+
+[functions.data-validator]
+verify_jwt = true
+
+[functions.data-saver]
 verify_jwt = true
 
 [functions.get-adobe-credentials]
 verify_jwt = true
 
 [functions.process-energy-bill]
+verify_jwt = true
+
+[functions.whapi-send-message]
+verify_jwt = true
+
+[functions.test-resend-email]
+verify_jwt = true
+
+[functions.whapi-webhook]
 verify_jwt = true
 
 [functions.ai-proposal-assistant]
@@ -22,18 +46,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-chatbot]
-verify_jwt = true
-
-[functions.ai-data-organizer]
-verify_jwt = true
-
-[functions.proposal-formatter]
-verify_jwt = true
-
-[functions.data-validator]
-verify_jwt = true
-
-[functions.data-saver]
 verify_jwt = true
 
 [functions.pdf-processing-logger]
