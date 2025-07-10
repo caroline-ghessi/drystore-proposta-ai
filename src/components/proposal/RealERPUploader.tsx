@@ -172,9 +172,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
     console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // TIMEOUT MAIS GENEROSO DE 45 SEGUNDOS - Upload direto é mais eficiente
+    // TIMEOUT OTIMIZADO DE 30 SEGUNDOS - Alinhado com timeouts das funções (5s cada)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 45 segundos')), 45 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 30 segundos')), 30 * 1000);
     });
 
     try {
@@ -234,20 +234,20 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
         
         if (result.success && result.data) {
           const extractedData = {
-            client: result.data.client_name || 'Cliente não identificado',
+            client: result.data.formatted_data?.client_name || result.data.client_name || 'Cliente não identificado',
             proposalNumber: `PROP-${result.data.proposal_id?.slice(0, 8)}` || 'N/A',
             vendor: 'DryStore',
-            items: [], // Será preenchido na revisão
-            subtotal: 0,
-            total: 0,
-            paymentTerms: 'A definir na revisão',
+            items: result.data.formatted_data?.items || [], // Dados extraídos completos
+            subtotal: result.data.formatted_data?.subtotal || 0,
+            total: result.data.formatted_data?.valor_total || result.data.formatted_data?.total || 0,
+            paymentTerms: result.data.formatted_data?.observacoes || 'A definir na revisão',
             delivery: 'A definir na revisão',
             // Dados adicionais para a revisão
             proposalId: result.data.proposal_id,
             clientId: result.data.client_id,
-            needsClientEmail: result.data.needs_client_email,
+            needsClientEmail: !result.data.formatted_data?.client_email,
             itemsCount: result.data.items_count || 0,
-            confidenceScore: result.data.confidence_score || 0
+            confidenceScore: result.final_confidence_score || 0
           };
 
           setExtractedData(extractedData);
@@ -255,16 +255,56 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
           console.log(`✅ [${processingId}] Proposta criada com sucesso:`, {
             proposal_id: result.data.proposal_id,
-            client_name: result.data.client_name,
-            items_count: result.data.items_count
+            client_name: extractedData.client,
+            items_count: result.data.items_count,
+            confidence_score: result.final_confidence_score
           });
 
           toast({
             title: "🚀 Dados extraídos e salvos!",
-            description: `Cliente: ${result.data.client_name} • ${result.data.items_count} itens extraídos`,
+            description: `Cliente: ${extractedData.client} • ${result.data.items_count} itens • Confiança: ${Math.round((result.final_confidence_score || 0) * 100)}%`,
           });
           
           return;
+        } else if (result.success === false && result.processing_log) {
+          // FALLBACK INTELIGENTE: Verificar se dados parciais estão disponíveis
+          console.log(`⚠️ [${processingId}] Processamento parcial - verificando dados salvos`);
+          
+          // Buscar dados em propostas_brutas como fallback
+          const { data: rawData } = await supabase
+            .from('propostas_brutas')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (rawData?.dados_estruturados) {
+            // Type assertion para dados estruturados
+            const structuredData = rawData.dados_estruturados as any;
+            
+            const fallbackData = {
+              client: rawData.cliente_identificado || 'Cliente não identificado',
+              proposalNumber: 'N/A (processamento parcial)',
+              vendor: 'DryStore',
+              items: (structuredData?.items && Array.isArray(structuredData.items)) ? structuredData.items : [],
+              subtotal: structuredData?.subtotal || 0,
+              total: rawData.valor_total_extraido || 0,
+              paymentTerms: 'Processamento parcial - revisar dados',
+              delivery: 'A definir na revisão'
+            };
+
+            setExtractedData(fallbackData);
+            setIsAnalyzed(true);
+
+            toast({
+              title: "⚠️ Dados parciais recuperados",
+              description: "Processamento incompleto, mas dados foram salvos. Revise antes de prosseguir.",
+              variant: "destructive"
+            });
+            
+            return;
+          }
         }
       }
 

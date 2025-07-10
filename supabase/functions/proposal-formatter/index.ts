@@ -13,7 +13,9 @@ serve(async (req) => {
   try {
     console.log('📝 proposal-formatter: Iniciando formatação da proposta');
     
-    const { organized_data, format_type = 'drystore_proposal' } = await req.json();
+    const { organized_data, format_type = 'drystore_proposal', processing_id } = await req.json();
+    
+    console.log(`📝 [${processing_id}] proposal-formatter iniciado com formato: ${format_type}`);
     
     if (!organized_data) {
       throw new Error('Dados organizados não fornecidos');
@@ -32,7 +34,7 @@ serve(async (req) => {
         throw new Error(`Formato não suportado: ${format_type}`);
     }
 
-    console.log('✅ Dados formatados com sucesso');
+    console.log(`✅ [${processing_id}] Dados formatados com sucesso`);
 
     return new Response(
       JSON.stringify({
@@ -50,7 +52,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Erro na formatação da proposta:', error);
+    console.error(`❌ [${processing_id}] Erro na formatação da proposta:`, error);
     
     return new Response(
       JSON.stringify({

@@ -13,7 +13,9 @@ serve(async (req) => {
   try {
     console.log('🧠 ai-data-organizer: Iniciando organização de dados');
     
-    const { extracted_text, context = 'erp_pdf' } = await req.json();
+    const { extracted_text, context = 'erp_pdf', processing_id } = await req.json();
+    
+    console.log(`🧠 [${processing_id}] ai-data-organizer iniciado com contexto: ${context}`);
     
     if (!extracted_text) {
       throw new Error('Texto extraído não fornecido');
@@ -26,7 +28,7 @@ serve(async (req) => {
 
     const prompt = createOrganizationPrompt(extracted_text, context);
     
-    console.log('📤 Enviando para Grok AI...');
+    console.log(`📤 [${processing_id}] Enviando para Grok AI...`);
     
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
@@ -73,7 +75,7 @@ serve(async (req) => {
       throw new Error('Dados organizados não contêm lista de itens válida');
     }
 
-    console.log(`✅ Dados organizados com sucesso: ${organizedData.items.length} itens identificados`);
+    console.log(`✅ [${processing_id}] Dados organizados com sucesso: ${organizedData.items.length} itens identificados`);
 
     return new Response(
       JSON.stringify({
@@ -91,7 +93,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Erro na organização de dados:', error);
+    console.error(`❌ [${processing_id}] Erro na organização de dados:`, error);
     
     return new Response(
       JSON.stringify({

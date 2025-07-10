@@ -97,9 +97,9 @@ serve(async (req) => {
 
     try {
       // Etapa 1: Extração de texto
-      console.log('📄 Etapa 1: Extração de texto...', { fileName, userId });
-      const textResult = await extractText(fileData, fileName, options);
-      console.log('📄 Etapa 1 CONCLUÍDA:', { success: textResult.success, hasText: !!textResult.extracted_text });
+      console.log(`📄 [${processingId}] Etapa 1: Extração de texto...`, { fileName, userId });
+      const textResult = await extractText(fileData, fileName, options, processingId);
+      console.log(`📄 [${processingId}] Etapa 1 CONCLUÍDA:`, { success: textResult.success, hasText: !!textResult.extracted_text });
       processingLog.stages.push({
         stage: 'text_extraction',
         success: textResult.success,
@@ -112,10 +112,10 @@ serve(async (req) => {
       }
 
       // Etapa 2: Organização de dados
-      console.log('🧠 Etapa 2: Organização de dados...', { textLength: textResult.extracted_text?.length });
+      console.log(`🧠 [${processingId}] Etapa 2: Organização de dados...`, { textLength: textResult.extracted_text?.length });
       const stageStart = Date.now();
-      const organizationResult = await organizeData(textResult.extracted_text);
-      console.log('🧠 Etapa 2 CONCLUÍDA:', { success: organizationResult.success, itemsFound: organizationResult.organized_data?.items?.length });
+      const organizationResult = await organizeData(textResult.extracted_text, processingId);
+      console.log(`🧠 [${processingId}] Etapa 2 CONCLUÍDA:`, { success: organizationResult.success, itemsFound: organizationResult.organized_data?.items?.length });
       processingLog.stages.push({
         stage: 'data_organization',
         success: organizationResult.success,
@@ -128,10 +128,10 @@ serve(async (req) => {
       }
 
       // Etapa 3: Formatação
-      console.log('📝 Etapa 3: Formatação...', { hasOrganizedData: !!organizationResult.organized_data });
+      console.log(`📝 [${processingId}] Etapa 3: Formatação...`, { hasOrganizedData: !!organizationResult.organized_data });
       const formatStart = Date.now();
-      const formatResult = await formatData(organizationResult.organized_data);
-      console.log('📝 Etapa 3 CONCLUÍDA:', { success: formatResult.success, hasFormattedData: !!formatResult.formatted_data });
+      const formatResult = await formatData(organizationResult.organized_data, processingId);
+      console.log(`📝 [${processingId}] Etapa 3 CONCLUÍDA:`, { success: formatResult.success, hasFormattedData: !!formatResult.formatted_data });
       processingLog.stages.push({
         stage: 'data_formatting',
         success: formatResult.success,
@@ -143,10 +143,10 @@ serve(async (req) => {
       }
 
       // Etapa 4: Validação
-      console.log('✅ Etapa 4: Validação...', { hasFormattedData: !!formatResult.formatted_data });
+      console.log(`✅ [${processingId}] Etapa 4: Validação...`, { hasFormattedData: !!formatResult.formatted_data });
       const validationStart = Date.now();
-      const validationResult = await validateData(formatResult.formatted_data);
-      console.log('✅ Etapa 4 CONCLUÍDA:', { success: validationResult.success, confidence: validationResult.validation_result?.confidence_score });
+      const validationResult = await validateData(formatResult.formatted_data, processingId);
+      console.log(`✅ [${processingId}] Etapa 4 CONCLUÍDA:`, { success: validationResult.success, confidence: validationResult.validation_result?.confidence_score });
       processingLog.stages.push({
         stage: 'data_validation',
         success: validationResult.success,
@@ -159,15 +159,16 @@ serve(async (req) => {
       }
 
       // Etapa 5: Salvamento
-      console.log('💾 Etapa 5: Salvamento...', { userId, productGroup, hasValidationResult: !!validationResult.validation_result });
+      console.log(`💾 [${processingId}] Etapa 5: Salvamento...`, { userId, productGroup, hasValidationResult: !!validationResult.validation_result });
       const saveStart = Date.now();
       const saveResult = await saveData(
         formatResult.formatted_data, 
         validationResult.validation_result,
         userId,
-        productGroup
+        productGroup,
+        processingId
       );
-      console.log('💾 Etapa 5 CONCLUÍDA:', { success: saveResult.success, proposalId: saveResult.saved_data?.proposal_id });
+      console.log(`💾 [${processingId}] Etapa 5 CONCLUÍDA:`, { success: saveResult.success, proposalId: saveResult.saved_data?.proposal_id });
       processingLog.stages.push({
         stage: 'data_saving',
         success: saveResult.success,
@@ -238,9 +239,9 @@ serve(async (req) => {
   }
 });
 
-async function extractText(fileData: string, fileName: string, options: any) {
+async function extractText(fileData: string, fileName: string, options: any, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -254,7 +255,8 @@ async function extractText(fileData: string, fileName: string, options: any) {
         body: JSON.stringify({
           file_data: fileData,
           file_name: fileName,
-          extraction_method: options.extractionMethod || 'adobe'
+          extraction_method: options.extractionMethod || 'adobe',
+          processing_id: processingId
         }),
         signal: controller.signal
       }
@@ -278,9 +280,9 @@ async function extractText(fileData: string, fileName: string, options: any) {
   }
 }
 
-async function organizeData(extractedText: string) {
+async function organizeData(extractedText: string, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -293,7 +295,8 @@ async function organizeData(extractedText: string) {
         },
         body: JSON.stringify({
           extracted_text: extractedText,
-          context: 'erp_pdf'
+          context: 'erp_pdf',
+          processing_id: processingId
         }),
         signal: controller.signal
       }
@@ -317,9 +320,9 @@ async function organizeData(extractedText: string) {
   }
 }
 
-async function formatData(organizedData: any) {
+async function formatData(organizedData: any, processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -332,7 +335,8 @@ async function formatData(organizedData: any) {
         },
         body: JSON.stringify({
           organized_data: organizedData,
-          format_type: 'drystore_proposal'
+          format_type: 'drystore_proposal',
+          processing_id: processingId
         }),
         signal: controller.signal
       }
@@ -356,7 +360,7 @@ async function formatData(organizedData: any) {
   }
 }
 
-async function validateData(formattedData: any) {
+async function validateData(formattedData: any, processingId?: string) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
@@ -371,7 +375,8 @@ async function validateData(formattedData: any) {
         },
         body: JSON.stringify({
           formatted_data: formattedData,
-          validation_rules: 'standard'
+          validation_rules: 'standard',
+          processing_id: processingId
         }),
         signal: controller.signal
       }
@@ -395,9 +400,9 @@ async function validateData(formattedData: any) {
   }
 }
 
-async function saveData(formattedData: any, validationResult: any, userId: string, productGroup: string = 'geral') {
+async function saveData(formattedData: any, validationResult: any, userId: string, productGroup: string = 'geral', processingId?: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -413,7 +418,8 @@ async function saveData(formattedData: any, validationResult: any, userId: strin
           validation_result: validationResult,
           save_type: 'proposal_draft',
           user_id: userId,
-          product_group: productGroup
+          product_group: productGroup,
+          processing_id: processingId
         }),
         signal: controller.signal
       }

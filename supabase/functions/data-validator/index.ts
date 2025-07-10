@@ -13,7 +13,9 @@ serve(async (req) => {
   try {
     console.log('✅ data-validator: Iniciando validação de dados');
     
-    const { formatted_data, validation_rules = 'standard' } = await req.json();
+    const { formatted_data, validation_rules = 'standard', processing_id } = await req.json();
+    
+    console.log(`✅ [${processing_id}] data-validator iniciado com regras: ${validation_rules}`);
     
     if (!formatted_data) {
       throw new Error('Dados formatados não fornecidos');
@@ -21,7 +23,7 @@ serve(async (req) => {
 
     const validationResult = await validateData(formatted_data, validation_rules);
     
-    console.log(`✅ Validação concluída - Score: ${validationResult.confidence_score}%`);
+    console.log(`✅ [${processing_id}] Validação concluída - Score: ${validationResult.confidence_score}%`);
 
     return new Response(
       JSON.stringify({
@@ -38,7 +40,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Erro na validação de dados:', error);
+    console.error(`❌ [${processing_id}] Erro na validação de dados:`, error);
     
     return new Response(
       JSON.stringify({
