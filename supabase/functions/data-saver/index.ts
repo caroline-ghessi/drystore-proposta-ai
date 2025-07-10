@@ -109,24 +109,21 @@ async function saveAsProposalDraft(
     let clientId = null;
     const rawClientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
     
-    // VALIDAÇÃO FLEXÍVEL: Permitir mais nomes de clientes válidos
+    // VALIDAÇÃO ULTRA FLEXÍVEL: Aceitar qualquer nome não vazio
     function isValidClientName(name: string): boolean {
-      if (!name || name.trim() === '') return false;
+      if (!name || name.trim() === '') {
+        console.log('❌ Nome inválido: vazio ou null');
+        return false;
+      }
       
       const trimmedName = name.trim();
+      console.log('🔍 Validando nome do cliente:', trimmedName);
       
-      // Apenas bloquear nomes obviamente inválidos
-      const invalidNames = [
-        'PROPOSTA COMERCIAL', 'PEDRO BARTELLE', 'CLIENTE TESTE', 'TEST CLIENT',
-        'DESCRIÇÃO', 'QUANTIDADE', 'VALOR', 'TOTAL'
-      ];
+      // Validação mínima - apenas comprimento
+      const isValid = trimmedName.length >= 2 && trimmedName.length <= 100;
+      console.log('✅ Nome válido:', isValid);
       
-      const upperName = trimmedName.toUpperCase();
-      const hasInvalidName = invalidNames.some(invalid => upperName === invalid);
-      
-      return !hasInvalidName && 
-             trimmedName.length >= 3 && 
-             trimmedName.length <= 60;
+      return isValid;
     }
     
     const clientName = isValidClientName(rawClientName) ? rawClientName.trim() : null;
@@ -195,7 +192,12 @@ async function saveAsProposalDraft(
         clientId = newClient.id;
       }
     } else {
-      throw new Error('Nome do cliente é obrigatório para criar proposta');
+      console.log('❌ Nome do cliente não identificado nos dados:', {
+        rawClientName,
+        formattedDataClient: formattedData.client,
+        allFormattedData: JSON.stringify(formattedData, null, 2)
+      });
+      throw new Error(`Nome do cliente não identificado nos dados. Raw: "${rawClientName}"`);
     }
 
     // Criar proposta com todos os campos obrigatórios
@@ -263,22 +265,28 @@ async function saveAsProposalDraft(
       console.log(`✅ ${itemCount} itens inseridos com sucesso`);
     }
 
-    // Salvar metadados de validação
+    // Forçar criação de novo registro com timestamp único
     console.log('💾 Salvando metadados de validação...');
+    const uniqueTimestamp = Date.now();
     const { error: metadataError } = await supabase
       .from('propostas_brutas')
       .insert({
         user_id: userId,
-        arquivo_nome: 'extracted_from_pdf.json',
+        arquivo_nome: `extracted_${uniqueTimestamp}.json`,
         arquivo_tamanho: JSON.stringify(formattedData).length,
         status: 'processed',
         dados_estruturados: formattedData,
         valor_total_extraido: formattedData.valor_total || formattedData.total || 0,
-        cliente_identificado: clientName
+        cliente_identificado: clientName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
 
     if (metadataError) {
-      console.warn('⚠️ Erro ao salvar metadados (não crítico):', metadataError);
+      console.error('❌ Erro ao salvar metadados:', metadataError);
+      throw new Error(`Erro ao salvar metadados: ${metadataError.message}`);
+    } else {
+      console.log('✅ Metadados salvos com sucesso');
     }
 
     return {
