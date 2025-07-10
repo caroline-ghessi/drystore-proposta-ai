@@ -19,9 +19,10 @@ serve(async (req) => {
   }
 
   const startTime = Date.now();
+  const correlationId = `pdf-extractor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log('🔧 pdf-text-extractor: Iniciando extração de texto');
+    console.log(`🔧 pdf-text-extractor [${correlationId}]: Iniciando extração de texto`);
     
     // CORREÇÃO CRÍTICA: Validação robusta do request
     let requestBody;
@@ -153,7 +154,7 @@ async function getAdobeAccessToken(): Promise<string> {
 
   console.log('🔐 Renovando token Adobe (cache expirado ou inexistente)...');
   
-  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
+  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -162,7 +163,7 @@ async function getAdobeAccessToken(): Promise<string> {
       'client_id': adobeClientId,
       'client_secret': adobeClientSecret,
       'grant_type': 'client_credentials',
-      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,read_write_documents'
+      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext'
     }).toString()
   });
 
@@ -283,9 +284,9 @@ async function extractWithAdobe(fileData: string, fileName: string) {
     
     console.log('⏳ Job de extração criado:', jobId);
 
-    // Step 4: Poll for completion (timeout aumentado para 45s)
+    // Step 4: Poll for completion (timeout aumentado para 90s)
     let attempts = 0;
-    const maxAttempts = 15; // 15 tentativas x 3s = 45s máximo
+    const maxAttempts = 30; // 30 tentativas x 3s = 90s máximo
     const pollingStartTime = Date.now();
     
     while (attempts < maxAttempts) {

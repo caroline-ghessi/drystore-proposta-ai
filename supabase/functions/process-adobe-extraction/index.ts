@@ -14,8 +14,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const correlationId = `adobe-extraction-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
-    console.log('=== ADOBE PDF PROCESSING V4 - REAL PDF EXTRACTION ===');
+    console.log(`=== ADOBE PDF PROCESSING V4 [${correlationId}] - REAL PDF EXTRACTION ===`);
     
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
@@ -258,7 +260,7 @@ async function processWithEnhancedAdobeAPI(
 
   // Get Adobe access token
   console.log('🔐 Getting Adobe access token for enhanced processing...');
-  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
+  const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -267,7 +269,7 @@ async function processWithEnhancedAdobeAPI(
       'client_id': adobeClientId,
       'client_secret': adobeClientSecret,
       'grant_type': 'client_credentials',
-      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,additional_info.roles'
+      'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext'
     }).toString()
   });
 
@@ -313,7 +315,7 @@ async function processWithEnhancedAdobeAPI(
   // POLLING MELHORADO: Com timeout adequado para Adobe
   let extractResult;
   let attempts = 0;
-  const maxAttempts = 40; // 120s timeout
+  const maxAttempts = 30; // 90s timeout
   let waitTime = 3000;
 
   while (attempts < maxAttempts) {
