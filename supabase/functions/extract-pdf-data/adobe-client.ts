@@ -11,257 +11,344 @@ export class AdobeClient {
     this.credentials = credentials;
   }
 
-  async getAccessToken(): Promise<string> {
-    console.log('🔄 Obtendo token de acesso Adobe...');
-    console.log('🔍 Credenciais em uso:');
-    console.log('  - Client ID length:', this.credentials.clientId.length);
-    console.log('  - Client Secret length:', this.credentials.clientSecret.length); 
-    console.log('  - Org ID length:', this.credentials.orgId.length);
-    console.log('  - Client ID preview:', this.credentials.clientId.substring(0, 10) + '...');
-    console.log('  - Org ID preview:', this.credentials.orgId.substring(0, 20) + '...');
+  async getAccessToken(correlationId?: string): Promise<string> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
+    console.log(`${logPrefix} 🔐 Iniciando autenticação Adobe...`);
     
-    const tokenResponse = await fetch('https://ims-na1.adobelogin.com/ims/token/v3', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        'client_id': this.credentials.clientId,
-        'client_secret': this.credentials.clientSecret,
-        'grant_type': 'client_credentials',
-        'scope': 'openid,AdobeID,read_organizations,additional_info.projectedProductContext,additional_info.roles,DCAPI'
-      }).toString()
-    });
-
-    console.log('📨 Adobe token response:', {
-      status: tokenResponse.status,
-      statusText: tokenResponse.statusText,
-      ok: tokenResponse.ok
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('❌ Adobe token error:', {
-        status: tokenResponse.status,
-        statusText: tokenResponse.statusText,
-        error: errorText
-      });
-      
-      // Provide specific error messages based on status
-      if (tokenResponse.status === 401) {
-        throw new Error('Adobe credentials are invalid. Please verify Client ID and Client Secret are correct.');
-      } else if (tokenResponse.status === 400) {
-        throw new Error('Adobe authentication request is malformed. Please check credential format.');
-      } else {
-        throw new Error(`Adobe authentication failed: ${tokenResponse.status} - ${errorText}`);
-      }
-    }
-
-    const tokenData = await tokenResponse.json();
-    const { access_token } = tokenData;
-    
-    if (!access_token) {
-      console.error('❌ No access token in response:', tokenData);
-      throw new Error('Adobe API returned success but no access token found');
+    // Validar credenciais antes de tentar autenticar
+    if (!this.credentials.clientId || !this.credentials.clientSecret || !this.credentials.orgId) {
+      throw new Error('Adobe credentials incomplete');
     }
     
-    console.log('✅ Adobe access token obtained successfully');
-    console.log('🔍 Token length:', access_token.length);
-    return access_token;
-  }
-
-  async uploadFile(file: File, accessToken: string): Promise<string> {
-    console.log('🚀 Starting Adobe file upload - Direct method...');
-    console.log('📄 File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
-    
-    // Validar token de acesso
-    if (!accessToken || accessToken.length < 10) {
-      throw new Error('Invalid Adobe access token');
-    }
-
     try {
-      return await this.uploadFileDirect(file, accessToken);
-    } catch (error) {
-      console.error('❌ Direct upload failed:', error);
-      throw error;
-    }
-  }
-
-  private async uploadFileDirect(file: File, accessToken: string): Promise<string> {
-    console.log('📤 Starting direct Adobe file upload...');
-    console.log('🔍 Upload details:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      accessTokenLength: accessToken.length
-    });
-    
-    // Prepare FormData with correct file handling
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file, file.name);
-
-    // Detailed headers for Adobe API
-    const headers = {
-      'Authorization': `Bearer ${accessToken}`,
-      'X-API-Key': this.credentials.clientId,
-      'X-Adobe-Organization-Id': this.credentials.orgId,
-    };
-
-    console.log('📨 Making request to Adobe with headers:', {
-      hasAuth: headers.Authorization.startsWith('Bearer '),
-      apiKey: headers['X-API-Key'].substring(0, 8) + '...',
-      orgId: headers['X-Adobe-Organization-Id'].substring(0, 15) + '...'
-    });
-
-    const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
-      method: 'POST',
-      headers,
-      body: uploadFormData
-    });
-
-    console.log('📨 Adobe upload response:', {
-      status: uploadResponse.status,
-      statusText: uploadResponse.statusText,
-      headers: Object.fromEntries(uploadResponse.headers.entries())
-    });
-
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('❌ Adobe upload error:', {
-        status: uploadResponse.status,
-        statusText: uploadResponse.statusText,
-        error: errorText
+      // Usar v1 da API conforme documentação Adobe
+      const response = await fetch('https://ims-na1.adobelogin.com/ims/token/v1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: this.credentials.clientId,
+          client_secret: this.credentials.clientSecret,
+          grant_type: 'client_credentials',
+          scope: 'openid,AdobeID,read_organizations,additional_info.projectedProductContext'
+        }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`${logPrefix} ❌ Erro na autenticação Adobe:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          clientId: this.credentials.clientId.substring(0, 8) + '...'
+        });
+        throw new Error(`Adobe authentication failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
       
-      // Provide specific error messages
-      if (uploadResponse.status === 415) {
-        throw new Error('Adobe rejected file format. Ensure PDF is valid and not corrupted.');
-      } else if (uploadResponse.status === 401) {
-        throw new Error('Adobe authentication failed. Check credentials configuration.');
-      } else if (uploadResponse.status === 413) {
-        throw new Error('File too large for Adobe API. Maximum size is 10MB.');
+      if (!data.access_token) {
+        console.error(`${logPrefix} ❌ Token não encontrado na resposta:`, data);
+        throw new Error('Access token not found in Adobe response');
       }
       
-      throw new Error(`Adobe upload failed: ${uploadResponse.status} - ${errorText}`);
-    }
+      console.log(`${logPrefix} ✅ Token Adobe obtido com sucesso (expires in ${data.expires_in || 'unknown'}s)`);
+      return data.access_token;
 
-    const uploadData = await uploadResponse.json();
-    const assetID = uploadData.assetID;
-    
-    if (!assetID) {
-      console.error('❌ No assetID in response:', uploadData);
-      throw new Error('Adobe upload succeeded but no assetID returned');
-    }
-
-    console.log('✅ File uploaded to Adobe successfully!', {
-      assetID: assetID,
-      fileName: file.name
-    });
-    
-    return assetID;
-  }
-
-  async startExtraction(assetID: string, accessToken: string): Promise<string> {
-    const extractPayload = {
-      assetID: assetID,
-      elementsToExtract: ['text', 'tables'],
-      tableOutputFormat: 'xlsx',
-      renditionsToExtract: ['tables'],
-      getCharBounds: true,
-      includeStyling: true,
-      getStylingInfo: true
-    };
-
-    console.log('Sending extract request with corrected payload:', JSON.stringify(extractPayload, null, 2));
-
-    const extractResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'X-API-Key': this.credentials.clientId,
-        'X-Adobe-Organization-Id': this.credentials.orgId,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(extractPayload)
-    });
-
-    if (!extractResponse.ok) {
-      const errorText = await extractResponse.text();
-      console.error('Adobe extract error:', errorText);
-      throw new Error(`Failed to start PDF extraction: ${extractResponse.status} - ${errorText}`);
-    }
-
-    const extractData = await extractResponse.json();
-    const location = extractData.location;
-    console.log('Extraction started successfully, polling location:', location);
-    return location;
-  }
-
-  async pollExtractionResult(location: string, accessToken: string): Promise<any> {
-    let extractResult;
-    let attempts = 0;
-    const maxAttempts = 40;
-    let waitTime = 3000;
-
-    while (attempts < maxAttempts) {
-      console.log(`Polling attempt ${attempts + 1}/${maxAttempts}, waiting ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
-      const pollResponse = await fetch(location, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'X-API-Key': this.credentials.clientId,
-          'X-Adobe-Organization-Id': this.credentials.orgId,
+    } catch (error) {
+      console.error(`${logPrefix} ❌ Erro ao obter token Adobe:`, {
+        error: error.message,
+        stack: error.stack,
+        credentials: {
+          clientId: this.credentials.clientId ? this.credentials.clientId.substring(0, 8) + '...' : 'missing',
+          hasSecret: !!this.credentials.clientSecret,
+          hasOrgId: !!this.credentials.orgId
         }
       });
-
-      if (!pollResponse.ok) {
-        const errorText = await pollResponse.text();
-        console.error('Poll response error:', errorText);
-        throw new Error(`Polling failed: ${pollResponse.status} - ${errorText}`);
-      }
-
-      const pollData = await pollResponse.json();
-      console.log('Poll result:', {
-        attempt: attempts + 1,
-        status: pollData.status,
-        progress: pollData.progress || 'N/A'
-      });
-
-      if (pollData.status === 'done') {
-        extractResult = pollData;
-        console.log('Adobe extraction completed successfully!');
-        break;
-      } else if (pollData.status === 'failed') {
-        console.error('Adobe extraction failed:', pollData);
-        throw new Error(`PDF extraction failed in Adobe API: ${JSON.stringify(pollData)}`);
-      }
-
-      attempts++;
-      waitTime = Math.min(waitTime * 1.3, 12000);
+      throw new Error(`Failed to get Adobe access token: ${error.message}`);
     }
-
-    if (!extractResult) {
-      throw new Error(`PDF extraction timed out after ${maxAttempts} attempts`);
-    }
-
-    return extractResult;
   }
 
-  async downloadResult(resultUrl: string): Promise<any> {
-    console.log('Downloading extraction result from:', resultUrl);
+  async uploadFile(file: File, accessToken: string, correlationId?: string): Promise<string> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
+    console.log(`${logPrefix} 📤 Iniciando upload para Adobe...`);
+    return await this.uploadFileDirect(file, accessToken, correlationId);
+  }
+
+  private async uploadFileDirect(file: File, accessToken: string, correlationId?: string): Promise<string> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
     
-    const resultResponse = await fetch(resultUrl);
-    if (!resultResponse.ok) {
-      throw new Error(`Failed to download result: ${resultResponse.status}`);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log(`${logPrefix} 📤 Fazendo upload direto do arquivo:`, {
+        nome: file.name,
+        tamanho: file.size,
+        tipo: file.type,
+        correlationId
+      });
+
+      // Implementar timeout mais robusto (120 segundos)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      try {
+        const uploadResponse = await fetch('https://pdf-services.adobe.io/assets', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'X-API-Key': this.credentials.clientId,
+          },
+          body: formData,
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error(`${logPrefix} ❌ Erro no upload:`, {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            error: errorText,
+            correlationId
+          });
+          throw new Error(`Upload failed: ${uploadResponse.status} - ${errorText}`);
+        }
+
+        const uploadData = await uploadResponse.json();
+        
+        if (!uploadData.assetID) {
+          console.error(`${logPrefix} ❌ Asset ID não encontrado na resposta:`, uploadData);
+          throw new Error('Asset ID not found in upload response');
+        }
+        
+        console.log(`${logPrefix} ✅ Upload concluído. Asset ID:`, uploadData.assetID);
+        return uploadData.assetID;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Upload timeout (120s exceeded)');
+        }
+        throw error;
+      }
+
+    } catch (error) {
+      console.error(`${logPrefix} ❌ Erro durante upload:`, {
+        error: error.message,
+        stack: error.stack,
+        fileName: file.name,
+        fileSize: file.size,
+        correlationId
+      });
+      throw new Error(`File upload failed: ${error.message}`);
+    }
+  }
+
+  async startExtraction(assetID: string, accessToken: string, correlationId?: string): Promise<string> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
+    console.log(`${logPrefix} 🔄 Iniciando extração de dados...`);
+    
+    try {
+      const extractionPayload = {
+        assetID: assetID,
+        getCharBounds: true,
+        includeStyling: true,
+        elementsToExtract: ['text', 'tables'],
+        elementsToExtractRenditions: ['tables', 'figures'],
+        renditionsToExtract: ['tables', 'figures']
+      };
+
+      console.log(`${logPrefix} 📋 Payload de extração:`, {
+        ...extractionPayload,
+        correlationId
+      });
+
+      // Implementar timeout robusto
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      try {
+        const extractionResponse = await fetch('https://pdf-services.adobe.io/operation/extractpdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'X-API-Key': this.credentials.clientId,
+          },
+          body: JSON.stringify(extractionPayload),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!extractionResponse.ok) {
+          const errorText = await extractionResponse.text();
+          console.error(`${logPrefix} ❌ Erro ao iniciar extração:`, {
+            status: extractionResponse.status,
+            statusText: extractionResponse.statusText,
+            error: errorText,
+            assetID,
+            correlationId
+          });
+          throw new Error(`Extraction failed: ${extractionResponse.status} - ${errorText}`);
+        }
+
+        const extractionData = await extractionResponse.json();
+        const location = extractionResponse.headers.get('location');
+        
+        if (!location) {
+          console.error(`${logPrefix} ❌ Location header não encontrado na resposta:`, extractionData);
+          throw new Error('Location header not found in extraction response');
+        }
+
+        console.log(`${logPrefix} ✅ Extração iniciada. Location:`, location);
+        return location;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Extraction start timeout (120s exceeded)');
+        }
+        throw error;
+      }
+
+    } catch (error) {
+      console.error(`${logPrefix} ❌ Erro ao iniciar extração:`, {
+        error: error.message,
+        stack: error.stack,
+        assetID,
+        correlationId
+      });
+      throw new Error(`Failed to start extraction: ${error.message}`);
+    }
+  }
+
+  async pollExtractionResult(location: string, accessToken: string, correlationId?: string): Promise<any> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
+    console.log(`${logPrefix} ⏳ Aguardando resultado da extração...`);
+    
+    // Polling mais inteligente baseado no timeout total
+    const maxAttempts = 60; // 60 tentativas
+    const pollInterval = 3000; // 3 segundos
+    const maxTotalTime = 180000; // 3 minutos total
+    const startTime = Date.now();
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Verificar timeout total
+      if (Date.now() - startTime > maxTotalTime) {
+        throw new Error(`Extraction timeout: exceeded ${maxTotalTime / 1000}s total time`);
+      }
+      
+      try {
+        console.log(`${logPrefix} 🔄 Tentativa ${attempt}/${maxAttempts} - Verificando status... (${Math.round((Date.now() - startTime) / 1000)}s)`);
+        
+        // Implementar timeout para cada request de polling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s por request
+        
+        try {
+          const response = await fetch(location, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'X-API-Key': this.credentials.clientId,
+            },
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (response.status === 200) {
+            const result = await response.json();
+            console.log(`${logPrefix} ✅ Extração concluída com sucesso! (${Math.round((Date.now() - startTime) / 1000)}s total)`);
+            return result;
+          } else if (response.status === 202) {
+            console.log(`${logPrefix} ⏳ Processamento em andamento... (tentativa ${attempt}, ${Math.round((Date.now() - startTime) / 1000)}s)`);
+            if (attempt < maxAttempts) {
+              // Backoff exponencial limitado
+              const delay = Math.min(pollInterval * Math.pow(1.1, attempt - 1), 10000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+          } else {
+            const errorText = await response.text();
+            console.error(`${logPrefix} ❌ Erro no polling (tentativa ${attempt}):`, {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorText,
+              location,
+              correlationId
+            });
+            throw new Error(`Polling failed: ${response.status} - ${errorText}`);
+          }
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error.name === 'AbortError') {
+            console.log(`${logPrefix} ⚠️ Polling request timeout (30s), retrying...`);
+            continue;
+          }
+          throw error;
+        }
+      } catch (error) {
+        console.error(`${logPrefix} ❌ Erro na tentativa ${attempt}:`, {
+          error: error.message,
+          attempt,
+          totalTime: Math.round((Date.now() - startTime) / 1000),
+          correlationId
+        });
+        
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+        
+        // Retry com delay
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      }
     }
     
-    const resultData = await resultResponse.json();
-    console.log('Result data downloaded successfully, processing...');
-    return resultData;
+    throw new Error(`Extraction timed out after ${maxAttempts} attempts (${Math.round((Date.now() - startTime) / 1000)}s total)`);
+  }
+
+  async downloadResult(resultUrl: string, correlationId?: string): Promise<any> {
+    const logPrefix = correlationId ? `[${correlationId}]` : '';
+    console.log(`${logPrefix} 📥 Fazendo download do resultado...`);
+    
+    try {
+      // Implementar timeout para download
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s para download
+      
+      try {
+        const response = await fetch(resultUrl, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.status} - ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`${logPrefix} ✅ Download do resultado concluído (${JSON.stringify(result).length} chars)`);
+        return result;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Download timeout (60s exceeded)');
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error(`${logPrefix} ❌ Erro no download do resultado:`, {
+        error: error.message,
+        stack: error.stack,
+        resultUrl,
+        correlationId
+      });
+      throw new Error(`Failed to download result: ${error.message}`);
+    }
   }
 }

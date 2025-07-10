@@ -110,8 +110,10 @@ async function uploadToAdobeWithPolling(
   fileName: string,
   clientId: string,
   clientSecret: string,
-  orgId: string
+  orgId: string,
+  correlationId?: string
 ): Promise<string> {
+  const logPrefix = correlationId ? `[${correlationId}]` : '';
   
   // Step 1: Get access token
   console.log('🔐 Getting Adobe access token...');
