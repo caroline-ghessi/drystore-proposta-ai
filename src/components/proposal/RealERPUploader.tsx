@@ -270,7 +270,7 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
           // FALLBACK INTELIGENTE: Verificar se dados parciais estão disponíveis
           console.log(`⚠️ [${processingId}] Processamento parcial - verificando dados salvos`);
           
-          // Buscar dados em propostas_brutas como fallback
+          // Buscar dados em propostas_brutas como fallback (incluindo dados marcados como teste)
           const { data: rawData } = await supabase
             .from('propostas_brutas')
             .select('*')
@@ -283,8 +283,22 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
             // Type assertion para dados estruturados
             const structuredData = rawData.dados_estruturados as any;
             
+            // RECUPERAR NOME REAL DO CLIENTE - Corrigir se foi marcado erroneamente
+            let clientName = rawData.cliente_identificado;
+            if (clientName === 'DADOS_TESTE_REMOVIDO' && rawData.arquivo_nome) {
+              // Tentar extrair cliente do nome do arquivo
+              const fileNameMatch = rawData.arquivo_nome.match(/([A-Z\s]+)\.pdf$/i);
+              if (fileNameMatch) {
+                const nameFromFile = fileNameMatch[1].replace(/\d+/g, '').trim();
+                if (nameFromFile.length > 6) {
+                  clientName = nameFromFile;
+                  console.log(`🔄 [${processingId}] Cliente recuperado do nome do arquivo: "${clientName}"`);
+                }
+              }
+            }
+            
             const fallbackData = {
-              client: rawData.cliente_identificado || 'Cliente não identificado',
+              client: clientName || 'Cliente não identificado',
               proposalNumber: 'N/A (processamento parcial)',
               vendor: 'DryStore',
               items: (structuredData?.items && Array.isArray(structuredData.items)) ? structuredData.items : [],
