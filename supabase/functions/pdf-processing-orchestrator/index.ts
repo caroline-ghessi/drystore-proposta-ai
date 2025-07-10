@@ -7,80 +7,71 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('🚀 PDF PROCESSING ORCHESTRATOR STARTED - FUNCTION INVOKED!');
+  
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('⚙️ Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
-  let requestBody;
-  let processingStartTime = Date.now();
+  const processingStartTime = Date.now();
+  const processingId = crypto.randomUUID();
   
   try {
-    console.log('🎬 pdf-processing-orchestrator: Iniciando orquestração');
-    console.log('📥 Headers recebidos:', Object.fromEntries(req.headers.entries()));
-    console.log('📝 Method:', req.method);
-    console.log('🌐 URL:', req.url);
+    console.log(`📋 [${processingId}] Parsing request body...`);
+    console.log(`📥 [${processingId}] Headers:`, Object.fromEntries(req.headers.entries()));
+    console.log(`📝 [${processingId}] Method:`, req.method);
     
-    // CORREÇÃO CRÍTICA: Verificar se há body disponível
-    if (!req.body) {
-      console.error('❌ ERRO: Sem body na requisição');
-      throw new Error('Request body está vazio');
-    }
-    
-    // CRÍTICO: Try/catch específico para parsing JSON com mais detalhes
+    // Parse JSON request body with proper error handling
+    let requestBody;
     try {
-      const requestText = await req.text();
-      console.log('📄 Texto bruto recebido (primeiros 200 chars):', requestText.substring(0, 200));
-      console.log('📏 Tamanho do texto:', requestText.length);
-      
-      requestBody = JSON.parse(requestText);
-      console.log('✅ JSON parseado com sucesso');
-    } catch (jsonError) {
-      console.error('❌ ERRO CRÍTICO no parsing JSON:', {
-        error: jsonError.message,
-        name: jsonError.name,
-        stack: jsonError.stack?.substring(0, 200),
-        bodyType: typeof req.body
-      });
-      throw new Error(`Parsing JSON falhou: ${jsonError.message}`);
+      requestBody = await req.json();
+      console.log(`✅ [${processingId}] JSON parsed successfully`);
+    } catch (parseError) {
+      console.error(`❌ [${processingId}] JSON Parse Error:`, parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid JSON in request body',
+          details: parseError.message
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
-    console.log('📋 Payload recebido:', { 
-      hasFileData: !!requestBody?.fileData, 
-      fileName: requestBody?.fileName,
-      userId: requestBody?.userId,
-      options: requestBody?.options,
-      rawKeys: requestBody ? Object.keys(requestBody) : [],
-      payloadType: typeof requestBody
-    });
+    // Extract and validate parameters
+    const { fileData, fileName, userId, productGroup = 'geral', options = {} } = requestBody;
     
-    // CORREÇÃO CRÍTICA: Verificar se requestBody existe antes do destructuring
-    if (!requestBody || typeof requestBody !== 'object') {
-      console.error('❌ ERRO: requestBody inválido:', requestBody);
-      throw new Error('Payload recebido não é um objeto válido');
-    }
-    
-    const { 
-      fileData, 
-      fileName, 
+    console.log(`🔍 [${processingId}] Request parameters:`, {
+      hasFileData: !!fileData,
+      fileDataLength: fileData?.length || 0,
+      fileName,
       userId,
-      options = {},
-      productGroup = 'geral'
-    } = requestBody;
-    
-    console.log('🏷️ Product Group recebido:', productGroup);
-    
-    // Validação robusta de campos obrigatórios
-    if (!fileData) {
-      console.error('❌ Campo fileData ausente');
-      throw new Error('Campo fileData é obrigatório');
-    }
-    if (!userId) {
-      console.error('❌ Campo userId ausente');
-      throw new Error('Campo userId é obrigatório'); 
-    }
-    if (!fileName) {
-      console.error('❌ Campo fileName ausente');
-      throw new Error('Campo fileName é obrigatório');
+      productGroup,
+      optionsKeys: Object.keys(options)
+    });
+
+    // Validate required parameters
+    if (!fileData || !fileName || !userId) {
+      console.error(`❌ [${processingId}] Missing required parameters:`, { 
+        fileData: !!fileData, 
+        fileName: !!fileName, 
+        userId: !!userId 
+      });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing required parameters: fileData, fileName, or userId' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     console.log('✅ Validação de campos concluída com sucesso');

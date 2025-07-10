@@ -215,30 +215,27 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
       
       setProcessingStage('Enviando para processamento orquestrado...');
       
+      console.log(`📤 [${processingId}] Invocando edge function via supabase.functions.invoke`);
+      
       const response = await Promise.race([
-        fetch(
-          `https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-processing-orchestrator`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          }
-        ),
+        supabase.functions.invoke('pdf-processing-orchestrator', {
+          body: payload
+        }),
         timeoutPromise
-      ]) as Response;
+      ]) as any; // Type assertion para evitar erros TypeScript
 
-      console.log(`📨 [${processingId}] Response status:`, response.status);
+      console.log(`📨 [${processingId}] Response:`, { 
+        hasData: !!response.data, 
+        hasError: !!response.error 
+      });
 
-      if (response.ok) {
-        const result = await response.json();
+      if (!response.error && response.data) {
+        const result = response.data;
         
-        if (result.success && result.saved_data) {
+        if (result.success && result.data) {
           const extractedData = {
-            client: result.saved_data.client_name || 'Cliente não identificado',
-            proposalNumber: `PROP-${result.saved_data.proposal_id?.slice(0, 8)}` || 'N/A',
+            client: result.data.client_name || 'Cliente não identificado',
+            proposalNumber: `PROP-${result.data.proposal_id?.slice(0, 8)}` || 'N/A',
             vendor: 'DryStore',
             items: [], // Será preenchido na revisão
             subtotal: 0,
@@ -246,33 +243,34 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
             paymentTerms: 'A definir na revisão',
             delivery: 'A definir na revisão',
             // Dados adicionais para a revisão
-            proposalId: result.saved_data.proposal_id,
-            clientId: result.saved_data.client_id,
-            needsClientEmail: result.saved_data.needs_client_email,
-            itemsCount: result.saved_data.items_count || 0,
-            confidenceScore: result.saved_data.confidence_score || 0
+            proposalId: result.data.proposal_id,
+            clientId: result.data.client_id,
+            needsClientEmail: result.data.needs_client_email,
+            itemsCount: result.data.items_count || 0,
+            confidenceScore: result.data.confidence_score || 0
           };
 
           setExtractedData(extractedData);
           setIsAnalyzed(true);
 
           console.log(`✅ [${processingId}] Proposta criada com sucesso:`, {
-            proposal_id: result.saved_data.proposal_id,
-            client_name: result.saved_data.client_name,
-            items_count: result.saved_data.items_count
+            proposal_id: result.data.proposal_id,
+            client_name: result.data.client_name,
+            items_count: result.data.items_count
           });
 
           toast({
             title: "🚀 Dados extraídos e salvos!",
-            description: `Cliente: ${result.saved_data.client_name} • ${result.saved_data.items_count} itens extraídos`,
+            description: `Cliente: ${result.data.client_name} • ${result.data.items_count} itens extraídos`,
           });
           
           return;
         }
       }
 
-      // Se chegou aqui, falhou
-      throw new Error('Processamento falhou - dados não extraídos');
+      // Se chegou aqui, há erro na resposta ou dados incompletos
+      const errorMessage = response.error?.message || 'Dados incompletos na resposta';
+      throw new Error(`Processamento falhou: ${errorMessage}`);
 
     } catch (error) {
       console.error(`❌ [${processingId}] Erro no processamento:`, error);
