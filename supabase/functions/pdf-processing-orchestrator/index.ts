@@ -11,15 +11,34 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody;
   try {
-    console.log('🎬 pdf-processing-orchestrator: Iniciando orquestração do processamento');
+    console.log('🎬 pdf-processing-orchestrator: Iniciando orquestração');
+    console.log('📥 Headers recebidos:', Object.fromEntries(req.headers.entries()));
+    console.log('📝 Method:', req.method);
+    console.log('🌐 URL:', req.url);
     
-    const requestBody = await req.json();
+    // CRÍTICO: Try/catch específico para parsing JSON
+    try {
+      requestBody = await req.json();
+      console.log('✅ JSON parseado com sucesso');
+      console.log('🔍 Tamanho do payload:', JSON.stringify(requestBody).length);
+    } catch (jsonError) {
+      console.error('❌ ERRO CRÍTICO no parsing JSON:', {
+        error: jsonError.message,
+        name: jsonError.name,
+        stack: jsonError.stack?.substring(0, 200)
+      });
+      throw new Error(`Parsing JSON falhou: ${jsonError.message}`);
+    }
+    
     console.log('📋 Payload recebido:', { 
       hasFileData: !!requestBody.fileData, 
       fileName: requestBody.fileName,
       userId: requestBody.userId,
-      options: requestBody.options 
+      options: requestBody.options,
+      rawKeys: Object.keys(requestBody),
+      payloadType: typeof requestBody
     });
     
     const { 
@@ -29,9 +48,21 @@ serve(async (req) => {
       options = {}
     } = requestBody;
     
-    if (!fileData || !userId) {
-      throw new Error('Dados do arquivo e ID do usuário são obrigatórios');
+    // Validação robusta de campos obrigatórios
+    if (!fileData) {
+      console.error('❌ Campo fileData ausente');
+      throw new Error('Campo fileData é obrigatório');
     }
+    if (!userId) {
+      console.error('❌ Campo userId ausente');
+      throw new Error('Campo userId é obrigatório'); 
+    }
+    if (!fileName) {
+      console.error('❌ Campo fileName ausente');
+      throw new Error('Campo fileName é obrigatório');
+    }
+    
+    console.log('✅ Validação de campos concluída com sucesso');
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

@@ -25,42 +25,91 @@ const ERPDebugTab = () => {
 
   const testERPExtraction = async () => {
     setIsProcessing(true);
+    setTestResult(null);
+    
     try {
+      console.log('🧪 ERPDebugTab: Iniciando teste de extração');
+      
       // Simular um teste de extração de ERP
       const mockPDFBuffer = 'JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEK'; // Mock base64 PDF
       
+      const payload = { 
+        fileData: mockPDFBuffer,
+        fileName: 'test-erp-debug.pdf',
+        fileSize: 12345,
+        userId: 'debug-user-test',
+        options: { extractionMethod: 'adobe_with_fallback' }
+      };
+      
+      console.log('📤 ERPDebugTab: Enviando payload:', {
+        hasFileData: !!payload.fileData,
+        fileName: payload.fileName,
+        userId: payload.userId,
+        options: payload.options,
+        payloadSize: JSON.stringify(payload).length,
+        payloadKeys: Object.keys(payload)
+      });
+      
+      const startTime = Date.now();
+      
       const response = await supabase.functions.invoke('pdf-processing-orchestrator', {
-        body: { 
-          fileData: mockPDFBuffer,
-          fileName: 'test-erp.pdf',
-          fileSize: 12345,
-          userId: 'test-user',
-          options: { extractionMethod: 'adobe_with_fallback' }
-        }
+        body: payload
+      });
+      
+      const duration = Date.now() - startTime;
+      
+      console.log('📥 ERPDebugTab: Resposta recebida:', {
+        duration: `${duration}ms`,
+        hasData: !!response.data,
+        hasError: !!response.error,
+        errorMessage: response.error?.message,
+        responseKeys: Object.keys(response),
+        responseType: typeof response.data
       });
 
-      if (response.error) throw response.error;
+      // Verificar se houve erro na resposta
+      if (response.error) {
+        throw new Error(response.error.message || 'Erro desconhecido na resposta');
+      }
 
       setTestResult({
         status: 'success',
         message: 'Extração de ERP funcionando corretamente',
-        details: response.data
+        details: response.data,
+        _debug: {
+          duration,
+          payloadSent: payload,
+          timestamp: new Date().toISOString(),
+          response: response
+        }
       });
 
       toast({
         title: "Teste Concluído",
-        description: "Sistema de extração de ERP está funcionando",
+        description: `Sistema funcionando (${duration}ms)`,
       });
     } catch (error) {
+      console.error('❌ ERPDebugTab: Erro no teste de extração:', {
+        error: error.message,
+        name: error.name,
+        stack: error.stack?.substring(0, 500)
+      });
+      
       setTestResult({
         status: 'error',
         message: error instanceof Error ? error.message : 'Erro desconhecido',
-        details: error
+        details: error,
+        _debug: {
+          errorType: error.name,
+          errorMessage: error.message,
+          errorStack: error.stack?.substring(0, 500),
+          timestamp: new Date().toISOString()
+        }
       });
 
       toast({
         title: "Erro no Teste",
-        description: "Falha na extração de ERP",
+        description: `Falha: ${error.message?.substring(0, 50)}...`,
         variant: "destructive"
       });
     } finally {
@@ -141,18 +190,63 @@ const ERPDebugTab = () => {
           </Button>
 
           {testResult && (
-            <Alert className={testResult.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-              <div className="flex items-center">
-                {testResult.status === 'success' ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <XCircle className="h-4 w-4 text-red-600" />
-                )}
-                <AlertDescription className="ml-2">
-                  {testResult.message}
-                </AlertDescription>
-              </div>
-            </Alert>
+            <div className="space-y-3">
+              <Alert className={testResult.status === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                <div className="flex items-center">
+                  {testResult.status === 'success' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <AlertDescription className="ml-2">
+                    {testResult.message}
+                    {testResult._debug?.duration && (
+                      <span className="ml-2 text-xs">({testResult._debug.duration}ms)</span>
+                    )}
+                  </AlertDescription>
+                </div>
+              </Alert>
+
+              {/* Debug Details */}
+              {testResult._debug && (
+                <Card className="border-orange-200 bg-orange-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center">
+                      <Zap className="w-4 h-4 mr-2 text-orange-600" />
+                      Debug Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      value={JSON.stringify(testResult._debug, null, 2)}
+                      readOnly
+                      className="text-xs font-mono bg-white"
+                      rows={8}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Error Details */}
+              {testResult.status === 'error' && testResult.details && (
+                <Card className="border-red-200 bg-red-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center">
+                      <XCircle className="w-4 h-4 mr-2 text-red-600" />
+                      Error Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      value={JSON.stringify(testResult.details, null, 2)}
+                      readOnly
+                      className="text-xs font-mono bg-white"
+                      rows={6}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
