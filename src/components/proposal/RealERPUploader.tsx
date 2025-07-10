@@ -22,6 +22,12 @@ interface ExtractedData {
   total: number;
   paymentTerms?: string;
   delivery?: string;
+  // Novos campos para revisão
+  proposalId?: string;
+  clientId?: string;
+  needsClientEmail?: boolean;
+  itemsCount?: number;
+  confidenceScore?: number;
 }
 
 interface RealERPUploaderProps {
@@ -229,29 +235,36 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
       if (response.ok) {
         const result = await response.json();
         
-        if (result.success && result.data) {
+        if (result.success && result.saved_data) {
           const extractedData = {
-            client: result.data.client || 'Cliente não identificado',
-            proposalNumber: result.data.proposalNumber || 'N/A',
-            vendor: result.data.vendor || 'N/A',
-            items: result.data.items || [],
-            subtotal: result.data.subtotal || 0,
-            total: result.data.total || 0,
-            paymentTerms: result.data.paymentTerms || 'N/A',
-            delivery: 'N/A'
+            client: result.saved_data.client_name || 'Cliente não identificado',
+            proposalNumber: `PROP-${result.saved_data.proposal_id?.slice(0, 8)}` || 'N/A',
+            vendor: 'DryStore',
+            items: [], // Será preenchido na revisão
+            subtotal: 0,
+            total: 0,
+            paymentTerms: 'A definir na revisão',
+            delivery: 'A definir na revisão',
+            // Dados adicionais para a revisão
+            proposalId: result.saved_data.proposal_id,
+            clientId: result.saved_data.client_id,
+            needsClientEmail: result.saved_data.needs_client_email,
+            itemsCount: result.saved_data.items_count || 0,
+            confidenceScore: result.saved_data.confidence_score || 0
           };
 
           setExtractedData(extractedData);
           setIsAnalyzed(true);
 
-          console.log(`✅ [${processingId}] Processamento bem-sucedido:`, {
-            items_count: extractedData.items.length,
-            total: extractedData.total
+          console.log(`✅ [${processingId}] Proposta criada com sucesso:`, {
+            proposal_id: result.saved_data.proposal_id,
+            client_name: result.saved_data.client_name,
+            items_count: result.saved_data.items_count
           });
 
           toast({
-            title: "🚀 PDF processado com sucesso!",
-            description: `${extractedData.items.length} itens extraídos.`,
+            title: "🚀 Dados extraídos e salvos!",
+            description: `Cliente: ${result.saved_data.client_name} • ${result.saved_data.items_count} itens extraídos`,
           });
           
           return;
@@ -461,22 +474,23 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center mb-3">
                   <Check className="w-5 h-5 text-green-600 mr-2" />
-                  <p className="font-medium text-green-800">Dados Extraídos com Sucesso!</p>
+                  <p className="font-medium text-green-800">Proposta Criada com Sucesso!</p>
                 </div>
                 <div className="text-sm text-green-700 space-y-1">
                   {extractedData.client && extractedData.client !== 'Cliente não identificado' && (
                     <p>✓ Cliente: {extractedData.client}</p>
                   )}
-                  {extractedData.proposalNumber && extractedData.proposalNumber !== 'N/A' && (
-                    <p>✓ Proposta: {extractedData.proposalNumber}</p>
+                  {extractedData.proposalId && (
+                    <p>✓ Proposta ID: {extractedData.proposalId.slice(0, 8)}...</p>
                   )}
-                  <p>✓ {extractedData.items.length} itens identificados</p>
-                  <p>✓ Valor total: R$ {extractedData.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                  {extractedData.paymentTerms && extractedData.paymentTerms !== 'N/A' && (
-                    <p>✓ Condições: {extractedData.paymentTerms}</p>
+                  {extractedData.itemsCount !== undefined && (
+                    <p>✓ {extractedData.itemsCount} itens extraídos e salvos</p>
                   )}
-                  {extractedData.vendor && extractedData.vendor !== 'N/A' && (
-                    <p>✓ Vendedor: {extractedData.vendor}</p>
+                  {extractedData.confidenceScore !== undefined && (
+                    <p>✓ Confiança: {Math.round(extractedData.confidenceScore * 100)}%</p>
+                  )}
+                  {extractedData.needsClientEmail && (
+                    <p className="text-amber-600">⚠️ Necessário adicionar email do cliente na revisão</p>
                   )}
                 </div>
               </div>

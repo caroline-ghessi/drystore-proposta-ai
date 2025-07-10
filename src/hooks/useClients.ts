@@ -131,3 +131,25 @@ export const useFindOrCreateClient = () => {
     },
   });
 };
+
+// Função para atualizar cliente com email
+export const useUpdateClientEmail = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ clientId, email }: { clientId: string; email: string }) => {
+      const { data, error } = await supabase
+        .from('clients')
+        .update({ email })
+        .eq('id', clientId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+};

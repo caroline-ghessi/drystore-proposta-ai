@@ -100,126 +100,178 @@ async function saveAsProposalDraft(
   userId: string,
   productGroup: string = 'geral'
 ) {
-  // Primeiro, verificar/criar cliente se necessário
-  let clientId;
-  
-  console.log('👤 Verificando cliente:', formattedData.client_name);
-  
-  if (formattedData.client_name && formattedData.client_name !== 'N/A' && formattedData.client_name.trim() !== '') {
-    // Buscar cliente existente primeiro
-    const { data: existingClient, error: searchError } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('nome', formattedData.client_name)
-      .maybeSingle();
+  try {
+    console.log('🔄 Iniciando saveAsProposalDraft...');
+    console.log('📊 Dados formatados recebidos:', JSON.stringify(formattedData, null, 2));
+    console.log('🏷️ Product group:', productGroup);
 
-    if (searchError) {
-      console.error('❌ Erro ao buscar cliente:', searchError);
-      throw new Error(`Erro ao buscar cliente: ${searchError.message}`);
-    }
-
-    if (existingClient) {
-      console.log('✅ Cliente existente encontrado:', existingClient.id);
-      clientId = existingClient.id;
-    } else {
-      console.log('🆕 Criando novo cliente sem email (será adicionado pelo vendedor)');
+    // Verificar se há dados do cliente
+    let clientId = null;
+    const clientName = formattedData.client_name || formattedData.client?.name;
+    
+    if (clientName && clientName !== 'N/A' && clientName.trim() !== '') {
+      console.log('👤 Processando dados do cliente:', clientName);
       
-      // Criar novo cliente SEM email obrigatório - será adicionado pelo vendedor depois
-      const { data: newClient, error: clientError } = await supabase
+      // Buscar cliente existente por nome
+      const { data: existingClient, error: searchError } = await supabase
         .from('clients')
-        .insert({
-          nome: formattedData.client_name,
-          // CORREÇÃO: Não incluir email fake - deixar null por enquanto
-          // email será adicionado pelo vendedor na revisão
-          origem_dados: 'pdf_extraction'
-        })
-        .select()
-        .single();
+        .select('*')
+        .eq('nome', clientName)
+        .maybeSingle();
 
-      if (clientError) {
-        console.error('❌ Erro ao criar cliente:', clientError);
-        throw new Error(`Erro ao criar cliente: ${clientError.message}`);
+      if (searchError) {
+        console.error('❌ Erro ao buscar cliente:', searchError);
+        throw new Error(`Erro ao buscar cliente: ${searchError.message}`);
       }
-      
-      console.log('✅ Cliente criado:', newClient.id);
-      clientId = newClient.id;
-    }
-  } else {
-    throw new Error('Nome do cliente é obrigatório para criar proposta');
-  }
 
-  // Criar proposta
-  console.log('📋 Criando proposta:', {
-    clientId,
-    userId,
-    valorTotal: formattedData.valor_total,
-    productGroup
-  });
-  
-  const { data: proposal, error: proposalError } = await supabase
-    .from('proposals')
-    .insert({
+      if (existingClient) {
+        console.log('✅ Cliente existente encontrado:', existingClient.id);
+        clientId = existingClient.id;
+        
+        // Atualizar dados se necessário
+        const updateData: any = {};
+        if (formattedData.client?.phone && !existingClient.telefone) {
+          updateData.telefone = formattedData.client.phone;
+        }
+        if (formattedData.client?.company && !existingClient.empresa) {
+          updateData.empresa = formattedData.client.company;
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          await supabase
+            .from('clients')
+            .update(updateData)
+            .eq('id', clientId);
+          console.log('✅ Cliente atualizado com dados adicionais');
+        }
+      } else {
+        console.log('➕ Criando novo cliente (sem email - será adicionado na revisão)...');
+        
+        // Criar novo cliente SEM email obrigatório
+        const clientData = {
+          nome: clientName,
+          telefone: formattedData.client?.phone || null,
+          empresa: formattedData.client?.company || null,
+          origem_dados: 'pdf_extraction'
+        };
+        
+        console.log('📋 Dados do cliente a inserir:', clientData);
+        
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert(clientData)
+          .select()
+          .single();
+
+        if (clientError) {
+          console.error('❌ Erro ao criar cliente:', clientError);
+          console.error('❌ Dados do cliente:', clientData);
+          throw new Error(`Erro ao criar cliente: ${clientError.message}`);
+        }
+        
+        console.log('✅ Cliente criado com sucesso:', newClient.id);
+        clientId = newClient.id;
+      }
+    } else {
+      throw new Error('Nome do cliente é obrigatório para criar proposta');
+    }
+
+    // Criar proposta com todos os campos obrigatórios
+    console.log('📝 Criando proposta...');
+    const proposalData = {
       client_id: clientId,
       user_id: userId,
       valor_total: formattedData.valor_total || 0,
       status: 'draft',
-      observacoes: formattedData.observacoes || '',
-      proposal_number: formattedData.proposal_number || null,
-      validade: formattedData.validade || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      product_group: productGroup, // CORREÇÃO CRÍTICA: Adicionar product_group obrigatório
+      product_group: productGroup, // CAMPO OBRIGATÓRIO
+      proposal_number: `PROP-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      validade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      observacoes: formattedData.observacoes || formattedData.summary?.notes || null,
       discount_percentage: formattedData.discount_percentage || 0,
-      show_detailed_values: true
-    })
-    .select()
-    .single();
+      show_detailed_values: true,
+      include_technical_details: false,
+      include_video: false
+    };
+    
+    console.log('📋 Dados da proposta a inserir:', proposalData);
+    
+    const { data: proposal, error: proposalError } = await supabase
+      .from('proposals')
+      .insert(proposalData)
+      .select()
+      .single();
 
-  if (proposalError) {
-    throw new Error(`Erro ao criar proposta: ${proposalError.message}`);
-  }
-
-  // Inserir itens da proposta
-  if (formattedData.items && formattedData.items.length > 0) {
-    const itemsToInsert = formattedData.items.map((item: any) => ({
-      proposal_id: proposal.id,
-      produto_nome: item.produto_nome,
-      descricao_item: item.descricao_item,
-      quantidade: item.quantidade,
-      preco_unit: item.preco_unit,
-      preco_total: item.preco_total
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('proposal_items')
-      .insert(itemsToInsert);
-
-    if (itemsError) {
-      throw new Error(`Erro ao inserir itens: ${itemsError.message}`);
+    if (proposalError) {
+      console.error('❌ Erro ao criar proposta:', proposalError);
+      console.error('❌ Dados da proposta:', proposalData);
+      throw new Error(`Erro ao criar proposta: ${proposalError.message}`);
     }
+
+    console.log('✅ Proposta criada com sucesso:', proposal.id);
+
+    // Inserir itens da proposta
+    let itemCount = 0;
+    if (formattedData.items && Array.isArray(formattedData.items) && formattedData.items.length > 0) {
+      console.log(`📦 Inserindo ${formattedData.items.length} itens da proposta...`);
+      
+      const itemsToInsert = formattedData.items.map((item: any, index: number) => ({
+        proposal_id: proposal.id,
+        produto_nome: item.produto_nome || item.name || `Item ${index + 1}`,
+        descricao_item: item.descricao_item || item.description || null,
+        quantidade: parseFloat(item.quantidade || item.quantity) || 1,
+        preco_unit: parseFloat(item.preco_unit || item.unit_price) || 0,
+        preco_total: parseFloat(item.preco_total || item.total_price) || 
+                    (parseFloat(item.quantidade || item.quantity) || 1) * 
+                    (parseFloat(item.preco_unit || item.unit_price) || 0)
+      }));
+
+      console.log('📦 Itens a inserir:', itemsToInsert);
+
+      const { error: itemsError } = await supabase
+        .from('proposal_items')
+        .insert(itemsToInsert);
+
+      if (itemsError) {
+        console.error('❌ Erro ao inserir itens:', itemsError);
+        console.error('❌ Itens enviados:', itemsToInsert);
+        throw new Error(`Erro ao inserir itens: ${itemsError.message}`);
+      }
+
+      itemCount = itemsToInsert.length;
+      console.log(`✅ ${itemCount} itens inseridos com sucesso`);
+    }
+
+    // Salvar metadados de validação
+    console.log('💾 Salvando metadados de validação...');
+    const { error: metadataError } = await supabase
+      .from('propostas_brutas')
+      .insert({
+        user_id: userId,
+        arquivo_nome: 'extracted_from_pdf.json',
+        arquivo_tamanho: JSON.stringify(formattedData).length,
+        status: 'processed',
+        dados_estruturados: formattedData,
+        valor_total_extraido: formattedData.valor_total || 0,
+        cliente_identificado: clientName
+      });
+
+    if (metadataError) {
+      console.warn('⚠️ Erro ao salvar metadados (não crítico):', metadataError);
+    }
+
+    return {
+      proposal_id: proposal.id,
+      client_id: clientId,
+      items_count: itemCount,
+      confidence_score: validationResult?.confidence_score || 0,
+      needs_client_email: true, // Sempre precisa coletar email na revisão
+      client_name: clientName
+    };
+
+  } catch (error) {
+    console.error('❌ Erro em saveAsProposalDraft:', error);
+    throw error;
   }
-
-  // Salvar dados de validação como metadata
-  const { error: metadataError } = await supabase
-    .from('propostas_brutas')
-    .insert({
-      user_id: userId,
-      arquivo_nome: 'extracted_from_pdf.json',
-      arquivo_tamanho: JSON.stringify(formattedData).length,
-      status: 'processed',
-      dados_estruturados: formattedData,
-      valor_total_extraido: formattedData.valor_total,
-      cliente_identificado: formattedData.client_name
-    });
-
-  if (metadataError) {
-    console.warn('⚠️ Erro ao salvar metadata (não crítico):', metadataError.message);
-  }
-
-  return {
-    proposal_id: proposal.id,
-    client_id: clientId,
-    items_count: formattedData.items ? formattedData.items.length : 0,
-    confidence_score: validationResult?.confidence_score || 0
-  };
 }
 
 async function saveAsRawData(

@@ -277,7 +277,7 @@ export type Database = {
           concessionaria: string | null
           consumo_historico: Json | null
           created_at: string
-          email: string
+          email: string | null
           empresa: string | null
           endereco: string | null
           estado: string | null
@@ -297,7 +297,7 @@ export type Database = {
           concessionaria?: string | null
           consumo_historico?: Json | null
           created_at?: string
-          email: string
+          email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
@@ -317,7 +317,7 @@ export type Database = {
           concessionaria?: string | null
           consumo_historico?: Json | null
           created_at?: string
-          email?: string
+          email?: string | null
           empresa?: string | null
           endereco?: string | null
           estado?: string | null
@@ -1941,6 +1941,10 @@ export type Database = {
       validate_client_access_token: {
         Args: { token: string }
         Returns: Json
+      }
+      validate_client_email_for_proposal: {
+        Args: { client_id: string }
+        Returns: boolean
       }
       validate_email_format: {
         Args: { email_input: string }
