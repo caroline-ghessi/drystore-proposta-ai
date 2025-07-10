@@ -105,9 +105,9 @@ async function saveAsProposalDraft(
     console.log('📊 Dados formatados recebidos:', JSON.stringify(formattedData, null, 2));
     console.log('🏷️ Product group:', productGroup);
 
-    // Verificar se há dados do cliente
+    // Verificar se há dados do cliente - mapear corretamente
     let clientId = null;
-    const clientName = formattedData.client_name || formattedData.client?.name;
+    const clientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
     
     if (clientName && clientName !== 'N/A' && clientName.trim() !== '') {
       console.log('👤 Processando dados do cliente:', clientName);
@@ -181,12 +181,12 @@ async function saveAsProposalDraft(
     const proposalData = {
       client_id: clientId,
       user_id: userId,
-      valor_total: formattedData.valor_total || 0,
+      valor_total: formattedData.valor_total || formattedData.total || 0,
       status: 'draft',
       product_group: productGroup, // CAMPO OBRIGATÓRIO
       proposal_number: `PROP-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       validade: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      observacoes: formattedData.observacoes || formattedData.summary?.notes || null,
+      observacoes: formattedData.observacoes || formattedData.summary?.notes || formattedData.paymentTerms || null,
       discount_percentage: formattedData.discount_percentage || 0,
       show_detailed_values: true,
       include_technical_details: false,
@@ -216,13 +216,13 @@ async function saveAsProposalDraft(
       
       const itemsToInsert = formattedData.items.map((item: any, index: number) => ({
         proposal_id: proposal.id,
-        produto_nome: item.produto_nome || item.name || `Item ${index + 1}`,
+        produto_nome: item.produto_nome || item.name || item.description || `Item ${index + 1}`,
         descricao_item: item.descricao_item || item.description || null,
         quantidade: parseFloat(item.quantidade || item.quantity) || 1,
-        preco_unit: parseFloat(item.preco_unit || item.unit_price) || 0,
-        preco_total: parseFloat(item.preco_total || item.total_price) || 
+        preco_unit: parseFloat(item.preco_unit || item.unit_price || item.unitPrice) || 0,
+        preco_total: parseFloat(item.preco_total || item.total_price || item.total) || 
                     (parseFloat(item.quantidade || item.quantity) || 1) * 
-                    (parseFloat(item.preco_unit || item.unit_price) || 0)
+                    (parseFloat(item.preco_unit || item.unit_price || item.unitPrice) || 0)
       }));
 
       console.log('📦 Itens a inserir:', itemsToInsert);
@@ -251,7 +251,7 @@ async function saveAsProposalDraft(
         arquivo_tamanho: JSON.stringify(formattedData).length,
         status: 'processed',
         dados_estruturados: formattedData,
-        valor_total_extraido: formattedData.valor_total || 0,
+        valor_total_extraido: formattedData.valor_total || formattedData.total || 0,
         cliente_identificado: clientName
       });
 
