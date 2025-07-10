@@ -70,13 +70,14 @@ export class ClientExtractor {
     return undefined;
   }
 
-  // VALIDAÇÃO ANTI-TESTE: Detectar dados de teste para evitar em produção
+  // VALIDAÇÃO ANTI-TESTE: Detectar APENAS dados obviamente de teste
   private static isTestData(text: string): boolean {
     const testIndicators = [
-      'PEDRO BARTELLE', 'BARTELLE',
-      'RONALDO SOUZA', 'TEST CLIENT',
+      'TEST CLIENT', 'CLIENT TEST',
       'CLIENTE TESTE', 'TESTE CLIENTE',
-      'MOCK DATA', 'DADOS TESTE'
+      'MOCK DATA', 'DADOS TESTE',
+      'EXEMPLO CLIENTE', 'CLIENTE EXEMPLO',
+      'DEMO CLIENT', 'CLIENT DEMO'
     ];
     
     const upperText = text.toUpperCase();

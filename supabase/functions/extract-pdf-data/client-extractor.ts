@@ -178,9 +178,10 @@ export class ClientExtractor {
 
   private static isTestData(name: string): boolean {
     const testNames = [
-      'PEDRO BARTELLE', 'BARTELLE',
-      'RONALDO SOUZA', 'TEST CLIENT',
-      'CLIENTE TESTE', 'TESTE CLIENTE'
+      'TEST CLIENT', 'CLIENT TEST',
+      'CLIENTE TESTE', 'TESTE CLIENTE',
+      'EXEMPLO CLIENTE', 'CLIENTE EXEMPLO',
+      'DEMO CLIENT', 'CLIENT DEMO'
     ];
     
     const upperName = name.toUpperCase();
