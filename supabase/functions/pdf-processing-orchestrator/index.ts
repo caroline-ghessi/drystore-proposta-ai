@@ -14,14 +14,22 @@ serve(async (req) => {
   try {
     console.log('🎬 pdf-processing-orchestrator: Iniciando orquestração do processamento');
     
-    const { 
-      file_data, 
-      file_name, 
-      user_id,
-      processing_options = {}
-    } = await req.json();
+    const requestBody = await req.json();
+    console.log('📋 Payload recebido:', { 
+      hasFileData: !!requestBody.fileData, 
+      fileName: requestBody.fileName,
+      userId: requestBody.userId,
+      options: requestBody.options 
+    });
     
-    if (!file_data || !user_id) {
+    const { 
+      fileData, 
+      fileName, 
+      userId,
+      options = {}
+    } = requestBody;
+    
+    if (!fileData || !userId) {
       throw new Error('Dados do arquivo e ID do usuário são obrigatórios');
     }
 
@@ -47,7 +55,7 @@ serve(async (req) => {
     try {
       // Etapa 1: Extração de texto
       console.log('📄 Etapa 1: Extração de texto...');
-      const textResult = await extractText(file_data, file_name, processing_options);
+      const textResult = await extractText(fileData, fileName, options);
       processingLog.stages.push({
         stage: 'text_extraction',
         success: textResult.success,
@@ -109,7 +117,7 @@ serve(async (req) => {
       const saveResult = await saveData(
         formatResult.formatted_data, 
         validationResult.validation_result,
-        user_id
+        userId
       );
       processingLog.stages.push({
         stage: 'data_saving',
@@ -183,7 +191,7 @@ serve(async (req) => {
 
 async function extractText(fileData: string, fileName: string, options: any) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout (reduzido)
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -197,7 +205,7 @@ async function extractText(fileData: string, fileName: string, options: any) {
         body: JSON.stringify({
           file_data: fileData,
           file_name: fileName,
-          extraction_method: options.extraction_method || 'adobe'
+          extraction_method: options.extractionMethod || 'adobe'
         }),
         signal: controller.signal
       }
@@ -223,7 +231,7 @@ async function extractText(fileData: string, fileName: string, options: any) {
 
 async function organizeData(extractedText: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout (reduzido)
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -262,7 +270,7 @@ async function organizeData(extractedText: string) {
 
 async function formatData(organizedData: any) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -301,7 +309,7 @@ async function formatData(organizedData: any) {
 
 async function validateData(formattedData: any) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(
@@ -340,7 +348,7 @@ async function validateData(formattedData: any) {
 
 async function saveData(formattedData: any, validationResult: any, userId: string) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
   
   try {
     const response = await fetch(

@@ -29,11 +29,13 @@ const ERPDebugTab = () => {
       // Simular um teste de extração de ERP
       const mockPDFBuffer = 'JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEK'; // Mock base64 PDF
       
-      const response = await supabase.functions.invoke('extract-pdf-data', {
+      const response = await supabase.functions.invoke('pdf-processing-orchestrator', {
         body: { 
-          pdfBuffer: mockPDFBuffer,
+          fileData: mockPDFBuffer,
           fileName: 'test-erp.pdf',
-          fileSize: 12345
+          fileSize: 12345,
+          userId: 'test-user',
+          options: { extractionMethod: 'adobe_with_fallback' }
         }
       });
 
