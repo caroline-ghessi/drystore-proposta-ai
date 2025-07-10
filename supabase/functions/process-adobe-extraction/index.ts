@@ -168,45 +168,9 @@ async function processWithEnhancedMockData(
 ) {
   console.log('📄 Using enhanced mock data with ALL 4 items...');
   
-  // Dados completos com todos os 4 itens do PDF
-  const completeExtractedData = {
-    items: [
-      {
-        description: "RU PLACA GESSO G,K,P 12,5 1200X1800MM",
-        quantity: 100,
-        unit: "PC",
-        unitPrice: 62.01,
-        total: 6201.00
-      },
-      {
-        description: "MONTANTE 48 S/ST - 3M", 
-        quantity: 300,
-        unit: "PC",
-        unitPrice: 19.71,
-        total: 5913.00
-      },
-      {
-        description: "GUIA 48 S/ST - 3M",
-        quantity: 120,
-        unit: "PC", 
-        unitPrice: 16.11,
-        total: 1933.20
-      },
-      {
-        description: "RODAPE DE IMPERMEABILIZACAO W200 - 3M",
-        quantity: 24,
-        unit: "PC",
-        unitPrice: 130.90,
-        total: 3141.60
-      }
-    ],
-    subtotal: 17188.80,
-    total: 17188.80,
-    client: "PEDRO BARTELLE",
-    paymentTerms: "BOLETO / 28 Dias (BOLETO 1X)",
-    delivery: "20/02/2025",
-    vendor: "RONALDO SOUZA"
-  };
+  // IMPORTANTE: NÃO usar dados de teste em produção
+  console.log('🚫 FALLBACK DESABILITADO: Não usar dados de teste em produção');
+  throw new Error('Extração de PDF falhou e fallback para dados de teste foi desabilitado para evitar dados incorretos em produção.');
 
   // Simular estrutura Adobe para compatibilidade
   const mockAdobeData = {

@@ -56,14 +56,14 @@ export class ClientExtractor {
       }
     }
     
-    // Estratégia 4: Busca por padrão específico "PEDRO BARTELLE" ou nomes similares
-    const specificNamePattern = /\b([A-ZÁÊÔÇÃÕ]{3,}\s+[A-ZÁÊÔÇÃÕ]{3,}(?:\s+[A-ZÁÊÔÇÃÕ]{2,})?)\b/g;
-    const nameMatches = [...text.matchAll(specificNamePattern)];
+    // Estratégia 4: Busca por nomes próprios brasileiros (genérico)
+    const genericNamePattern = /\b([A-ZÁÊÔÇÃÕ]{3,}\s+[A-ZÁÊÔÇÃÕ]{3,}(?:\s+[A-ZÁÊÔÇÃÕ]{2,})?)\b/g;
+    const nameMatches = [...text.matchAll(genericNamePattern)];
     
     for (const match of nameMatches) {
       const candidateName = match[1].trim();
-      if (this.isValidDrystoreClientName(candidateName) && !this.isExcludedPhrase(candidateName)) {
-        console.log(`✅ Nome encontrado por padrão específico: "${candidateName}"`);
+      if (this.isValidDrystoreClientName(candidateName) && !this.isExcludedPhrase(candidateName) && !this.isTestData(candidateName)) {
+        console.log(`✅ Nome encontrado por padrão genérico: "${candidateName}"`);
         return candidateName;
       }
     }
@@ -174,6 +174,17 @@ export class ClientExtractor {
     }
     
     return true;
+  }
+
+  private static isTestData(name: string): boolean {
+    const testNames = [
+      'PEDRO BARTELLE', 'BARTELLE',
+      'RONALDO SOUZA', 'TEST CLIENT',
+      'CLIENTE TESTE', 'TESTE CLIENTE'
+    ];
+    
+    const upperName = name.toUpperCase();
+    return testNames.some(testName => upperName.includes(testName));
   }
 
   private static isExcludedPhrase(line: string): boolean {
