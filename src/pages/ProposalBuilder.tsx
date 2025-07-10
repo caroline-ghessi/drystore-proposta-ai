@@ -129,12 +129,12 @@ const ProposalBuilderContent = () => {
       description: `${extractedData.items.length} itens extraídos. Redirecionando para criação da proposta...`
     });
 
-    // Simular redirecionamento para criação de proposta com dados
+    // Redirecionamento para criação de proposta com dados extraídos
     setTimeout(() => {
       navigate('/create-proposal', { 
         state: { 
           extractedData,
-          productGroup: 'divisorias' 
+          productGroup: selectedProductGroup 
         } 
       });
     }, 2000);
@@ -207,7 +207,10 @@ const ProposalBuilderContent = () => {
                   </div>
                 </div>
                 
-                <RealERPUploader onUploadComplete={handlePDFUpload} />
+                <RealERPUploader 
+                  onUploadComplete={handlePDFUpload} 
+                  productGroup={selectedProductGroup}
+                />
                 
                 <div className="mt-4 flex justify-center">
                   <Button 

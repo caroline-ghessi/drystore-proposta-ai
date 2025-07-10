@@ -63,8 +63,11 @@ serve(async (req) => {
       fileData, 
       fileName, 
       userId,
-      options = {}
+      options = {},
+      productGroup = 'geral'
     } = requestBody;
+    
+    console.log('🏷️ Product Group recebido:', productGroup);
     
     // Validação robusta de campos obrigatórios
     if (!fileData) {
@@ -166,7 +169,8 @@ serve(async (req) => {
       const saveResult = await saveData(
         formatResult.formatted_data, 
         validationResult.validation_result,
-        userId
+        userId,
+        productGroup
       );
       processingLog.stages.push({
         stage: 'data_saving',
@@ -395,7 +399,7 @@ async function validateData(formattedData: any) {
   }
 }
 
-async function saveData(formattedData: any, validationResult: any, userId: string) {
+async function saveData(formattedData: any, validationResult: any, userId: string, productGroup: string = 'geral') {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 segundos timeout (OTIMIZADO)
   
@@ -412,7 +416,8 @@ async function saveData(formattedData: any, validationResult: any, userId: strin
           formatted_data: formattedData,
           validation_result: validationResult,
           save_type: 'proposal_draft',
-          user_id: userId
+          user_id: userId,
+          product_group: productGroup
         }),
         signal: controller.signal
       }

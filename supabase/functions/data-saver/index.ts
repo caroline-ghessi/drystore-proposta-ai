@@ -18,8 +18,17 @@ serve(async (req) => {
       formatted_data, 
       validation_result, 
       save_type = 'proposal_draft',
-      user_id 
+      user_id,
+      product_group = 'geral' 
     } = await req.json();
+    
+    console.log('📋 Dados recebidos:', {
+      hasFormattedData: !!formatted_data,
+      saveType: save_type,
+      userId: user_id,
+      productGroup: product_group,
+      clientName: formatted_data?.client_name
+    });
     
     if (!formatted_data) {
       throw new Error('Dados formatados não fornecidos');
@@ -38,7 +47,7 @@ serve(async (req) => {
 
     switch (save_type) {
       case 'proposal_draft':
-        savedData = await saveAsProposalDraft(supabase, formatted_data, validation_result, user_id);
+        savedData = await saveAsProposalDraft(supabase, formatted_data, validation_result, user_id, product_group);
         break;
       case 'raw_data':
         savedData = await saveAsRawData(supabase, formatted_data, validation_result, user_id);
@@ -88,36 +97,51 @@ async function saveAsProposalDraft(
   supabase: any, 
   formattedData: any, 
   validationResult: any, 
-  userId: string
+  userId: string,
+  productGroup: string = 'geral'
 ) {
   // Primeiro, verificar/criar cliente se necessário
   let clientId;
   
-  if (formattedData.client_name && formattedData.client_name !== 'N/A') {
-    const { data: existingClient } = await supabase
+  console.log('👤 Verificando cliente:', formattedData.client_name);
+  
+  if (formattedData.client_name && formattedData.client_name !== 'N/A' && formattedData.client_name.trim() !== '') {
+    // Buscar cliente existente primeiro
+    const { data: existingClient, error: searchError } = await supabase
       .from('clients')
       .select('id')
       .eq('nome', formattedData.client_name)
-      .single();
+      .maybeSingle();
+
+    if (searchError) {
+      console.error('❌ Erro ao buscar cliente:', searchError);
+      throw new Error(`Erro ao buscar cliente: ${searchError.message}`);
+    }
 
     if (existingClient) {
+      console.log('✅ Cliente existente encontrado:', existingClient.id);
       clientId = existingClient.id;
     } else {
-      // Criar novo cliente
+      console.log('🆕 Criando novo cliente sem email (será adicionado pelo vendedor)');
+      
+      // Criar novo cliente SEM email obrigatório - será adicionado pelo vendedor depois
       const { data: newClient, error: clientError } = await supabase
         .from('clients')
         .insert({
           nome: formattedData.client_name,
-          email: formattedData.client_email || 'cliente@exemplo.com',
+          // CORREÇÃO: Não incluir email fake - deixar null por enquanto
+          // email será adicionado pelo vendedor na revisão
           origem_dados: 'pdf_extraction'
         })
         .select()
         .single();
 
       if (clientError) {
+        console.error('❌ Erro ao criar cliente:', clientError);
         throw new Error(`Erro ao criar cliente: ${clientError.message}`);
       }
       
+      console.log('✅ Cliente criado:', newClient.id);
       clientId = newClient.id;
     }
   } else {
@@ -125,16 +149,26 @@ async function saveAsProposalDraft(
   }
 
   // Criar proposta
+  console.log('📋 Criando proposta:', {
+    clientId,
+    userId,
+    valorTotal: formattedData.valor_total,
+    productGroup
+  });
+  
   const { data: proposal, error: proposalError } = await supabase
     .from('proposals')
     .insert({
       client_id: clientId,
       user_id: userId,
-      valor_total: formattedData.valor_total,
+      valor_total: formattedData.valor_total || 0,
       status: 'draft',
-      observacoes: formattedData.observacoes,
-      proposal_number: formattedData.proposal_number,
-      validade: formattedData.validade
+      observacoes: formattedData.observacoes || '',
+      proposal_number: formattedData.proposal_number || null,
+      validade: formattedData.validade || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      product_group: productGroup, // CORREÇÃO CRÍTICA: Adicionar product_group obrigatório
+      discount_percentage: formattedData.discount_percentage || 0,
+      show_detailed_values: true
     })
     .select()
     .single();

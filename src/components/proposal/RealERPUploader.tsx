@@ -26,9 +26,10 @@ interface ExtractedData {
 
 interface RealERPUploaderProps {
   onUploadComplete: (extractedData: ExtractedData) => void;
+  productGroup?: string;
 }
 
-const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
+const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUploaderProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -197,11 +198,14 @@ const RealERPUploader = ({ onUploadComplete }: RealERPUploaderProps) => {
         fileName: file.name,
         fileSize: file.size,
         userId: session.user.id,
+        productGroup: productGroup, // CORREÇÃO: Passar product group
         options: {
           extractionMethod: 'adobe_with_fallback',
           confidenceThreshold: 0.7
         }
       };
+      
+      console.log('🏷️ Enviando productGroup:', productGroup);
       
       setProcessingStage('Enviando para processamento orquestrado...');
       
