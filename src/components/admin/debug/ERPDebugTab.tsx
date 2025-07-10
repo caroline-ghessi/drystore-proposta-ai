@@ -63,13 +63,20 @@ const ERPDebugTab = () => {
         hasData: !!response.data,
         hasError: !!response.error,
         errorMessage: response.error?.message,
-        responseKeys: Object.keys(response),
+        responseKeys: Object.keys(response || {}),
         responseType: typeof response.data
       });
 
-      // Verificar se houve erro na resposta
+      // CORREÇÃO: Verificar se houve erro na resposta
       if (response.error) {
-        throw new Error(response.error.message || 'Erro desconhecido na resposta');
+        console.error('❌ ERPDebugTab: Erro na resposta do orquestrador:', response.error);
+        throw new Error(`Orquestrador retornou erro: ${response.error.message || JSON.stringify(response.error)}`);
+      }
+      
+      // VERIFICAÇÃO ADICIONAL: Se response.data for null mas não há erro explícito
+      if (!response.data && !response.error) {
+        console.warn('⚠️ ERPDebugTab: Resposta sem dados e sem erro explícito');
+        throw new Error('Resposta vazia do orquestrador - possível erro interno');
       }
 
       setTestResult({

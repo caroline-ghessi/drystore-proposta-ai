@@ -12,34 +12,52 @@ serve(async (req) => {
   }
 
   let requestBody;
+  let processingStartTime = Date.now();
+  
   try {
     console.log('🎬 pdf-processing-orchestrator: Iniciando orquestração');
     console.log('📥 Headers recebidos:', Object.fromEntries(req.headers.entries()));
     console.log('📝 Method:', req.method);
     console.log('🌐 URL:', req.url);
     
-    // CRÍTICO: Try/catch específico para parsing JSON
+    // CORREÇÃO CRÍTICA: Verificar se há body disponível
+    if (!req.body) {
+      console.error('❌ ERRO: Sem body na requisição');
+      throw new Error('Request body está vazio');
+    }
+    
+    // CRÍTICO: Try/catch específico para parsing JSON com mais detalhes
     try {
-      requestBody = await req.json();
+      const requestText = await req.text();
+      console.log('📄 Texto bruto recebido (primeiros 200 chars):', requestText.substring(0, 200));
+      console.log('📏 Tamanho do texto:', requestText.length);
+      
+      requestBody = JSON.parse(requestText);
       console.log('✅ JSON parseado com sucesso');
-      console.log('🔍 Tamanho do payload:', JSON.stringify(requestBody).length);
     } catch (jsonError) {
       console.error('❌ ERRO CRÍTICO no parsing JSON:', {
         error: jsonError.message,
         name: jsonError.name,
-        stack: jsonError.stack?.substring(0, 200)
+        stack: jsonError.stack?.substring(0, 200),
+        bodyType: typeof req.body
       });
       throw new Error(`Parsing JSON falhou: ${jsonError.message}`);
     }
     
     console.log('📋 Payload recebido:', { 
-      hasFileData: !!requestBody.fileData, 
-      fileName: requestBody.fileName,
-      userId: requestBody.userId,
-      options: requestBody.options,
-      rawKeys: Object.keys(requestBody),
+      hasFileData: !!requestBody?.fileData, 
+      fileName: requestBody?.fileName,
+      userId: requestBody?.userId,
+      options: requestBody?.options,
+      rawKeys: requestBody ? Object.keys(requestBody) : [],
       payloadType: typeof requestBody
     });
+    
+    // CORREÇÃO CRÍTICA: Verificar se requestBody existe antes do destructuring
+    if (!requestBody || typeof requestBody !== 'object') {
+      console.error('❌ ERRO: requestBody inválido:', requestBody);
+      throw new Error('Payload recebido não é um objeto válido');
+    }
     
     const { 
       fileData, 
