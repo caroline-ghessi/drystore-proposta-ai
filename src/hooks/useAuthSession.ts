@@ -19,28 +19,28 @@ export const useAuthSession = () => {
     try {
       console.log(`🔍 Carregando perfil do usuário ${supabaseUser.email} (tentativa ${retryCount + 1})`);
       
-      // Timeout aumentado para 15 segundos
+      // Timeout reduzido para 5 segundos e usando maybeSingle
       const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', supabaseUser.id)
-        .single();
+        .maybeSingle();
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile load timeout')), 15000);
+        setTimeout(() => reject(new Error('Profile load timeout')), 5000);
       });
 
       const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (error) {
         console.error('❌ Error loading profile:', error);
         
-        // Retry até 2 tentativas
-        if (retryCount < 2) {
-          console.log(`🔄 Tentando novamente carregar perfil em ${(retryCount + 1) * 2} segundos...`);
+        // Se for timeout ou erro de rede, fazer retry rápido
+        if ((error.message === 'Profile load timeout' || error.code === 'PGRST301') && retryCount < 1) {
+          console.log(`🔄 Tentando novamente carregar perfil imediatamente...`);
           setTimeout(() => {
             loadUserProfile(supabaseUser, retryCount + 1);
-          }, (retryCount + 1) * 2000);
+          }, 500);
           return;
         }
       }
@@ -63,12 +63,12 @@ export const useAuthSession = () => {
     } catch (error) {
       console.error('❌ Error loading user profile:', error);
       
-      // Retry até 2 tentativas
-      if (retryCount < 2) {
-        console.log(`🔄 Tentando novamente carregar perfil em ${(retryCount + 1) * 2} segundos...`);
+      // Retry apenas 1 vez mais rapidamente
+      if (retryCount < 1) {
+        console.log(`🔄 Tentando novamente carregar perfil em 500ms...`);
         setTimeout(() => {
           loadUserProfile(supabaseUser, retryCount + 1);
-        }, (retryCount + 1) * 2000);
+        }, 500);
         return;
       }
       

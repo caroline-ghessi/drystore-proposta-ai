@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { InfrastructureTest } from './InfrastructureTest';
 
 interface TestResult {
   id: string;
@@ -773,6 +774,9 @@ const AdobeDebugTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Teste de Infraestrutura Básica */}
+      <InfrastructureTest />
+      
       {/* Status Overview */}
       <Card>
         <CardHeader>
