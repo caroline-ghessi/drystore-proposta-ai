@@ -304,7 +304,7 @@ async function extractText(fileData: string, fileName: string, options: any, pro
       }
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos timeout aumentado
+      const timeoutId = setTimeout(() => controller.abort(), 35000); // 35 segundos timeout otimizado
       
       try {
         const response = await fetch(
@@ -365,7 +365,7 @@ async function organizeData(extractedText: string, processingId?: string) {
       console.log(`🧠 [${processingId}] organizeData attempt ${attempt}/3`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 segundos timeout otimizado
       
       try {
         const response = await fetch(

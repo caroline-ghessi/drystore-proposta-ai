@@ -140,10 +140,10 @@ serve(async (req) => {
 
     // 4. Verificar status das edge functions relacionadas
     const edgeFunctions = [
-      'extract-pdf-data',
       'upload-to-adobe', 
       'pdf-text-extractor',
-      'process-adobe-extraction'
+      'pdf-processing-orchestrator',
+      'ai-data-organizer'
     ];
     
     healthCheck.checks.edge_functions = {};

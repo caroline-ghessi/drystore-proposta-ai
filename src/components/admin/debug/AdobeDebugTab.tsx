@@ -436,9 +436,100 @@ const AdobeDebugTab = () => {
     }
   };
 
-  // REMOVIDO: Teste do pipeline de extração que usa funções quebradas
-  // Esta função estava tentando testar extract-pdf-data e process-adobe-extraction
-  // que têm dependências quebradas. Foi removida para evitar falsos erros.
+  // Teste do pipeline de processamento com timeout otimizado
+  const testPipelineProcessing = async () => {
+    if (!testFile) {
+      toast({
+        title: "Arquivo necessário",
+        description: "Selecione um arquivo PDF para testar o pipeline",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const correlationId = generateCorrelationId();
+    const startTime = Date.now();
+    
+    addTestResult({
+      test: 'Pipeline de Processamento Completo',
+      status: 'running',
+      message: 'Testando pipeline de extração end-to-end...'
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Converter arquivo para base64
+      const reader = new FileReader();
+      const fileData = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(btoa(reader.result as string));
+        reader.onerror = reject;
+        reader.readAsBinaryString(testFile);
+      });
+
+      // Chamar pipeline orchestrator com timeout otimizado
+      const { data: pipelineResult, error: pipelineError } = await supabase.functions.invoke('pdf-processing-orchestrator', {
+        body: {
+          fileData,
+          fileName: testFile.name,
+          userId: session.user.id,
+          productGroup: 'geral',
+          options: { extractionMethod: 'adobe' }
+        },
+        headers: {
+          'X-Correlation-ID': correlationId
+        }
+      });
+
+      const duration = Date.now() - startTime;
+
+      if (pipelineError) {
+        throw new Error(`Pipeline falhou: ${pipelineError.message}`);
+      }
+
+      addTestResult({
+        test: 'Pipeline de Processamento Completo',
+        status: pipelineResult.success ? 'success' : 'error',
+        message: pipelineResult.success ? 
+          `Pipeline concluído: ${pipelineResult.data?.items_count || 0} itens processados` :
+          `Pipeline falhou: ${pipelineResult.data?.error}`,
+        duration,
+        details: {
+          success: pipelineResult.success,
+          items_count: pipelineResult.data?.items_count,
+          proposal_id: pipelineResult.data?.proposal_id,
+          confidence_score: pipelineResult.final_confidence_score,
+          stages: pipelineResult.processing_log?.stages,
+          correlationId
+        }
+      });
+
+      addPerformanceMetric({
+        operation: 'Complete PDF Pipeline',
+        duration,
+        status: pipelineResult.success ? 'success' : 'error'
+      });
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      addTestResult({
+        test: 'Pipeline de Processamento Completo',
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Erro no pipeline',
+        duration,
+        details: { error, correlationId }
+      });
+
+      addPerformanceMetric({
+        operation: 'Complete PDF Pipeline',
+        duration,
+        status: 'error'
+      });
+    }
+  };
 
   const checkConnectionStatus = async () => {
     setConnectionStatus('checking');
@@ -537,7 +628,11 @@ const AdobeDebugTab = () => {
       await testAdobeConnectivity();
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Teste 4: Verificar status da conexão
+      // Teste 4: Diagnóstico do Pipeline
+      await runPipelineDiagnostics();
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Teste 5: Verificar status da conexão
       await checkConnectionStatus();
       
       toast({
@@ -566,6 +661,69 @@ const AdobeDebugTab = () => {
     } finally {
       setIsRunningTests(false);
       setIsPerformanceMonitoring(false);
+    }
+  };
+
+  const runPipelineDiagnostics = async () => {
+    const correlationId = generateCorrelationId();
+    const startTime = Date.now();
+    
+    addTestResult({
+      test: 'Diagnóstico Completo do Pipeline',
+      status: 'running',
+      message: 'Analisando performance e gargalos do pipeline...'
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data: diagnosticResult, error: diagnosticError } = await supabase.functions.invoke('pdf-processing-diagnostics', {
+        headers: {
+          'X-Correlation-ID': correlationId
+        }
+      });
+
+      if (diagnosticError) {
+        throw new Error(`Diagnóstico falhou: ${diagnosticError.message}`);
+      }
+
+      const duration = Date.now() - startTime;
+
+      addTestResult({
+        test: 'Diagnóstico Completo do Pipeline',
+        status: diagnosticResult.overall_status === 'healthy' ? 'success' : 
+               diagnosticResult.overall_status === 'degraded' ? 'warning' : 'error',
+        message: `Pipeline ${diagnosticResult.overall_status.toUpperCase()} - ${diagnosticResult.bottlenecks.length} gargalos encontrados`,
+        duration,
+        details: {
+          overall_status: diagnosticResult.overall_status,
+          success_rate: diagnosticResult.pipeline_health?.success_rate,
+          avg_duration: diagnosticResult.pipeline_health?.avg_duration_ms,
+          bottlenecks: diagnosticResult.bottlenecks,
+          recommendations: diagnosticResult.recommendations,
+          functions_status: diagnosticResult.pipeline_health?.functions,
+          correlationId
+        }
+      });
+
+      addPerformanceMetric({
+        operation: 'Pipeline Diagnostics',
+        duration,
+        status: diagnosticResult.overall_status === 'healthy' ? 'success' : 'error'
+      });
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      addTestResult({
+        test: 'Diagnóstico Completo do Pipeline',
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Erro no diagnóstico',
+        duration,
+        details: { error, correlationId }
+      });
     }
   };
 
@@ -715,6 +873,16 @@ const AdobeDebugTab = () => {
                   </Button>
                   
                   <Button 
+                    onClick={runPipelineDiagnostics}
+                    disabled={isRunningTests}
+                    variant="outline"
+                    className="justify-start"
+                  >
+                    <Database className="w-4 h-4 mr-2" />
+                    Diagnóstico do Pipeline
+                  </Button>
+                  
+                  <Button 
                     onClick={checkConnectionStatus}
                     disabled={isRunningTests}
                     variant="outline"
@@ -776,12 +944,18 @@ const AdobeDebugTab = () => {
                   )}
                 </div>
                 
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Pipeline de extração em desenvolvimento. Use os testes individuais acima.
-                  </AlertDescription>
-                </Alert>
+                <Button 
+                  onClick={testPipelineProcessing}
+                  disabled={isRunningTests || !testFile}
+                  className="w-full"
+                >
+                  {isRunningTests ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4 mr-2" />
+                  )}
+                  Testar Pipeline Completo
+                </Button>
               </CardContent>
             </Card>
           </div>
