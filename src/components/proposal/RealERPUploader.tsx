@@ -67,34 +67,50 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
     setIsGloballyProcessing(false);
     setCurrentProcessingId('');
     
-    // NOVO: Limpar qualquer cache do navegador
-    if ('caches' in window) {
-      caches.keys().then(names => {
-        names.forEach(name => caches.delete(name));
-      });
-    }
-    
     toast({
-      title: "Sistema resetado completamente",
-      description: "Cache limpo, processamento resetado. Pronto para novo PDF.",
+      title: "Processamento cancelado",
+      description: "Sistema pronto para processar novo PDF.",
     });
   };
 
-  // CIRCUIT BREAKER - Auto-reset mais agressivo (15 segundos)
+  // CIRCUIT BREAKER INTELIGENTE - 120 segundos com avisos graduais
   useEffect(() => {
-    const checkStuckState = () => {
+    const checkProcessingStatus = () => {
       if (isGloballyProcessing && processingStartTime > 0) {
         const elapsed = Date.now() - processingStartTime;
-        if (elapsed > 15000) { // 15 segundos - mais agressivo
-          console.log('🔄 CIRCUIT BREAKER: Estado travado detectado após 15s');
-          forceReset();
+        
+        // Aviso aos 60 segundos
+        if (elapsed > 60000 && elapsed < 65000) {
+          setProcessingStage('Processamento complexo detectado... Aguarde mais um momento');
+        }
+        
+        // Aviso aos 90 segundos
+        if (elapsed > 90000 && elapsed < 95000) {
+          setProcessingStage('Quase finalizado... PDF complexo requer tempo adicional');
+        }
+        
+        // Reset apenas após 120 segundos (2 minutos)
+        if (elapsed > 120000) {
+          console.log('🔄 CIRCUIT BREAKER: Timeout após 120 segundos - PDF muito complexo');
+          setIsGloballyProcessing(false);
+          setCurrentProcessingId('');
+          setIsProcessing(false);
+          setCanCancel(false);
+          setProcessingStartTime(0);
+          setProcessingStage('');
+          
+          toast({
+            title: "Processamento interrompido",
+            description: "PDF muito complexo. Tente dividir em páginas menores ou simplificar o documento.",
+            variant: "destructive"
+          });
         }
       }
     };
     
-    const interval = setInterval(checkStuckState, 2000); // Verificar a cada 2s
+    const interval = setInterval(checkProcessingStatus, 5000); // Verificar a cada 5s
     return () => clearInterval(interval);
-  }, [isGloballyProcessing, processingStartTime]);
+  }, [isGloballyProcessing, processingStartTime, toast]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -190,9 +206,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
     console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // TIMEOUT ESTENDIDO DE 180 SEGUNDOS - Para suportar PDFs complexos e retry
+    // TIMEOUT DE 120 SEGUNDOS - Alinhado com circuit breaker
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 180 segundos')), 180 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 120 segundos')), 120 * 1000);
     });
 
     try {
@@ -376,10 +392,11 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
   // Cancelar processamento
   const cancelProcessing = () => {
-    console.log(`❌ [${currentProcessingId}] Cancelando processamento pelo usuário`);
+    console.log(`❌ [${currentProcessingId}] Processamento cancelado manualmente pelo usuário`);
     setIsProcessing(false);
     setCanCancel(false);
     setProcessingStage('');
+    setProcessingStartTime(0);
     
     // LIBERAR MUTEX GLOBAL
     setIsGloballyProcessing(false);
@@ -387,7 +404,7 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
     
     toast({
       title: "Processamento cancelado",
-      description: "O processamento foi cancelado pelo usuário.",
+      description: "Cancelado manualmente. Sistema pronto para novo PDF.",
     });
   };
 
@@ -481,12 +498,15 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
                 </div>
                 <p className="text-blue-700 text-sm">{processingStage}</p>
                 <div className="mt-2 text-xs text-blue-600">
-                  Este processo pode levar alguns minutos...
                   {processingStartTime > 0 && (
-                    <span className="ml-2">
-                      ({Math.round((Date.now() - processingStartTime) / 1000)}s)
-                    </span>
+                    <div className="flex justify-between">
+                      <span>Tempo decorrido: {Math.round((Date.now() - processingStartTime) / 1000)}s</span>
+                      <span>Timeout em: {120 - Math.round((Date.now() - processingStartTime) / 1000)}s</span>
+                    </div>
                   )}
+                  <div className="text-xs text-gray-500 mt-1">
+                    PDFs complexos podem levar até 2 minutos para processar
+                  </div>
                 </div>
               </div>
             )}
