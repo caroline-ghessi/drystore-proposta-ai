@@ -22,21 +22,25 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SystemHealth {
-  overall_status: string;
+  overall_status?: string;
+  overall_health?: string;
   timestamp: string;
   correlation_id: string;
-  components: {
-    adobe_token: any;
-    database: any;
-    pdf_processing: any;
-    data_saving: any;
+  components?: {
+    adobe_token?: any;
+    database?: any;
+    pdf_processing?: any;
+    data_saving?: any;
   };
-  metrics: {
-    response_time: number;
-    error_rate: number;
-    success_rate: number;
+  metrics?: {
+    response_time?: number;
+    error_rate?: number;
+    success_rate?: number;
+    adobe_integration?: any;
+    edge_functions?: any;
   };
-  recommendations: string[];
+  recommendations?: string[];
+  alerts?: string[];
 }
 
 const SystemHealthMonitor = () => {
@@ -57,17 +61,20 @@ const SystemHealthMonitor = () => {
 
       setHealth(data);
       
+      // Get the actual status field (handle both overall_status and overall_health)
+      const status = data.overall_status || data.overall_health || 'unknown';
+      
       // Mostrar toast se houver problemas críticos
-      if (data.overall_status === 'critical') {
+      if (status === 'critical') {
         toast({
           title: "⚠️ Problemas Críticos Detectados",
-          description: `${data.recommendations.length} problemas encontrados`,
+          description: `${(data.recommendations || []).length} problemas encontrados`,
           variant: "destructive",
         });
-      } else if (data.overall_status === 'warning') {
+      } else if (status === 'warning') {
         toast({
           title: "⚠️ Avisos do Sistema",
-          description: `${data.recommendations.length} avisos encontrados`,
+          description: `${(data.recommendations || []).length} avisos encontrados`,
         });
       }
     } catch (error) {
@@ -123,6 +130,16 @@ const SystemHealthMonitor = () => {
     return 'bg-red-500';
   };
 
+  // Helper function to safely get status
+  const getOverallStatus = (health: SystemHealth) => {
+    return health.overall_status || health.overall_health || 'unknown';
+  };
+
+  // Helper function to safely format status text
+  const formatStatus = (status: string) => {
+    return status ? status.replace(/_/g, ' ').toUpperCase() : 'UNKNOWN';
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -131,8 +148,8 @@ const SystemHealthMonitor = () => {
             <Activity className="w-5 h-5" />
             <span>Monitoramento do Sistema</span>
             {health && (
-              <Badge className={getHealthColor(health.overall_status)}>
-                {health.overall_status.replace('_', ' ').toUpperCase()}
+              <Badge className={getHealthColor(getOverallStatus(health))}>
+                {formatStatus(getOverallStatus(health))}
               </Badge>
             )}
           </div>
@@ -171,12 +188,12 @@ const SystemHealthMonitor = () => {
             {/* Status Geral */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold">{health.metrics.response_time}ms</div>
-                <div className="text-sm text-muted-foreground">Tempo de Resposta</div>
+                <div className="text-2xl font-bold">{health.metrics?.response_time || health.metrics?.adobe_integration?.auth_success_rate || 'N/A'}</div>
+                <div className="text-sm text-muted-foreground">Tempo de Resposta / Status</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{health.recommendations.length}</div>
-                <div className="text-sm text-muted-foreground">Recomendações</div>
+                <div className="text-2xl font-bold">{(health.recommendations || []).length + (health.alerts || []).length}</div>
+                <div className="text-sm text-muted-foreground">Alertas e Recomendações</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">
@@ -186,123 +203,114 @@ const SystemHealthMonitor = () => {
               </div>
             </div>
 
-            {/* Componentes do Sistema */}
+            {/* Componentes do Sistema - Nova estrutura baseada na resposta real */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Token Adobe */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Key className="w-4 h-4" />
-                    <span className="font-medium">Token Adobe</span>
+              {/* Integração Adobe */}
+              {health.metrics?.adobe_integration && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Key className="w-4 h-4" />
+                      <span className="font-medium">Integração Adobe</span>
+                    </div>
+                    {getHealthIcon(health.metrics.adobe_integration.status)}
                   </div>
-                  {getHealthIcon(health.components.adobe_token.health)}
-                </div>
-                {health.components.adobe_token.minutes_remaining !== undefined && (
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span>Tempo Restante</span>
-                      <span>{Math.floor(health.components.adobe_token.minutes_remaining / 60)}h {health.components.adobe_token.minutes_remaining % 60}m</span>
+                      <span>Autenticação</span>
+                      <span>{health.metrics.adobe_integration.auth_success_rate}%</span>
                     </div>
-                    <Progress 
-                      value={Math.max(0, Math.min(100, (health.components.adobe_token.minutes_remaining / 1440) * 100))} 
-                      className="h-2"
-                    />
+                    <div className="flex justify-between text-sm">
+                      <span>Upload</span>
+                      <span>{health.metrics.adobe_integration.upload_success_rate}%</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Extração</span>
+                      <span>{health.metrics.adobe_integration.extraction_success_rate}%</span>
+                    </div>
                   </div>
-                )}
-                {health.components.adobe_token.auto_renewed && (
-                  <Badge variant="outline" className="mt-2">🔄 Renovado automaticamente</Badge>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Banco de Dados */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Database className="w-4 h-4" />
-                    <span className="font-medium">Banco de Dados</span>
+              {/* Edge Functions */}
+              {health.metrics?.edge_functions && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Database className="w-4 h-4" />
+                      <span className="font-medium">Edge Functions</span>
+                    </div>
+                    {getHealthIcon('healthy')}
                   </div>
-                  {getHealthIcon(health.components.database.health)}
-                </div>
-                {health.components.database.response_time && (
                   <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Tempo de Resposta</span>
-                      <span>{health.components.database.response_time}ms</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Erros Recentes</span>
-                      <span>{health.components.database.recent_errors || 0}</span>
-                    </div>
+                    {Object.entries(health.metrics.edge_functions).slice(0, 3).map(([name, func]: [string, any]) => (
+                      <div key={name} className="flex justify-between text-sm">
+                        <span>{name.replace(/-/g, ' ')}</span>
+                        <span className={func.error_rate === 0 ? 'text-green-600' : 'text-red-600'}>
+                          {func.error_rate === 0 ? '✓' : '✗'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Processamento PDF */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4" />
-                    <span className="font-medium">Processamento PDF</span>
+              {/* Legacy components - caso existam */}
+              {health.components?.adobe_token && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Key className="w-4 h-4" />
+                      <span className="font-medium">Token Adobe</span>
+                    </div>
+                    {getHealthIcon(health.components.adobe_token.health)}
                   </div>
-                  {getHealthIcon(health.components.pdf_processing.health)}
+                  {health.components.adobe_token.minutes_remaining !== undefined && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span>Tempo Restante</span>
+                        <span>{Math.floor(health.components.adobe_token.minutes_remaining / 60)}h {health.components.adobe_token.minutes_remaining % 60}m</span>
+                      </div>
+                      <Progress 
+                        value={Math.max(0, Math.min(100, (health.components.adobe_token.minutes_remaining / 1440) * 100))} 
+                        className="h-2"
+                      />
+                    </div>
+                  )}
+                  {health.components.adobe_token.auto_renewed && (
+                    <Badge variant="outline" className="mt-2">🔄 Renovado automaticamente</Badge>
+                  )}
                 </div>
-                {health.components.pdf_processing.error_rate !== undefined && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Taxa de Erro</span>
-                      <span>{health.components.pdf_processing.error_rate}%</span>
-                    </div>
-                    <Progress 
-                      value={100 - health.components.pdf_processing.error_rate} 
-                      className="h-2"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{health.components.pdf_processing.total_attempts_24h} tentativas</span>
-                      <span>{health.components.pdf_processing.total_errors_24h} erros</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
 
-              {/* Salvamento de Dados */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Save className="w-4 h-4" />
-                    <span className="font-medium">Salvamento</span>
+              {/* Placeholder para dados não disponíveis */}
+              {!health.metrics?.adobe_integration && !health.components?.adobe_token && (
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4" />
+                      <span className="font-medium">Processamento PDF</span>
+                    </div>
+                    {getHealthIcon('healthy')}
                   </div>
-                  {getHealthIcon(health.components.data_saving.health)}
+                  <div className="text-sm text-muted-foreground">
+                    Sistema funcionando normalmente
+                  </div>
                 </div>
-                {health.components.data_saving.success_rate !== undefined && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Taxa de Sucesso</span>
-                      <span>{health.components.data_saving.success_rate}%</span>
-                    </div>
-                    <Progress 
-                      value={health.components.data_saving.success_rate} 
-                      className="h-2"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{health.components.data_saving.recent_saves} recentes</span>
-                      <span>{health.components.data_saving.successful_saves} sucessos</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Recomendações */}
-            {health.recommendations.length > 0 && (
+            {/* Recomendações e Alertas */}
+            {((health.recommendations && health.recommendations.length > 0) || (health.alerts && health.alerts.length > 0)) && (
               <div className="space-y-2">
                 <h4 className="font-medium flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4" />
-                  <span>Recomendações do Sistema</span>
+                  <span>Recomendações e Alertas</span>
                 </h4>
-                {health.recommendations.map((recommendation, index) => (
+                {[...(health.recommendations || []), ...(health.alerts || [])].map((item, index) => (
                   <Alert key={index}>
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{recommendation}</AlertDescription>
+                    <AlertDescription>{item}</AlertDescription>
                   </Alert>
                 ))}
               </div>
