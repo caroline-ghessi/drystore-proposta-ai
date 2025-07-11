@@ -85,18 +85,36 @@ const AdobeTemporaryTokenForm = () => {
           </div>
         </div>
 
-        {/* Formulário de Secret */}
+        {/* Formulário Seguro - lov-secret-form */}
         <div className="border-t pt-4">
-          <p className="text-sm text-muted-foreground mb-3">
-            Configure o secret ADOBE_TEMP_TOKEN com o token temporário obtido do Adobe Console:
-          </p>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h5 className="font-medium text-blue-900 mb-2">Configurar Token Temporário</h5>
-            <p className="text-sm text-blue-800 mb-3">
-              Use o formulário seguro abaixo para configurar o token temporário. 
-              Após configurado, clique em "Token Temporário" na seção de status do Adobe acima.
+          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
+            <h5 className="font-medium text-blue-900 mb-2 flex items-center space-x-2">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span>Configurar Token Temporário (Seguro)</span>
+            </h5>
+            <p className="text-sm text-blue-800 mb-4">
+              Configure o token temporário da Adobe de forma segura usando o sistema de secrets do Supabase. 
+              O token será criptografado e não aparecerá em nenhum lugar da interface.
             </p>
+            
+            <div className="bg-white border border-green-200 rounded p-3 mb-4">
+              <div className="flex items-center space-x-2 text-sm text-green-800">
+                <Shield className="w-3 h-3" />
+                <span><strong>Segurança garantida:</strong> Token armazenado de forma criptografada</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-gray-700">
+                <strong>1.</strong> Clique no botão abaixo para abrir o formulário seguro
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>2.</strong> Cole o token obtido do Adobe Console
+              </p>
+              <p className="text-sm text-gray-700">
+                <strong>3.</strong> Após salvar, clique em "Token Temporário" na seção de status acima
+              </p>
+            </div>
           </div>
         </div>
       </CardContent>
