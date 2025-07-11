@@ -37,6 +37,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { InfrastructureTest } from './InfrastructureTest';
+import { AuthenticationTest } from './AuthenticationTest';
+import { ExternalAPITest } from './ExternalAPITest';
 
 interface TestResult {
   id: string;
@@ -823,13 +825,15 @@ const AdobeDebugTab = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="tests" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="tests">Testes</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-          <TabsTrigger value="tools">Ferramentas</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="tests" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="tests">Testes Adobe</TabsTrigger>
+            <TabsTrigger value="infrastructure">Infraestrutura</TabsTrigger>
+            <TabsTrigger value="auth">Autenticação</TabsTrigger>
+            <TabsTrigger value="apis">APIs Externas</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="tests" className="space-y-6">
           {/* Test Controls */}
@@ -1292,6 +1296,18 @@ const AdobeDebugTab = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="infrastructure" className="space-y-4">
+          <InfrastructureTest />
+        </TabsContent>
+
+        <TabsContent value="auth" className="space-y-4">
+          <AuthenticationTest />
+        </TabsContent>
+
+        <TabsContent value="apis" className="space-y-4">
+          <ExternalAPITest />
         </TabsContent>
       </Tabs>
     </div>
