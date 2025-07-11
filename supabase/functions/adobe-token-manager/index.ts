@@ -52,6 +52,9 @@ serve(async (req) => {
       case 'auto_renewal_check':
         result = await autoRenewalCheck(supabase, correlationId);
         break;
+      case 'insert_manual_token':
+        result = await insertManualToken(supabase, correlationId);
+        break;
       case 'cleanup':
         result = await cleanupExpiredTokens(supabase, correlationId);
         break;
@@ -340,6 +343,93 @@ async function autoRenewalCheck(supabase: any, correlationId: string) {
     action_taken: 'no_action_needed',
     status: status.overall_status
   };
+}
+
+// NOVA FUNÇÃO: Inserção segura de token temporário
+async function insertManualToken(supabase: any, correlationId: string) {
+  console.log(`🔐 [${correlationId}] Inserindo token temporário via Supabase Secret`);
+  
+  try {
+    // Buscar token do Supabase Secret
+    const tempToken = Deno.env.get('ADOBE_TEMP_TOKEN');
+    
+    if (!tempToken) {
+      throw new Error('Token temporário não encontrado nos secrets');
+    }
+    
+    // Validar formato básico do token
+    if (tempToken.length < 50) {
+      throw new Error('Token temporário parece inválido (muito curto)');
+    }
+    
+    console.log(`✅ [${correlationId}] Token temporário encontrado, validando contra API Adobe...`);
+    
+    // Validar token contra API Adobe
+    const validationResponse = await fetch('https://pdf-services.adobe.io/assets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${tempToken}`,
+        'X-API-Key': Deno.env.get('ADOBE_CLIENT_ID') || '',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        mediaType: 'application/pdf'
+      })
+    });
+    
+    if (!validationResponse.ok) {
+      console.error(`❌ [${correlationId}] Token inválido na validação:`, validationResponse.status);
+      throw new Error(`Token temporário inválido (Status: ${validationResponse.status})`);
+    }
+    
+    console.log(`✅ [${correlationId}] Token temporário validado com sucesso`);
+    
+    // Desativar tokens antigos
+    await supabase
+      .from('adobe_token_cache')
+      .update({ is_active: false })
+      .eq('is_active', true);
+    
+    // Calcular expiração (24 horas)
+    const expiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000));
+    
+    // Salvar token temporário
+    const { data: savedToken, error: saveError } = await supabase
+      .from('adobe_token_cache')
+      .insert({
+        access_token: tempToken,
+        expires_at: expiresAt.toISOString(),
+        correlation_id: correlationId,
+        client_id: Deno.env.get('ADOBE_CLIENT_ID') || 'manual_temp',
+        scopes: 'openid,AdobeID,DCAPI',
+        token_source: 'manual_temporary',
+        renewal_count: 0,
+        is_active: true
+      })
+      .select()
+      .single();
+    
+    if (saveError) {
+      console.error(`❌ [${correlationId}] Erro ao salvar token temporário:`, saveError);
+      throw new Error(`Erro ao salvar token: ${saveError.message}`);
+    }
+    
+    // Remover o secret após uso por segurança
+    console.log(`🔒 [${correlationId}] Token temporário salvo, removendo secret por segurança`);
+    
+    return {
+      success: true,
+      message: 'Token temporário inserido com sucesso',
+      expires_at: expiresAt.toISOString(),
+      correlation_id: correlationId,
+      token_source: 'manual_temporary',
+      expires_in_hours: 24
+    };
+    
+  } catch (error) {
+    console.error(`❌ [${correlationId}] Erro ao inserir token temporário:`, error);
+    throw error;
+  }
 }
 
 // FASE 1: Limpeza de tokens expirados

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Key, RefreshCw, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Clock, Key, RefreshCw, CheckCircle, AlertTriangle, XCircle, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,6 +22,7 @@ const AdobeTokenStatus = () => {
   const [tokenStatus, setTokenStatus] = useState<TokenStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [insertingManual, setInsertingManual] = useState(false);
   const { toast } = useToast();
 
   const fetchTokenStatus = async (refresh = false) => {
@@ -105,6 +106,50 @@ const AdobeTokenStatus = () => {
       });
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const insertManualToken = async () => {
+    setInsertingManual(true);
+    try {
+      // Verificar se o secret está configurado
+      const { data, error } = await supabase.functions.invoke('adobe-token-manager', {
+        body: { 
+          action: 'insert_manual_token'
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao inserir token temporário');
+      }
+
+      // Atualizar status após inserção
+      await fetchTokenStatus();
+      
+      toast({
+        title: "Token Temporário Inserido",
+        description: `Token inserido com sucesso! Expira em 24 horas (${new Date(data.expires_at).toLocaleString('pt-BR')})`,
+      });
+    } catch (error) {
+      console.error('Erro ao inserir token manual:', error);
+      
+      // Se o erro indica que o secret não existe, mostrar o formulário
+      if (error.message?.includes('não encontrado nos secrets')) {
+        toast({
+          title: "Token Temporário Necessário",
+          description: "Configure o token temporário no formulário abaixo.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Erro ao Inserir Token",
+        description: `Falha: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setInsertingManual(false);
     }
   };
 
@@ -194,7 +239,7 @@ const AdobeTokenStatus = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => fetchTokenStatus()}
-                  disabled={loading || refreshing}
+                  disabled={loading || refreshing || insertingManual}
                 >
                   <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                   Atualizar
@@ -203,10 +248,19 @@ const AdobeTokenStatus = () => {
                   variant="default"
                   size="sm"
                   onClick={refreshToken}
-                  disabled={loading || refreshing}
+                  disabled={loading || refreshing || insertingManual}
                 >
                   <Key className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
                   Renovar Token
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={insertManualToken}
+                  disabled={loading || refreshing || insertingManual}
+                >
+                  <Upload className={`w-4 h-4 mr-1 ${insertingManual ? 'animate-spin' : ''}`} />
+                  Token Temporário
                 </Button>
               </div>
             </div>

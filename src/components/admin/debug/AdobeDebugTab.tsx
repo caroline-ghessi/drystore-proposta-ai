@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdobeTokenStatus from './AdobeTokenStatus';
+import AdobeTemporaryTokenForm from './AdobeTemporaryTokenForm';
 import { 
   CheckCircle, 
   XCircle, 
@@ -1149,6 +1150,9 @@ const AdobeDebugTab = () => {
         <TabsContent value="tools" className="space-y-6">
           {/* Adobe Token Status - Nova seção integrada */}
           <AdobeTokenStatus />
+          
+          {/* Adobe Temporary Token Form - Nova seção para token temporário */}
+          <AdobeTemporaryTokenForm />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
