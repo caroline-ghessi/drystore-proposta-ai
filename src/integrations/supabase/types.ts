@@ -804,6 +804,48 @@ export type Database = {
           },
         ]
       }
+      pdf_extraction_cache: {
+        Row: {
+          created_at: string | null
+          extraction_data: Json
+          extraction_quality: string
+          file_hash: string
+          file_name: string
+          file_size: number
+          hit_count: number | null
+          id: string
+          last_accessed: string | null
+          processing_method: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          extraction_data: Json
+          extraction_quality: string
+          file_hash: string
+          file_name: string
+          file_size: number
+          hit_count?: number | null
+          id?: string
+          last_accessed?: string | null
+          processing_method: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          extraction_data?: Json
+          extraction_quality?: string
+          file_hash?: string
+          file_name?: string
+          file_size?: number
+          hit_count?: number | null
+          id?: string
+          last_accessed?: string | null
+          processing_method?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pdf_processing_logs: {
         Row: {
           created_at: string
