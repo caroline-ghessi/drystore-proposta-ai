@@ -49,8 +49,28 @@ serve(async (req) => {
       }
     }
 
-    // 3. Testar credenciais se solicitado
-    const testCredentials = new URL(req.url).searchParams.get('test_credentials') === 'true';
+    // 3. Processar parâmetros da requisição (GET ou POST)
+    let testCredentials = false;
+    let refreshToken = false;
+    
+    try {
+      if (req.method === 'GET') {
+        const url = new URL(req.url);
+        testCredentials = url.searchParams.get('test_credentials') === 'true';
+        refreshToken = url.searchParams.get('refresh_token') === 'true';
+      } else if (req.method === 'POST') {
+        const requestText = await req.text();
+        if (requestText) {
+          const body = JSON.parse(requestText);
+          testCredentials = body.test_credentials === true;
+          refreshToken = body.refresh_token === true;
+        }
+      }
+    } catch (e) {
+      console.log(`⚠️ [${correlationId}] Erro ao processar parâmetros:`, e.message);
+    }
+
+    // 4. Testar credenciais se solicitado
     if (testCredentials) {
       console.log(`🧪 [${correlationId}] Testando credenciais...`);
       try {
@@ -66,12 +86,11 @@ serve(async (req) => {
       }
     }
 
-    // 4. Renovar token se solicitado
-    const refreshToken = new URL(req.url).searchParams.get('refresh_token') === 'true';
+    // 5. Renovar token se solicitado
     if (refreshToken) {
       console.log(`🔄 [${correlationId}] Renovando token...`);
       try {
-        const newToken = await tokenManager.refreshToken();
+        await tokenManager.refreshToken();
         healthCheck.token_refreshed = true;
         healthCheck.new_token_info = tokenManager.getTokenInfo();
         healthCheck.overall_status = 'refreshed';

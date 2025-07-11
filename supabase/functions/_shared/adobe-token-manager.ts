@@ -70,7 +70,7 @@ export class AdobeTokenManager {
     return isValid;
   }
 
-  // Buscar token válido do cache (Supabase ou memória)
+  // Buscar token válido do cache (Supabase ou memória) - CACHE INTELIGENTE
   private async getCachedToken(): Promise<AdobeToken | null> {
     // Primeiro verificar token em memória
     if (this.isTokenValid(this.currentToken)) {
@@ -79,8 +79,54 @@ export class AdobeTokenManager {
     }
 
     try {
-      // Buscar do cache do Supabase (implementação futura se necessário)
-      // Por ora, apenas retornar null para forçar nova autenticação
+      // Buscar do cache persistente no Supabase
+      const { data: cachedTokens, error } = await this.supabase
+        .from('pdf_extraction_cache')
+        .select('*')
+        .eq('processing_method', 'adobe_token')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        this.logError('Error querying token cache:', error);
+        return null;
+      }
+
+      if (cachedTokens && cachedTokens.length > 0) {
+        const cachedData = cachedTokens[0].extraction_data;
+        if (cachedData && cachedData.access_token) {
+          const token: AdobeToken = {
+            access_token: cachedData.access_token,
+            expires_in: cachedData.expires_in,
+            created_at: cachedData.created_at,
+            expires_at: cachedData.expires_at
+          };
+
+          if (this.isTokenValid(token)) {
+            this.log('Using valid token from persistent cache');
+            this.currentToken = token;
+            
+            // Atualizar hit count
+            await this.supabase
+              .from('pdf_extraction_cache')
+              .update({ 
+                hit_count: (cachedTokens[0].hit_count || 0) + 1,
+                last_accessed: new Date().toISOString()
+              })
+              .eq('id', cachedTokens[0].id);
+              
+            return token;
+          } else {
+            this.log('Cached token expired, will authenticate');
+            // Token expirado, limpar cache
+            await this.supabase
+              .from('pdf_extraction_cache')
+              .delete()
+              .eq('id', cachedTokens[0].id);
+          }
+        }
+      }
+
       this.log('No valid cached token found');
       return null;
     } catch (error) {
@@ -140,6 +186,9 @@ export class AdobeTokenManager {
       // Armazenar em memória
       this.currentToken = token;
       
+      // Salvar no cache persistente
+      await this.saveToPersistentCache(token);
+      
       return token;
 
     } catch (error) {
@@ -191,6 +240,53 @@ export class AdobeTokenManager {
       minutes_remaining: minutesRemaining,
       is_valid: this.isTokenValid(this.currentToken)
     };
+  }
+
+  // Salvar token no cache persistente
+  private async saveToPersistentCache(token: AdobeToken): Promise<void> {
+    try {
+      const cacheData = {
+        user_id: 'system', // Token é do sistema, não de usuário específico
+        file_hash: `adobe_token_${Date.now()}`,
+        file_name: 'adobe_access_token.json',
+        file_size: JSON.stringify(token).length,
+        processing_method: 'adobe_token',
+        extraction_quality: 'high',
+        extraction_data: token,
+        hit_count: 0
+      };
+
+      await this.supabase
+        .from('pdf_extraction_cache')
+        .insert(cacheData);
+
+      this.log('Token saved to persistent cache successfully');
+    } catch (error) {
+      this.logError('Failed to save token to persistent cache:', error);
+      // Não falhar se o cache der erro
+    }
+  }
+
+  // Auto-renewal: verifica se precisa renovar (1 hora antes da expiração)
+  async checkAndRenewIfNeeded(): Promise<boolean> {
+    if (!this.currentToken) return false;
+
+    const now = Date.now();
+    const oneHourInMs = 60 * 60 * 1000; // 1 hora
+    const renewThreshold = this.currentToken.expires_at - oneHourInMs;
+
+    if (now >= renewThreshold) {
+      this.log('Token expires soon, auto-renewing...');
+      try {
+        await this.refreshToken();
+        return true;
+      } catch (error) {
+        this.logError('Auto-renewal failed:', error);
+        return false;
+      }
+    }
+
+    return false;
   }
 
   // Validar credenciais sem obter token

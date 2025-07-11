@@ -34,7 +34,10 @@ const AdobeTokenStatus = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro na chamada da função');
+      }
 
       setTokenStatus(data);
       
@@ -48,8 +51,15 @@ const AdobeTokenStatus = () => {
       console.error('Erro ao buscar status do token:', error);
       toast({
         title: "Erro",
-        description: "Falha ao verificar status do token Adobe",
+        description: `Falha ao verificar status: ${error.message}`,
         variant: "destructive",
+      });
+      
+      // Definir estado de erro
+      setTokenStatus({
+        status: 'error',
+        overall_status: 'error',
+        actions_available: ['check_system']
       });
     } finally {
       setLoading(false);
@@ -66,7 +76,10 @@ const AdobeTokenStatus = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro na renovação');
+      }
 
       setTokenStatus(data);
       toast({
@@ -77,7 +90,7 @@ const AdobeTokenStatus = () => {
       console.error('Erro ao renovar token:', error);
       toast({
         title: "Erro ao Renovar",
-        description: "Falha ao renovar token Adobe",
+        description: `Falha ao renovar: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -87,6 +100,13 @@ const AdobeTokenStatus = () => {
 
   useEffect(() => {
     fetchTokenStatus();
+    
+    // Auto-refresh a cada 5 minutos
+    const interval = setInterval(() => {
+      fetchTokenStatus();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const getStatusIcon = (status: string) => {

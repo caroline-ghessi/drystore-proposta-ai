@@ -15,10 +15,10 @@ serve(async (req) => {
     const correlationId = `data-saver-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     console.log(`💾 [${correlationId}] data-saver: Iniciando salvamento de dados`);
     
-    // Validar Content-Type
-    const contentType = req.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Invalid Content-Type: ${contentType}. Expected application/json`);
+    // Validação flexível de Content-Type
+    const contentType = req.headers.get('content-type') || '';
+    if (!contentType.includes('application/json') && !contentType.includes('multipart/form-data')) {
+      console.log(`⚠️ [${correlationId}] Content-Type aceito com ressalvas: ${contentType}`);
     }
 
     // Parse do JSON com tratamento de erro

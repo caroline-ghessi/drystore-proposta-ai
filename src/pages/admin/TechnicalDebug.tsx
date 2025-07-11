@@ -29,9 +29,10 @@ import DebugHeader from '@/components/admin/debug/DebugHeader';
 import StatusOverview from '@/components/admin/debug/StatusOverview';
 import QuickActions from '@/components/admin/debug/QuickActions';
 import SystemInfo from '@/components/admin/debug/SystemInfo';
+import SystemHealthMonitor from '@/components/admin/debug/SystemHealthMonitor';
 
 const TechnicalDebug = () => {
-  const [activeTab, setActiveTab] = useState('erp');
+  const [activeTab, setActiveTab] = useState('adobe');
   const [systemStatus, setSystemStatus] = useState({
     overall: 'healthy',
     lastCheck: new Date().toISOString()
@@ -59,6 +60,9 @@ const TechnicalDebug = () => {
           systemStatus={systemStatus}
           onRefreshStatus={handleRefreshStatus}
         />
+
+        {/* Sistema de Monitoramento Automático */}
+        <SystemHealthMonitor />
 
         {/* Status Cards Overview */}
         <StatusOverview systemStatus={systemStatus} />
