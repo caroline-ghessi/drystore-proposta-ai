@@ -129,19 +129,16 @@ const AdobeDebugTab = () => {
       }
 
       // Chamar nova edge function de health check
-      const healthResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/debug-adobe-health', {
+      const { data: healthData, error: healthError } = await supabase.functions.invoke('debug-adobe-health', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
           'X-Correlation-ID': correlationId
         }
       });
 
-      if (!healthResponse.ok) {
-        throw new Error(`Health check falhou: ${healthResponse.status}`);
+      if (healthError) {
+        throw new Error(`Health check falhou: ${healthError.message}`);
       }
 
-      const healthData = await healthResponse.json();
       const duration = Date.now() - startTime;
 
       // Atualizar status de conexão
@@ -200,20 +197,15 @@ const AdobeDebugTab = () => {
       }
 
       // Teste 1: Obter credenciais
-      const credResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/get-adobe-credentials', {
+      const { data: credentials, error: credError } = await supabase.functions.invoke('get-adobe-credentials', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
           'X-Correlation-ID': correlationId
         }
       });
 
-      if (!credResponse.ok) {
-        const errorText = await credResponse.text();
-        throw new Error(`Falha ao obter credenciais: ${credResponse.status} - ${errorText}`);
+      if (credError) {
+        throw new Error(`Falha ao obter credenciais: ${credError.message}`);
       }
-
-      const credentials = await credResponse.json();
       addEdgeLog({
         function_name: 'get-adobe-credentials',
         level: 'INFO',
@@ -341,31 +333,26 @@ const AdobeDebugTab = () => {
       const testFile = new File([testBlob], `debug-test-${Date.now()}.pdf`, { type: 'application/pdf' });
 
       const uploadStartTime = Date.now();
-      const uploadResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/upload-to-adobe', {
-        method: 'POST',
+      const { data: uploadResult, error: uploadError } = await supabase.functions.invoke('upload-to-adobe', {
+        body: testFile,
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/pdf',
           'X-File-Name': testFile.name,
           'X-File-Size': testFile.size.toString(),
           'X-Correlation-ID': correlationId
-        },
-        body: testFile
+        }
       });
 
       const uploadDuration = Date.now() - uploadStartTime;
       addPerformanceMetric({
         operation: 'Adobe Upload Test',
         duration: uploadDuration,
-        status: uploadResponse.ok ? 'success' : 'error'
+        status: uploadError ? 'error' : 'success'
       });
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Upload falhou: ${uploadResponse.status} - ${errorText}`);
+      if (uploadError) {
+        throw new Error(`Upload falhou: ${uploadError.message}`);
       }
-
-      const uploadResult = await uploadResponse.json();
       addEdgeLog({
         function_name: 'upload-to-adobe',
         level: 'INFO',
@@ -375,30 +362,25 @@ const AdobeDebugTab = () => {
 
       // Fase 2: Teste de Extração
       const extractStartTime = Date.now();
-      const extractResponse = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/pdf-text-extractor', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-          'X-Correlation-ID': correlationId
-        },
-        body: JSON.stringify({
+      const { data: extractResult, error: extractError } = await supabase.functions.invoke('pdf-text-extractor', {
+        body: {
           file_data: btoa(String.fromCharCode(...testPdfContent)),
           file_name: testFile.name,
           extraction_method: 'adobe'
-        })
+        },
+        headers: {
+          'X-Correlation-ID': correlationId
+        }
       });
 
       const extractDuration = Date.now() - extractStartTime;
       addPerformanceMetric({
         operation: 'Adobe Text Extraction',
         duration: extractDuration,
-        status: extractResponse.ok ? 'success' : 'error'
+        status: extractError ? 'error' : 'success'
       });
 
-      let extractResult = null;
-      if (extractResponse.ok) {
-        extractResult = await extractResponse.json();
+      if (!extractError) {
         addEdgeLog({
           function_name: 'pdf-text-extractor',
           level: 'INFO',
@@ -415,13 +397,13 @@ const AdobeDebugTab = () => {
         duration: totalDuration,
         details: {
           upload: {
-            success: uploadResponse.ok,
+            success: !uploadError,
             duration: uploadDuration,
             assetId: uploadResult?.assetID,
             strategy: uploadResult?.strategy
           },
           extraction: {
-            success: extractResponse.ok,
+            success: !extractError,
             duration: extractDuration,
             textLength: extractResult?.extracted_text?.length || 0,
             method: extractResult?.metadata?.method
@@ -468,15 +450,9 @@ const AdobeDebugTab = () => {
         return;
       }
 
-      const response = await fetch('https://mlzgeceiinjwpffgsxuy.supabase.co/functions/v1/get-adobe-credentials', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { data: credentials, error } = await supabase.functions.invoke('get-adobe-credentials');
 
-      if (response.ok) {
-        const credentials = await response.json();
+      if (!error && credentials) {
         if (credentials.clientId && credentials.clientSecret && credentials.orgId) {
           setConnectionStatus('connected');
         } else {
