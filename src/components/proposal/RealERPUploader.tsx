@@ -190,9 +190,9 @@ const RealERPUploader = ({ onUploadComplete, productGroup = 'geral' }: RealERPUp
 
     console.log(`🚀 [${processingId}] PROCESSAMENTO ÚNICO INICIADO`);
 
-    // TIMEOUT OTIMIZADO DE 150 SEGUNDOS - Para suportar retry e arquivos complexos
+    // TIMEOUT ESTENDIDO DE 180 SEGUNDOS - Para suportar PDFs complexos e retry
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 150 segundos')), 150 * 1000);
+      setTimeout(() => reject(new Error('Timeout: Processamento excedeu 180 segundos')), 180 * 1000);
     });
 
     try {

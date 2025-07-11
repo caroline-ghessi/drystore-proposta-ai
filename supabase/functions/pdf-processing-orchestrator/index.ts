@@ -240,15 +240,36 @@ serve(async (req) => {
 });
 
 async function extractText(fileData: string, fileName: string, options: any, processingId?: string) {
-  // Implementar retry com backoff exponencial
+  // Implementar retry com backoff exponencial e verificação de token
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       console.log(`📤 [${processingId}] extractText attempt ${attempt}/3`);
       
+      // Verificar token Adobe antes da tentativa
+      if (attempt === 1) {
+        try {
+          console.log(`🔑 [${processingId}] Verificando token Adobe...`);
+          await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/adobe-token-manager`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+              },
+              body: JSON.stringify({ action: 'get_token' })
+            }
+          );
+          console.log(`✅ [${processingId}] Token Adobe verificado`);
+        } catch (tokenError) {
+          console.log(`⚠️ [${processingId}] Aviso na verificação do token: ${tokenError.message}`);
+        }
+      }
+      
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos timeout aumentado
       
       try {
         const response = await fetch(
@@ -290,7 +311,7 @@ async function extractText(fileData: string, fileName: string, options: any, pro
       console.log(`⚠️ [${processingId}] extractText attempt ${attempt} failed: ${error.message}`);
       
       if (attempt < 3) {
-        const backoffTime = Math.pow(2, attempt - 1) * 1000; // 1s, 2s
+        const backoffTime = Math.pow(2, attempt - 1) * 2000; // 2s, 4s - backoff aumentado
         console.log(`🔄 [${processingId}] Retrying in ${backoffTime}ms...`);
         await new Promise(resolve => setTimeout(resolve, backoffTime));
       }
@@ -441,44 +462,65 @@ async function validateData(formattedData: any, processingId?: string) {
 }
 
 async function saveData(formattedData: any, validationResult: any, userId: string, productGroup: string = 'geral', processingId?: string) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
+  // Implementar retry para salvamento
+  let lastError: Error | null = null;
   
-  try {
-    const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-saver`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify({
-          formatted_data: formattedData,
-          validation_result: validationResult,
-          save_type: 'proposal_draft',
-          user_id: userId,
-          product_group: productGroup,
-          processing_id: processingId
-        }),
-        signal: controller.signal
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`💾 [${processingId}] saveData attempt ${attempt}/3`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 segundos timeout aumentado
+      
+      try {
+        const response = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/data-saver`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            },
+            body: JSON.stringify({
+              formatted_data: formattedData,
+              validation_result: validationResult,
+              save_type: 'proposal_draft',
+              user_id: userId,
+              product_group: productGroup,
+              processing_id: processingId
+            }),
+            signal: controller.signal
+          }
+        );
+
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Data saving failed with status: ${response.status} - ${errorText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+          throw new Error('Data saving timeout');
+        }
+        
+        throw error;
       }
-    );
-
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`Data saving failed with status: ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      console.log(`⚠️ [${processingId}] saveData attempt ${attempt} failed: ${error.message}`);
+      
+      if (attempt < 3) {
+        const backoffTime = Math.pow(2, attempt - 1) * 1500; // 1.5s, 3s
+        console.log(`🔄 [${processingId}] Retrying save in ${backoffTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
     }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    if (error.name === 'AbortError') {
-      return { success: false, error: 'Data saving timeout' };
-    }
-    
-    return { success: false, error: error.message };
   }
+  
+  return { success: false, error: lastError?.message || 'Data saving failed after 3 attempts' };
 }

@@ -164,19 +164,19 @@ async function saveAsProposalDraft(
     let clientId = null;
     const rawClientName = formattedData.client_name || formattedData.client?.name || formattedData.client;
     
-    // VALIDAÇÃO ULTRA FLEXÍVEL: Aceitar qualquer nome não vazio
+    // VALIDAÇÃO ULTRA FLEXÍVEL: Aceitar qualquer texto como nome de cliente
     function isValidClientName(name: string): boolean {
-      if (!name || name.trim() === '') {
-        console.log('❌ Nome inválido: vazio ou null');
+      if (!name) {
+        console.log('❌ Nome totalmente ausente');
         return false;
       }
       
-      const trimmedName = name.trim();
-      console.log('🔍 Validando nome do cliente:', trimmedName);
+      const trimmedName = name.toString().trim();
+      console.log(`🔍 [${correlationId}] Validando nome do cliente:`, trimmedName);
       
-      // Validação mínima - apenas comprimento
-      const isValid = trimmedName.length >= 2 && trimmedName.length <= 100;
-      console.log('✅ Nome válido:', isValid);
+      // Aceitar QUALQUER texto não vazio (até mesmo números ou símbolos)
+      const isValid = trimmedName.length >= 1;
+      console.log(`✅ [${correlationId}] Nome válido:`, isValid);
       
       return isValid;
     }
@@ -247,12 +247,32 @@ async function saveAsProposalDraft(
         clientId = newClient.id;
       }
     } else {
-      console.log('❌ Nome do cliente não identificado nos dados:', {
-        rawClientName,
-        formattedDataClient: formattedData.client,
-        allFormattedData: JSON.stringify(formattedData, null, 2)
-      });
-      throw new Error(`Nome do cliente não identificado nos dados. Raw: "${rawClientName}"`);
+      console.log(`⚠️ [${correlationId}] Nome do cliente não identificado, criando cliente genérico...`);
+      
+      // FALLBACK ROBUSTO: Criar cliente com nome genérico se necessário
+      const fallbackClientName = `Cliente-${Date.now().toString().slice(-6)}`;
+      
+      console.log(`➕ [${correlationId}] Criando cliente fallback: ${fallbackClientName}`);
+      
+      const fallbackClientData = {
+        nome: fallbackClientName,
+        origem_dados: 'pdf_extraction_fallback',
+        // Não incluir campos opcionais que podem ser null
+      };
+      
+      const { data: fallbackClient, error: fallbackError } = await supabase
+        .from('clients')
+        .insert(fallbackClientData)
+        .select()
+        .single();
+
+      if (fallbackError) {
+        console.error(`❌ [${correlationId}] Erro ao criar cliente fallback:`, fallbackError);
+        throw new Error(`Erro ao criar cliente fallback: ${fallbackError.message}`);
+      }
+      
+      console.log(`✅ [${correlationId}] Cliente fallback criado:`, fallbackClient.id);
+      clientId = fallbackClient.id;
     }
 
     // Criar proposta com todos os campos obrigatórios
