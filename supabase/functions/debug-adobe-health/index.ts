@@ -63,14 +63,24 @@ serve(async (req) => {
         
         if (tokenResponse.ok) {
           const tokenData = await tokenResponse.json();
+          
+          // Calcular informações de expiração
+          const now = Date.now();
+          const expiresIn = tokenData.expires_in || 86400; // Default 24h
+          const expiresAt = now + (expiresIn * 1000);
+          const hoursRemaining = Math.floor(expiresIn / 3600);
+          
           healthCheck.checks.authentication = {
             status: 'success',
             duration_ms: authDuration,
             has_token: !!tokenData.access_token,
-            expires_in: tokenData.expires_in || 'unknown',
-            token_preview: tokenData.access_token ? tokenData.access_token.substring(0, 20) + '...' : 'missing'
+            expires_in_seconds: expiresIn,
+            expires_in_hours: hoursRemaining,
+            expires_at: new Date(expiresAt).toISOString(),
+            token_preview: tokenData.access_token ? tokenData.access_token.substring(0, 20) + '...' : 'missing',
+            token_length: tokenData.access_token ? tokenData.access_token.length : 0
           };
-          console.log(`✅ [${correlationId}] Autenticação Adobe OK (${authDuration}ms)`);
+          console.log(`✅ [${correlationId}] Autenticação Adobe OK (${authDuration}ms) - Token expira em ${hoursRemaining}h`);
         } else {
           const errorText = await tokenResponse.text();
           healthCheck.checks.authentication = {

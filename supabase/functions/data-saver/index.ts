@@ -12,81 +12,135 @@ serve(async (req) => {
   }
 
   try {
-    console.log('💾 data-saver: Iniciando salvamento de dados');
+    const correlationId = `data-saver-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    console.log(`💾 [${correlationId}] data-saver: Iniciando salvamento de dados`);
     
+    // Validar Content-Type
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Invalid Content-Type: ${contentType}. Expected application/json`);
+    }
+
+    // Parse do JSON com tratamento de erro
+    let requestData;
+    try {
+      const requestText = await req.text();
+      if (!requestText || requestText.trim() === '') {
+        throw new Error('Request body is empty');
+      }
+      requestData = JSON.parse(requestText);
+    } catch (parseError) {
+      console.error(`❌ [${correlationId}] Erro ao fazer parse do JSON:`, parseError);
+      throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+    }
+
     const { 
       formatted_data, 
       validation_result, 
       save_type = 'proposal_draft',
       user_id,
       product_group = 'geral' 
-    } = await req.json();
+    } = requestData;
     
-    console.log('📋 Dados recebidos:', {
+    console.log(`📋 [${correlationId}] Dados recebidos:`, {
       hasFormattedData: !!formatted_data,
       saveType: save_type,
       userId: user_id,
       productGroup: product_group,
-      clientName: formatted_data?.client_name
+      clientName: formatted_data?.client_name,
+      dataSize: JSON.stringify(formatted_data || {}).length
     });
     
+    // Validações mais detalhadas
     if (!formatted_data) {
+      console.error(`❌ [${correlationId}] Dados formatados ausentes`);
       throw new Error('Dados formatados não fornecidos');
     }
 
     if (!user_id) {
+      console.error(`❌ [${correlationId}] User ID ausente`);
       throw new Error('ID do usuário não fornecido');
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    if (typeof formatted_data !== 'object') {
+      console.error(`❌ [${correlationId}] Dados formatados inválidos:`, typeof formatted_data);
+      throw new Error('Dados formatados devem ser um objeto');
+    }
+
+    // Initialize Supabase client com validação
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error(`❌ [${correlationId}] Credenciais Supabase ausentes`);
+      throw new Error('Supabase credentials not configured');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log(`🔌 [${correlationId}] Cliente Supabase inicializado`);
 
     let savedData;
 
+    console.log(`🔄 [${correlationId}] Iniciando salvamento tipo: ${save_type}`);
+    
     switch (save_type) {
       case 'proposal_draft':
-        savedData = await saveAsProposalDraft(supabase, formatted_data, validation_result, user_id, product_group);
+        savedData = await saveAsProposalDraft(supabase, formatted_data, validation_result, user_id, product_group, correlationId);
         break;
       case 'raw_data':
-        savedData = await saveAsRawData(supabase, formatted_data, validation_result, user_id);
+        savedData = await saveAsRawData(supabase, formatted_data, validation_result, user_id, correlationId);
         break;
       default:
+        console.error(`❌ [${correlationId}] Tipo de salvamento inválido: ${save_type}`);
         throw new Error(`Tipo de salvamento não suportado: ${save_type}`);
     }
 
-    console.log('✅ Dados salvos com sucesso');
+    console.log(`✅ [${correlationId}] Dados salvos com sucesso`);
 
     return new Response(
       JSON.stringify({
         success: true,
         saved_data: savedData,
         save_type: save_type,
-        processing_time: Date.now()
+        correlation_id: correlationId,
+        processing_time: Date.now(),
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { 
           ...corsHeaders, 
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json',
+          'X-Correlation-ID': correlationId
         } 
       }
     );
 
   } catch (error) {
-    console.error('❌ Erro no salvamento de dados:', error);
+    const correlationId = `error-${Date.now()}`;
+    console.error(`❌ [${correlationId}] Erro no salvamento de dados:`, {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
-        stage: 'data_saving'
+        stage: 'data_saving',
+        correlation_id: correlationId,
+        timestamp: new Date().toISOString(),
+        details: {
+          error_type: error.constructor.name,
+          stack: error.stack
+        }
       }),
       { 
         status: 500,
         headers: { 
           ...corsHeaders, 
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json',
+          'X-Correlation-ID': correlationId
         } 
       }
     );
@@ -98,7 +152,8 @@ async function saveAsProposalDraft(
   formattedData: any, 
   validationResult: any, 
   userId: string,
-  productGroup: string = 'geral'
+  productGroup: string = 'geral',
+  correlationId: string = 'unknown'
 ) {
   try {
     console.log('🔄 Iniciando saveAsProposalDraft...');
@@ -308,7 +363,8 @@ async function saveAsRawData(
   supabase: any, 
   formattedData: any, 
   validationResult: any, 
-  userId: string
+  userId: string,
+  correlationId: string = 'unknown'
 ) {
   const { data, error } = await supabase
     .from('propostas_brutas')
