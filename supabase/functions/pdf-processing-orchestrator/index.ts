@@ -247,11 +247,11 @@ async function extractText(fileData: string, fileName: string, options: any, pro
     try {
       console.log(`📤 [${processingId}] extractText attempt ${attempt}/3`);
       
-      // Verificar token Adobe antes da tentativa
+      // NOVA VERIFICAÇÃO: Validar token Adobe antes da tentativa
       if (attempt === 1) {
         try {
-          console.log(`🔑 [${processingId}] Verificando token Adobe...`);
-          await fetch(
+          console.log(`🔑 [${processingId}] Verificando validade do token Adobe...`);
+          const tokenResponse = await fetch(
             `${Deno.env.get('SUPABASE_URL')}/functions/v1/adobe-token-manager`,
             {
               method: 'POST',
@@ -259,12 +259,47 @@ async function extractText(fileData: string, fileName: string, options: any, pro
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
               },
-              body: JSON.stringify({ action: 'get_token' })
+              body: JSON.stringify({ action: 'status' })
             }
           );
-          console.log(`✅ [${processingId}] Token Adobe verificado`);
+          
+          const tokenStatus = await tokenResponse.json();
+          
+          if (!tokenStatus.is_valid || tokenStatus.needs_renewal) {
+            console.log(`🔄 [${processingId}] Token precisa renovação - forçando renovação...`);
+            await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/adobe-token-manager`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+                },
+                body: JSON.stringify({ action: 'renew_token' })
+              }
+            );
+            console.log(`✅ [${processingId}] Token renovado com sucesso`);
+          } else {
+            console.log(`✅ [${processingId}] Token válido, prosseguindo...`);
+          }
         } catch (tokenError) {
           console.log(`⚠️ [${processingId}] Aviso na verificação do token: ${tokenError.message}`);
+          // Não falhar a extração por problemas de token, mas tentar renovar
+          try {
+            await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/functions/v1/adobe-token-manager`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+                },
+                body: JSON.stringify({ action: 'renew_token' })
+              }
+            );
+          } catch (renewError) {
+            console.log(`⚠️ [${processingId}] Renovação preventiva falhou: ${renewError.message}`);
+          }
         }
       }
       

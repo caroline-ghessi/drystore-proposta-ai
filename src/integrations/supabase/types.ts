@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      adobe_token_cache: {
+        Row: {
+          access_token: string
+          client_id: string
+          correlation_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          last_accessed: string | null
+          last_validated: string | null
+          renewal_count: number | null
+          scopes: string
+          token_source: string | null
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          correlation_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed?: string | null
+          last_validated?: string | null
+          renewal_count?: number | null
+          scopes?: string
+          token_source?: string | null
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          correlation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_accessed?: string | null
+          last_validated?: string | null
+          renewal_count?: number | null
+          scopes?: string
+          token_source?: string | null
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           created_at: string
@@ -1863,6 +1908,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adobe_token_needs_renewal: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       calcular_financeiro_solar: {
         Args: {
           p_custo_equipamentos: number
@@ -1899,6 +1948,10 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
+      }
+      cleanup_expired_adobe_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       dimensionar_sistema_solar: {
         Args: { p_consumo_medio_kwh: number; p_estado: string }

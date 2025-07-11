@@ -27,10 +27,10 @@ const AdobeTokenStatus = () => {
   const fetchTokenStatus = async (refresh = false) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('adobe-token-health', {
+      // NOVA INTEGRAÇÃO: Usar adobe-token-manager diretamente
+      const { data, error } = await supabase.functions.invoke('adobe-token-manager', {
         body: { 
-          test_credentials: false,
-          refresh_token: refresh
+          action: refresh ? 'auto_renewal_check' : 'status'
         }
       });
 
@@ -44,7 +44,7 @@ const AdobeTokenStatus = () => {
       if (refresh) {
         toast({
           title: "Token Atualizado",
-          description: "Status do token Adobe foi atualizado com sucesso",
+          description: data.auto_renewal ? "Token renovado automaticamente" : "Status verificado - Token válido",
         });
       }
     } catch (error) {
@@ -58,7 +58,7 @@ const AdobeTokenStatus = () => {
       // Definir estado de erro
       setTokenStatus({
         status: 'error',
-        overall_status: 'error',
+        overall_status: 'ERRO - Sistema Indisponível',
         actions_available: ['check_system']
       });
     } finally {
@@ -70,9 +70,10 @@ const AdobeTokenStatus = () => {
   const refreshToken = async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('adobe-token-health', {
+      // NOVA INTEGRAÇÃO: Usar adobe-token-manager para renovação forçada
+      const { data, error } = await supabase.functions.invoke('adobe-token-manager', {
         body: { 
-          refresh_token: true
+          action: 'renew_token'
         }
       });
 
@@ -81,10 +82,19 @@ const AdobeTokenStatus = () => {
         throw new Error(error.message || 'Erro na renovação');
       }
 
-      setTokenStatus(data);
+      setTokenStatus({
+        status: 'valid',
+        overall_status: 'OK - Token Renovado',
+        expires_at: data.expires_at,
+        created_at: new Date().toISOString(),
+        is_valid: true,
+        correlation_id: data.correlation_id,
+        actions_available: ['get_token', 'renew_token']
+      });
+      
       toast({
         title: "Token Renovado",
-        description: "Token Adobe foi renovado com sucesso",
+        description: `Token Adobe renovado com sucesso. Expira em: ${new Date(data.expires_at).toLocaleString('pt-BR')}`,
       });
     } catch (error) {
       console.error('Erro ao renovar token:', error);
